@@ -186,6 +186,7 @@ def add_questions(test_id: int, payload: QuestionsBulk, db: Session = Depends(ge
         raise HTTPException(status_code=404, detail="Not found")
     existing = len(test.questions)
     total_added = 0.0
+    BATCH_SIZE = 20
     for idx, q in enumerate(payload.questions):
         db.add(Question(
             test_id=test_id, question_type=QuestionType(q.question_type),
@@ -195,6 +196,8 @@ def add_questions(test_id: int, payload: QuestionsBulk, db: Session = Depends(ge
             topic=q.topic, order_index=existing + idx
         ))
         total_added += q.marks
+        if (idx + 1) % BATCH_SIZE == 0:
+            db.commit()
     test.total_marks += total_added
     db.commit()
     return {"message": f"Added {len(payload.questions)} questions", "total_in_test": existing + len(payload.questions)}

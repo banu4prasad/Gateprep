@@ -328,14 +328,25 @@ export default function AdminTestDetail() {
   useEffect(load, [testId])
 
   const addQuestion = async (q) => {
-    await adminAPI.addQuestions(testId, [q])
-    load()
-    setMode(null)
+    try {
+      await adminAPI.addQuestions(testId, [q])
+      load()
+      setMode(null)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to add question')
+    }
   }
 
   const addQuestionsJSON = async (qs) => {
-    await adminAPI.addQuestions(testId, qs)
-    load()
+    try {
+      const CHUNK = 20
+      for (let i = 0; i < qs.length; i += CHUNK) {
+        await adminAPI.addQuestions(testId, qs.slice(i, i + CHUNK))
+      }
+      load()
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to upload questions')
+    }
   }
 
   const deleteQuestion = async (qId) => {
