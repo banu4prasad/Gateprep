@@ -244,7 +244,7 @@ function JSONUploadForm({ onAdd, onClose }) {
   )
 }
 
-function QuestionCard({ q, idx, onDelete }) {
+function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
   const [open, setOpen] = useState(false)
   const typeColor = { mcq:'badge-blue', msq:'badge-amber', nat:'badge-green' }
 
@@ -268,7 +268,7 @@ function QuestionCard({ q, idx, onDelete }) {
         </div>
       </div>
       {open && (
-        <div className="px-4 pb-4 border-t border-slate-800 pt-3 space-y-2">
+        <div className="px-4 pb-4 border-t border-slate-800 pt-3 space-y-3">
           {q.options?.length > 0 && (
             <div className="grid grid-cols-2 gap-1.5">
               {q.options.map((o,i) => {
@@ -288,6 +288,24 @@ function QuestionCard({ q, idx, onDelete }) {
             <span className="text-slate-600 ml-2">·</span>
             <span className="text-slate-500">+{q.marks}M</span>
             {q.negative_marks > 0 && <span className="text-slate-500">/ -{q.negative_marks}M</span>}
+          </div>
+
+          {/* Image upload section */}
+          <div className="border-t border-slate-800 pt-3">
+            <p className="text-xs text-slate-500 mb-2">Question Image (optional)</p>
+            {q.question_image_url ? (
+              <div className="flex items-start gap-3">
+                <img src={q.question_image_url} alt="question" className="max-h-32 rounded border border-slate-700 cursor-pointer" onClick={() => window.open(q.question_image_url, '_blank')} />
+                <button onClick={() => onDeleteImage(q.id, 'question')} className="text-xs text-red-400 hover:text-red-300 mt-1">Remove</button>
+              </div>
+            ) : (
+              <label className="flex items-center gap-2 cursor-pointer w-fit">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-dashed border-slate-600 text-xs text-slate-400 hover:border-sky-500 hover:text-sky-400 transition-colors">
+                  <Upload size={13}/> Upload Image
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={e => { if(e.target.files[0]) onUploadImage(q.id, e.target.files[0]) }} />
+              </label>
+            )}
           </div>
         </div>
       )}
@@ -327,6 +345,26 @@ export default function AdminTestDetail() {
       setQuestions(qs => qs.filter(q => q.id !== qId))
       toast.success('Deleted')
     } catch { toast.error('Failed') }
+  }
+
+  const uploadImage = async (qId, file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      await adminAPI.uploadQImage(qId, fd)
+      toast.success('Image uploaded!')
+      load()
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Upload failed. Check Cloudinary config.')
+    }
+  }
+
+  const deleteImage = async (qId, target) => {
+    try {
+      await adminAPI.deleteQImage(qId, target)
+      toast.success('Image removed')
+      load()
+    } catch { toast.error('Failed to remove image') }
   }
 
   if (loading) return <Layout><div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500"/></div></Layout>
@@ -384,7 +422,7 @@ export default function AdminTestDetail() {
             </div>
           ) : (
             questions.map((q, idx) => (
-              <QuestionCard key={q.id} q={q} idx={idx} onDelete={deleteQuestion} />
+              <QuestionCard key={q.id} q={q} idx={idx} onDelete={deleteQuestion} onUploadImage={uploadImage} onDeleteImage={deleteImage} />
             ))
           )}
         </div>
