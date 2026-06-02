@@ -6,7 +6,13 @@ MSQ:  +marks only if ALL correct options selected exactly, 0 otherwise (no negat
 NAT:  +marks if answer in range (or exact match), 0 otherwise (no negative)
 """
 from typing import Optional
-from app.models.models import Question, QuestionType
+from app.models.models import Question
+from app.services.answer_utils import (
+    normalize_question_type,
+    parse_float,
+    parse_nat_range,
+    split_answer_tokens,
+)
 
 
 def evaluate_answer(question: Question, selected: Optional[str]) -> tuple[bool | None, float]:
@@ -17,40 +23,49 @@ def evaluate_answer(question: Question, selected: Optional[str]) -> tuple[bool |
     if selected is None or selected.strip() == "":
         return None, 0.0  # skipped
 
-    q_type = question.question_type
+    q_type = normalize_question_type(question.question_type)
     correct = question.correct_answer.strip().upper()
     given = selected.strip().upper()
+    question_marks = parse_float(question.marks) or 0.0
+    negative_marks = parse_float(question.negative_marks) or 0.0
 
-    if q_type == QuestionType.mcq:
+    if q_type == "mcq":
         is_correct = given == correct
-        marks = question.marks if is_correct else -question.negative_marks
+        marks = question_marks if is_correct else -negative_marks
         return is_correct, round(marks, 2)
 
-    elif q_type == QuestionType.msq:
-        correct_set = set(c.strip() for c in correct.split(","))
-        given_set = set(c.strip() for c in given.split(","))
+    elif q_type == "msq":
+        correct_set = set(c.upper() for c in split_answer_tokens(correct))
+        given_set = set(c.upper() for c in split_answer_tokens(given))
         is_correct = correct_set == given_set
-        marks = question.marks if is_correct else 0.0  # no negative for MSQ
+        marks = question_marks if is_correct else 0.0  # no negative for MSQ
         return is_correct, round(marks, 2)
 
-    elif q_type == QuestionType.nat:
+    elif q_type == "nat":
         # Correct answer can be exact "42" or range "41.5-42.5"
-        try:
-            given_val = float(given)
-        except ValueError:
+        given_val = parse_float(given)
+        if given_val is None:
             return False, 0.0
 
-        if "-" in correct and not correct.startswith("-"):
-            # Range answer
-            parts = correct.split("-")
-            lo, hi = float(parts[0]), float(parts[1])
-            is_correct = lo <= given_val <= hi
-        else:
-            # Exact (allow ±0.01 tolerance for floating point)
-            expected = float(correct)
-            is_correct = abs(given_val - expected) <= 0.01
+        is_correct = False
+        for accepted in split_answer_tokens(correct):
+            bounds = parse_nat_range(accepted)
+            if bounds:
+                lo, hi = bounds
+                if lo <= given_val <= hi:
+                    is_correct = True
+                    break
+                continue
 
-        marks = question.marks if is_correct else 0.0
+            # Exact (allow +/-0.01 tolerance for floating point)
+            expected = parse_float(accepted)
+            if expected is None:
+                continue
+            if abs(given_val - expected) <= 0.01:
+                is_correct = True
+                break
+
+        marks = question_marks if is_correct else 0.0
         return is_correct, round(marks, 2)
 
-    return None, 0.0
+    return False, 0.0

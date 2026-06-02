@@ -3,11 +3,12 @@ import shutil
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from app.core.database import get_db
 from app.core.config import settings
 from app.api.deps import require_admin
 from app.models.models import User, Test, Question, QuestionType, UserRole
+from app.services.answer_utils import is_valid_nat_answer, normalize_question_type, split_answer_tokens
 from app.services.pdf_service import extract_questions_from_pdf
 from app.services.cloudinary_service import upload_image, delete_image
 
@@ -111,6 +112,26 @@ async def create_test(
             shutil.copyfileobj(pdf_file.file, f)
         pdf_filename = safe
         extracted = extract_questions_from_pdf(path)
+        if not extracted:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            raise HTTPException(
+                status_code=400,
+                detail="No questions could be extracted from PDF."
+            )
+
+        review_count = sum(1 for q in extracted if q.get("needs_review") or not q.get("correct_answer"))
+        if review_count:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            raise HTTPException(
+                status_code=400,
+                detail=f"PDF extraction found {len(extracted)} question(s), but {review_count} need review. Add/verify answer keys, options, and image-dependent content before importing."
+            )
 
     total_marks = sum(q["marks"] for q in extracted) if extracted else 0.0
     test = Test(
@@ -130,7 +151,8 @@ async def create_test(
             test_id=test.id, question_type=QuestionType(q["question_type"]),
             question_text=q["question_text"], options=q["options"],
             correct_answer=q["correct_answer"], marks=q["marks"],
-            negative_marks=q["negative_marks"], order_index=idx
+            negative_marks=q["negative_marks"], subject=q.get("subject"),
+            topic=q.get("topic"), order_index=idx
         ))
     if extracted:
         db.commit()
@@ -173,6 +195,34 @@ class QuestionIn(BaseModel):
     negative_marks: float = 0.33
     subject: Optional[str] = None
     topic: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_answer_shape(self):
+        q_type = normalize_question_type(self.question_type)
+        if q_type not in {"mcq", "msq", "nat"}:
+            raise ValueError("question_type must be one of mcq, msq, or nat")
+
+        self.question_type = q_type
+        self.correct_answer = self.correct_answer.strip().upper().replace(" ", "")
+        if not self.correct_answer:
+            raise ValueError("correct_answer is required")
+
+        if q_type == "mcq":
+            if self.correct_answer not in {"A", "B", "C", "D"}:
+                raise ValueError("MCQ correct_answer must be one of A, B, C, or D")
+        elif q_type == "msq":
+            selected = [part.strip().upper() for part in split_answer_tokens(self.correct_answer)]
+            if not selected or any(part not in {"A", "B", "C", "D"} for part in selected):
+                raise ValueError("MSQ correct_answer must contain option letters like A,C")
+            self.correct_answer = ",".join(dict.fromkeys(selected))
+            self.negative_marks = 0.0
+        else:
+            if not is_valid_nat_answer(self.correct_answer):
+                raise ValueError("NAT correct_answer must be a number or range like 41.5-42.5")
+            self.options = []
+            self.negative_marks = 0.0
+
+        return self
 
 
 class QuestionsBulk(BaseModel):
