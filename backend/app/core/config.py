@@ -71,6 +71,7 @@ def normalize_database_url(database_url: str) -> str:
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/gate_prep"
+    REDIS_URL: str = "redis://localhost:6379/0"
     SECRET_KEY: str = "change-me-in-production-32-chars-minimum"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480

@@ -1,9 +1,10 @@
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 from sqlalchemy import func
 from pydantic import BaseModel
+from fastapi_cache.decorator import cache
 from app.core.database import get_db
 from app.api.deps import require_aspirant, get_current_user
 from app.models.models import Test, Question, TestAttempt, UserAnswer, TestStatus, OTPToken
@@ -44,15 +45,22 @@ def cleanup_expired_otps(db: Session):
 
 @router.get("")
 def list_tests(db: Session = Depends(get_db), _=Depends(require_aspirant)):
-    tests = db.query(Test).filter(Test.is_published == True).order_by(Test.created_at.desc()).all()
+    results = (
+        db.query(Test, func.count(Question.id).label("question_count"))
+        .outerjoin(Question, Test.id == Question.test_id)
+        .filter(Test.is_published == True)
+        .group_by(Test.id)
+        .order_by(Test.created_at.desc())
+        .all()
+    )
     return [{
-        "id": t.id, "title": t.title, "description": t.description,
-        "duration_minutes": t.duration_minutes, "total_marks": t.total_marks,
-        "question_count": len(t.questions), "series_id": t.series_id,
-        "created_at": t.created_at,
-        "category": t.category, "series_name": t.series_name,
-        "test_type": t.test_type, "subject": t.subject
-    } for t in tests]
+        "id": test.id, "title": test.title, "description": test.description,
+        "duration_minutes": test.duration_minutes, "total_marks": test.total_marks,
+        "question_count": question_count, "series_id": test.series_id,
+        "created_at": test.created_at,
+        "category": test.category, "series_name": test.series_name,
+        "test_type": test.test_type, "subject": test.subject
+    } for test, question_count in results]
 
 
 @router.get("/{test_id}")
@@ -325,8 +333,7 @@ def get_result(
     avg_pct = round(avg_score / attempt.total_marks * 100, 2) if attempt.total_marks else 0
 
     # Topper
-    sorted_attempts = sorted(first_attempts, key=lambda a: a.score or 0, reverse=True)
-    topper = sorted_attempts[0] if sorted_attempts else None
+    topper = first_attempts[0] if first_attempts else None
     topper_data = None
     topper_answers_map = {}
     if topper:
@@ -340,7 +347,7 @@ def get_result(
         }
 
     # User rank
-    rank = next((i + 1 for i, a in enumerate(sorted_attempts) if a.user_id == current_user.id), None)
+    rank = next((i + 1 for i, a in enumerate(first_attempts) if a.user_id == current_user.id), None)
 
     # Attempt number
     all_user_attempts = db.query(TestAttempt).filter(
@@ -404,32 +411,85 @@ def get_result(
     }
 
 
-def _get_first_attempts(test_id: int, db: Session) -> list:
-    all_submitted = (
+def _get_first_attempts(test_id: int, db: Session) -> list[TestAttempt]:
+    if db.get_bind().dialect.name == "postgresql":
+        first_attempts_subquery = (
+            db.query(TestAttempt)
+            .filter(
+                TestAttempt.test_id == test_id,
+                TestAttempt.status == TestStatus.submitted,
+            )
+            .distinct(TestAttempt.user_id)
+            .order_by(TestAttempt.user_id, TestAttempt.id.asc())
+            .subquery()
+        )
+
+        FirstAttempt = aliased(TestAttempt, first_attempts_subquery)
+
+        return (
+            db.query(FirstAttempt)
+            .order_by(
+                FirstAttempt.score.desc(),
+                FirstAttempt.id.asc(),
+            )
+            .all()
+        )
+
+    first_attempt_ids_subquery = (
+        db.query(
+            TestAttempt.id.label("attempt_id"),
+            func.row_number().over(
+                partition_by=TestAttempt.user_id,
+                order_by=TestAttempt.id.asc(),
+            ).label("attempt_rank"),
+        )
+        .filter(
+            TestAttempt.test_id == test_id,
+            TestAttempt.status == TestStatus.submitted,
+        )
+        .subquery()
+    )
+
+    return (
         db.query(TestAttempt)
-        .filter(TestAttempt.test_id == test_id, TestAttempt.status == TestStatus.submitted)
-        .order_by(TestAttempt.id.asc())
+        .join(first_attempt_ids_subquery, TestAttempt.id == first_attempt_ids_subquery.c.attempt_id)
+        .filter(first_attempt_ids_subquery.c.attempt_rank == 1)
+        .order_by(
+            TestAttempt.score.desc(),
+            TestAttempt.id.asc(),
+        )
         .all()
     )
-    seen = set()
-    first = []
-    for a in all_submitted:
-        if a.user_id not in seen:
-            seen.add(a.user_id)
-            first.append(a)
-    return first
 
 
 # ── Leaderboard ───────────────────────────────────────────────────
 
+def _leaderboard_cache_key_builder(func, namespace="", *, request=None, response=None, args=None, kwargs=None):
+    args = args or ()
+    kwargs = kwargs or {}
+
+    test_id = kwargs.get("test_id")
+    current_user = kwargs.get("current_user")
+
+    if test_id is None and request is not None:
+        test_id = request.path_params.get("test_id")
+    if test_id is None and args:
+        test_id = args[0]
+    if current_user is None and len(args) >= 3:
+        current_user = args[2]
+
+    user_id = getattr(current_user, "id", "unknown")
+    return f"{namespace}:{func.__module__}:{func.__name__}:test:{test_id}:user:{user_id}"
+
+
 @router.get("/{test_id}/leaderboard")
+@cache(expire=60, key_builder=_leaderboard_cache_key_builder)
 def get_leaderboard(test_id: int, db: Session = Depends(get_db), current_user=Depends(require_aspirant)):
     test = db.query(Test).filter(Test.id == test_id).first()
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
     first_attempts = _get_first_attempts(test_id, db)
-    first_attempts.sort(key=lambda a: a.score or 0, reverse=True)
 
     leaderboard = []
     current_user_rank = None

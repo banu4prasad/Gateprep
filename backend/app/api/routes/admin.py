@@ -2,6 +2,8 @@ import os
 import shutil
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.concurrency import run_in_threadpool
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, model_validator
 from app.core.database import get_db
@@ -106,15 +108,21 @@ def toggle_status(user_id: int, db: Session = Depends(get_db), _=Depends(require
 
 @router.get("/tests")
 def list_tests(db: Session = Depends(get_db), _=Depends(require_admin)):
-    tests = db.query(Test).order_by(Test.created_at.desc()).all()
+    results = (
+        db.query(Test, func.count(Question.id).label("question_count"))
+        .outerjoin(Question, Test.id == Question.test_id)
+        .group_by(Test.id)
+        .order_by(Test.created_at.desc())
+        .all()
+    )
     return [{
-        "id": t.id, "title": t.title, "description": t.description,
-        "duration_minutes": t.duration_minutes, "total_marks": t.total_marks,
-        "question_count": len(t.questions), "series_id": t.series_id,
-        "is_published": t.is_published, "created_at": t.created_at,
-        "category": t.category, "series_name": t.series_name,
-        "test_type": t.test_type, "subject": t.subject
-    } for t in tests]
+        "id": test.id, "title": test.title, "description": test.description,
+        "duration_minutes": test.duration_minutes, "total_marks": test.total_marks,
+        "question_count": question_count, "series_id": test.series_id,
+        "is_published": test.is_published, "created_at": test.created_at,
+        "category": test.category, "series_name": test.series_name,
+        "test_type": test.test_type, "subject": test.subject
+    } for test, question_count in results]
 
 
 @router.get("/tests/{test_id}")
@@ -158,7 +166,7 @@ async def create_test(
         with open(path, "wb") as f:
             shutil.copyfileobj(pdf_file.file, f)
         pdf_filename = safe
-        extracted = extract_questions_from_pdf(path)
+        extracted = await run_in_threadpool(extract_questions_from_pdf, path)
         if not extracted:
             try:
                 os.remove(path)
@@ -311,7 +319,7 @@ async def upload_question_image(
         raise HTTPException(status_code=404, detail="Question not found")
 
     contents = await image.read()
-    result = upload_image(contents, folder="gate-prep/questions")
+    result = await run_in_threadpool(upload_image, contents, folder="gate-prep/questions")
     if not result.get("url"):
         raise HTTPException(status_code=500, detail=f"Image upload failed: {result.get('error', 'Unknown error')}")
 
