@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { testAPI } from '../api/api'
 import toast from 'react-hot-toast'
@@ -35,6 +35,96 @@ const STATUS_CLASS = {
   'answered-marked': 'q-dot q-dot-answered-marked',
 }
 
+const TIMER_WARNINGS = [30, 15, 10, 5, 1]
+
+function getEndTimeMs(startedAt, durationMinutes) {
+  if (!startedAt || !durationMinutes) return null
+
+  // Parse server time — handle all formats FastAPI may return:
+  // "2024-01-01T12:00:00" / "2024-01-01T12:00:00Z" / "2024-01-01T12:00:00+00:00"
+  let startMs
+  try {
+    let str = String(startedAt).trim()
+    // If no timezone info at all, treat as UTC
+    if (!str.endsWith('Z') && !str.includes('+') && !/[0-9]-[0-9]{2}:[0-9]{2}$/.test(str)) {
+      str = str + 'Z'
+    }
+    startMs = new Date(str).getTime()
+    if (isNaN(startMs)) throw new Error('Invalid date')
+  } catch {
+    // Fallback: treat as current time (timer starts fresh)
+    startMs = Date.now()
+  }
+
+  return startMs + durationMinutes * 60 * 1000
+}
+
+const TimerDisplay = ({
+  endTime,
+  onExpire,
+  announceWarnings = true,
+  className = 'flex items-center gap-1.5 px-3 py-1 rounded font-mono font-bold text-sm border',
+  lowClassName = 'bg-red-500/20 border-red-500/50 text-red-400 timer-critical',
+  normalClassName = 'bg-slate-800 border-slate-700 text-slate-200'
+}) => {
+  const getRemaining = useCallback(
+    () => Number.isFinite(endTime) ? Math.max(0, endTime - Date.now()) : null,
+    [endTime]
+  )
+  const [remaining, setRemaining] = useState(getRemaining)
+  const expiredRef = useRef(false)
+  const warnedRef = useRef(new Set())
+
+  useEffect(() => {
+    if (!Number.isFinite(endTime)) {
+      setRemaining(null)
+      return
+    }
+
+    expiredRef.current = false
+    warnedRef.current = new Set()
+
+    const tick = () => {
+      const left = Math.max(0, endTime - Date.now())
+
+      setRemaining(left)
+
+      const minsLeft = Math.ceil(left / 60000)
+      if (announceWarnings && TIMER_WARNINGS.includes(minsLeft) && !warnedRef.current.has(minsLeft) && left > 1000) {
+        warnedRef.current.add(minsLeft)
+        toast(minsLeft === 1 ? '🚨 1 minute remaining!' : `⏰ ${minsLeft} minutes remaining`,
+          { duration: 4000 })
+      }
+
+      if (left <= 0 && !expiredRef.current) {
+        expiredRef.current = true
+        clearInterval(timer)
+        onExpire()
+      }
+    }
+
+    const timer = setInterval(tick, 1000)
+    tick()
+
+    return () => clearInterval(timer)
+  }, [endTime, onExpire, announceWarnings])
+
+  const isLow = remaining !== null && remaining < 5 * 60 * 1000
+
+  return (
+    <div
+      className={clsx(
+        className,
+        isLow
+          ? lowClassName
+          : normalClassName
+      )}
+    >
+      {formatTime(remaining)}
+    </div>
+  )
+}
+
 export default function TestEngine() {
   const { testId }  = useParams()
   const navigate    = useNavigate()
@@ -56,16 +146,12 @@ export default function TestEngine() {
   const [tabViolations, setTabViolations]   = useState(0)
   const [fsViolations, setFsViolations]     = useState(0)
   const [showFsWarning, setShowFsWarning]   = useState(false)
-  const [remaining, setRemaining] = useState(null)
   const [attemptNumber, setAttemptNumber] = useState(null)
   const [maxAttempts, setMaxAttempts]     = useState(6)
 
   // ── Refs (stable, never cause re-renders) ─────────────────────
   const submitLockRef    = useRef(false)
   const autoSaveRef      = useRef(null)
-  const timerRef         = useRef(null)
-  const expiredRef       = useRef(false)
-  const warnedRef        = useRef(new Set())
   const tabViolRef       = useRef(0)
   const fsViolRef        = useRef(0)
   const attemptRef       = useRef(null)
@@ -101,7 +187,6 @@ export default function TestEngine() {
         questionsRef.current = qRes.data
         if (qRes.data[0]) setVisited(new Set([qRes.data[0].id]))
 
-        // Timer starts AFTER everything loads (set in state, useEffect will trigger it)
         // Tab detection enabled after 2s delay to prevent false positive on load
         setTimeout(() => { loadedRef.current = true }, 2000)
 
@@ -114,72 +199,15 @@ export default function TestEngine() {
     })()
 
     return () => {
-      clearInterval(timerRef.current)
       clearInterval(autoSaveRef.current)
     }
   }, [testId])
-
-  // ── Timer (uses refs only — no dependency on React state) ─────
-  const startTimer = useCallback((startedAt, durationMinutes) => {
-    if (!startedAt || !durationMinutes) return
-    clearInterval(timerRef.current)
-    expiredRef.current = false
-
-    // Parse server time — handle all formats FastAPI may return:
-    // "2024-01-01T12:00:00" / "2024-01-01T12:00:00Z" / "2024-01-01T12:00:00+00:00"
-    let startMs
-    try {
-      let str = String(startedAt).trim()
-      // If no timezone info at all, treat as UTC
-      if (!str.endsWith('Z') && !str.includes('+') && !/[0-9]-[0-9]{2}:[0-9]{2}$/.test(str)) {
-        str = str + 'Z'
-      }
-      startMs = new Date(str).getTime()
-      if (isNaN(startMs)) throw new Error('Invalid date')
-    } catch {
-      // Fallback: treat as current time (timer starts fresh)
-      startMs = Date.now()
-    }
-    const endTime = startMs + durationMinutes * 60 * 1000
-
-    const tick = () => {
-      const now  = Date.now()
-      const left = Math.max(0, endTime - now)
-      setRemaining(left)
-
-      // Warning toasts at specific intervals
-      const minsLeft = Math.ceil(left / 60000)
-      if ([30, 15, 10, 5, 1].includes(minsLeft) && !warnedRef.current.has(minsLeft) && left > 1000) {
-        warnedRef.current.add(minsLeft)
-        toast(minsLeft === 1 ? '🚨 1 minute remaining!' : `⏰ ${minsLeft} minutes remaining`,
-          { duration: 4000 })
-      }
-
-      // Expire
-      if (left === 0 && !expiredRef.current) {
-        expiredRef.current = true
-        clearInterval(timerRef.current)
-        doSubmitRef.current(true)
-      }
-    }
-
-    tick()
-    timerRef.current = setInterval(tick, 1000)
-  }, [])
-
-  // ── Start timer after everything loads ────────────────────────
-  useEffect(() => {
-    if (!loading && test && attempt && questions.length > 0) {
-      startTimer(attempt.started_at, test.duration_minutes)
-    }
-  }, [loading, test, attempt, questions.length, startTimer])
 
   // ── Submit (stable ref — never recreated) ─────────────────────
   const doSubmitCore = useCallback(async (auto = false) => {
     if (submitLockRef.current) return
     submitLockRef.current = true
     setSubmitting(true)
-    clearInterval(timerRef.current)
     clearInterval(autoSaveRef.current)
 
     // Exit fullscreen cleanly
@@ -219,6 +247,10 @@ export default function TestEngine() {
 
   // Public doSubmit for UI buttons
   const doSubmit = useCallback((auto = false) => doSubmitRef.current(auto), [])
+
+  const handleTimerExpire = useCallback(() => {
+    doSubmitRef.current(true)
+  }, [])
 
   // ── Enter fullscreen on load ───────────────────────────────────
   useEffect(() => {
@@ -388,11 +420,20 @@ export default function TestEngine() {
   }
 
   // ── Derived values ─────────────────────────────────────────────
-  const subjects    = [...new Set(questions.map(q => q.subject || 'General'))]
-  const answered    = Object.values(answers).filter(Boolean).length
+  const subjects = useMemo(() => {
+    return [...new Set(questions.map((q) => q.subject || 'General'))]
+  }, [questions])
+
+  const answered = useMemo(() => {
+    return Object.values(answers).filter(Boolean).length
+  }, [answers])
+
   const notAnswered = questions.length - answered
-  const isLow       = remaining !== null && remaining < 5 * 60 * 1000
   const totalViol   = tabViolations + fsViolations
+  const endTimeMs   = useMemo(
+    () => getEndTimeMs(attempt?.started_at, test?.duration_minutes),
+    [attempt?.started_at, test?.duration_minutes]
+  )
 
   // ── Loading state ──────────────────────────────────────────────
   if (loading) return (
@@ -419,9 +460,14 @@ export default function TestEngine() {
             <p className="text-slate-400 text-sm mb-1">The timer is still running.</p>
             <p className="text-red-400 font-semibold mb-1">Violation {fsViolations}/3</p>
             <p className="text-slate-500 text-xs mb-5">3 violations = test auto-submitted</p>
-            <div className={clsx('text-3xl font-mono font-bold mb-6', isLow ? 'text-red-400 timer-critical' : 'text-white')}>
-              {formatTime(remaining)}
-            </div>
+            <TimerDisplay
+              endTime={endTimeMs}
+              onExpire={handleTimerExpire}
+              announceWarnings={false}
+              className="text-3xl font-mono font-bold mb-6"
+              lowClassName="text-red-400 timer-critical"
+              normalClassName="text-white"
+            />
             <div className="space-y-3">
               <button
                 onClick={() => {
@@ -495,14 +541,7 @@ export default function TestEngine() {
           </button>
 
           {/* Timer */}
-          <div className={clsx(
-            'flex items-center gap-1.5 px-3 py-1 rounded font-mono font-bold text-sm border',
-            isLow
-              ? 'bg-red-500/20 border-red-500/50 text-red-400 timer-critical'
-              : 'bg-slate-800 border-slate-700 text-slate-200'
-          )}>
-            {formatTime(remaining)}
-          </div>
+          <TimerDisplay endTime={endTimeMs} onExpire={handleTimerExpire} />
 
           {/* Submit button */}
           <button onClick={() => setShowConfirm(true)} disabled={submitting}
@@ -544,6 +583,7 @@ export default function TestEngine() {
               </p>
               {q.question_image_url && (
                 <img src={q.question_image_url} alt="question"
+                     loading="lazy"
                      className="mt-3 max-w-full max-h-64 rounded cursor-pointer border"
                      style={{ borderColor: 'var(--border)' }}
                      onClick={() => window.open(q.question_image_url, '_blank')} />
@@ -572,6 +612,7 @@ export default function TestEngine() {
                         <span className="text-sm" style={{ color: 'var(--text)' }}>{opt}</span>
                         {q.option_images?.[letter] && (
                           <img src={q.option_images[letter]} alt={`option ${letter}`}
+                               loading="lazy"
                                className="mt-2 max-h-32 rounded cursor-pointer"
                                onClick={e => { e.stopPropagation(); window.open(q.option_images[letter], '_blank') }} />
                         )}
