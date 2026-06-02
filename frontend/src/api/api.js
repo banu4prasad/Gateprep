@@ -19,6 +19,7 @@ export const adminAPI = {
   updateTest:       (id, data)       => api.patch(`/admin/tests/${id}`, data),
   getQuestions:     (testId)        => api.get(`/admin/tests/${testId}/questions`),
   addQuestions:     (testId, qs)    => api.post(`/admin/tests/${testId}/questions`, { questions: qs }),
+  uploadQuestionsFile: (testId, form) => api.post(`/admin/tests/${testId}/questions/upload-file`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteQuestion:   (testId, qId)   => api.delete(`/admin/tests/${testId}/questions/${qId}`),
   uploadQImage:     (qId, form)     => api.post(`/admin/questions/${qId}/image`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteQImage:     (qId, target)   => api.delete(`/admin/questions/${qId}/image?target=${target}`),

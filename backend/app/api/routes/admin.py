@@ -1,11 +1,12 @@
+import json
 import os
 import shutil
-from typing import List, Optional
+from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from app.core.database import get_db
 from app.core.config import settings
 from app.api.deps import require_admin
@@ -281,6 +282,106 @@ class QuestionsBulk(BaseModel):
     questions: List[QuestionIn]
 
 
+class QuestionFileImport(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question_type: QuestionType
+    question_text: str = Field(..., min_length=1)
+    options: List[str] = Field(default_factory=list)
+    correct_answer: str = Field(..., min_length=1)
+    marks: float = 1.0
+    negative_marks: float = 0.33
+    order_index: int = 0
+    subject: Optional[str] = None
+    topic: Optional[str] = None
+
+    @field_validator("question_text", "correct_answer")
+    @classmethod
+    def validate_required_text(cls, value: str):
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("field cannot be blank")
+        return stripped
+
+    @field_validator("subject", "topic")
+    @classmethod
+    def normalize_optional_text(cls, value: Optional[str]):
+        if value is None:
+            return None
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("options", mode="before")
+    @classmethod
+    def validate_options_list(cls, value):
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise ValueError("options must be a JSON list")
+        if any(not isinstance(option, str) for option in value):
+            raise ValueError("options must contain only strings")
+        return value
+
+    @field_validator("marks", "negative_marks", mode="before")
+    @classmethod
+    def validate_numeric_fields(cls, value):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError("field must be a number")
+        return float(value)
+
+    @field_validator("order_index", mode="before")
+    @classmethod
+    def validate_order_index(cls, value):
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError("order_index must be an integer")
+        return value
+
+    @model_validator(mode="after")
+    def validate_answer_shape(self):
+        q_type = self.question_type.value
+        self.correct_answer = self.correct_answer.strip().upper().replace(" ", "")
+
+        if q_type == "mcq":
+            if self.correct_answer not in {"A", "B", "C", "D"}:
+                raise ValueError("MCQ correct_answer must be one of A, B, C, or D")
+        elif q_type == "msq":
+            selected = [part.strip().upper() for part in split_answer_tokens(self.correct_answer)]
+            if not selected or any(part not in {"A", "B", "C", "D"} for part in selected):
+                raise ValueError("MSQ correct_answer must contain option letters like A,C")
+            self.correct_answer = ",".join(dict.fromkeys(selected))
+            self.negative_marks = 0.0
+        else:
+            if not is_valid_nat_answer(self.correct_answer):
+                raise ValueError("NAT correct_answer must be a number or range like 41.5-42.5")
+            self.options = []
+            self.negative_marks = 0.0
+
+        return self
+
+
+def _questions_from_json_root(data: Any) -> list[Any]:
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        questions = data.get("questions")
+        if isinstance(questions, list):
+            return questions
+        raise HTTPException(status_code=400, detail='JSON object must contain a "questions" key with a list value')
+    raise HTTPException(status_code=400, detail='JSON root must be a questions array or an object containing a "questions" array')
+
+
+def _format_question_validation_errors(question_index: int, exc: ValidationError) -> list[dict]:
+    errors = []
+    for error in exc.errors():
+        loc = ".".join(str(part) for part in error.get("loc", ())) or "question"
+        errors.append({
+            "question_index": question_index,
+            "field": loc,
+            "message": error.get("msg", "Invalid value"),
+        })
+    return errors
+
+
 @router.post("/tests/{test_id}/questions", status_code=201)
 def add_questions(test_id: int, payload: QuestionsBulk, db: Session = Depends(get_db), _=Depends(require_admin)):
     test = db.query(Test).filter(Test.id == test_id).first()
@@ -303,6 +404,91 @@ def add_questions(test_id: int, payload: QuestionsBulk, db: Session = Depends(ge
     test.total_marks += total_added
     db.commit()
     return {"message": f"Added {len(payload.questions)} questions", "total_in_test": existing + len(payload.questions)}
+
+
+@router.post("/tests/{test_id}/questions/upload-file", status_code=201)
+async def upload_questions_file(
+    test_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _=Depends(require_admin)
+):
+    if not file.filename or not file.filename.lower().endswith(".json"):
+        raise HTTPException(status_code=400, detail="Only .json files accepted")
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded JSON file is empty")
+
+    try:
+        decoded = contents.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="JSON file must be UTF-8 encoded")
+
+    try:
+        raw_data = json.loads(decoded)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON syntax at line {exc.lineno}, column {exc.colno}: {exc.msg}")
+
+    raw_questions = _questions_from_json_root(raw_data)
+    if not raw_questions:
+        raise HTTPException(status_code=400, detail="JSON file does not contain any questions")
+
+    validated_questions: list[QuestionFileImport] = []
+    validation_errors: list[dict] = []
+    for idx, raw_question in enumerate(raw_questions, start=1):
+        if not isinstance(raw_question, dict):
+            validation_errors.append({
+                "question_index": idx,
+                "field": "question",
+                "message": "Each question must be a JSON object",
+            })
+            continue
+        try:
+            validated_questions.append(QuestionFileImport.model_validate(raw_question))
+        except ValidationError as exc:
+            validation_errors.extend(_format_question_validation_errors(idx, exc))
+
+    if validation_errors:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": f"Validation failed for {len(validation_errors)} field(s)",
+                "errors": validation_errors,
+            },
+        )
+
+    test = db.query(Test).filter(Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    existing = db.query(func.count(Question.id)).filter(Question.test_id == test_id).scalar() or 0
+    total_added = 0.0
+    for question in validated_questions:
+        db.add(Question(
+            test_id=test_id,
+            question_type=question.question_type,
+            question_text=question.question_text,
+            options=question.options,
+            correct_answer=question.correct_answer,
+            marks=question.marks,
+            negative_marks=question.negative_marks,
+            order_index=question.order_index,
+            subject=question.subject,
+            topic=question.topic,
+        ))
+        total_added += question.marks
+
+    test.total_marks = (test.total_marks or 0.0) + total_added
+    db.commit()
+
+    imported_count = len(validated_questions)
+    return {
+        "status": "success",
+        "message": f"Imported {imported_count} question{'' if imported_count == 1 else 's'} from JSON file",
+        "imported_count": imported_count,
+        "total_in_test": existing + imported_count,
+    }
 
 
 @router.post("/questions/{question_id}/image")

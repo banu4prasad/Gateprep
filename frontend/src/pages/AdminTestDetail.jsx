@@ -89,12 +89,17 @@ function QuestionForm({ onAdd, onClose }) {
   )
 }
 
-function JSONUploadForm({ onAdd, onClose }) {
+function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState(null)
   const [error, setError] = useState('')
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [fileLoading, setFileLoading] = useState(false)
+  const [fileMessage, setFileMessage] = useState('')
+  const [fileError, setFileError] = useState('')
   const fileRef = useRef()
+  const uploadFileRef = useRef()
 
   const SAMPLE = JSON.stringify({
     questions: [
@@ -157,6 +162,51 @@ function JSONUploadForm({ onAdd, onClose }) {
     validate(SAMPLE)
   }
 
+  const formatServerDetail = (detail) => {
+    if (!detail) return 'Failed to upload questions file'
+    if (typeof detail === 'string') return detail
+    if (Array.isArray(detail)) {
+      return detail.map(item => item?.msg || item?.message || String(item)).join('; ')
+    }
+    if (Array.isArray(detail.errors)) {
+      const lines = detail.errors.slice(0, 5).map(err => {
+        const q = err.question_index ? `Q${err.question_index}` : 'Question'
+        const field = err.field ? ` ${err.field}` : ''
+        return `${q}${field}: ${err.message}`
+      })
+      if (detail.errors.length > 5) lines.push(`...and ${detail.errors.length - 5} more`)
+      return [detail.message, ...lines].filter(Boolean).join(' · ')
+    }
+    return detail.message || JSON.stringify(detail)
+  }
+
+  const handleUploadFileChange = (e) => {
+    const file = e.target.files[0] || null
+    setSelectedFile(file)
+    setFileMessage('')
+    setFileError('')
+  }
+
+  const submitFile = async () => {
+    if (!selectedFile) { toast.error('Select a JSON file first'); return }
+    if (!selectedFile.name.toLowerCase().endsWith('.json')) { toast.error('Only .json files are accepted'); return }
+    setFileLoading(true)
+    setFileMessage('')
+    setFileError('')
+    try {
+      const result = await onUploadFile(selectedFile)
+      const message = result?.message || `Imported ${result?.imported_count || 0} questions from JSON file`
+      setFileMessage(message)
+      setSelectedFile(null)
+      if (uploadFileRef.current) uploadFileRef.current.value = ''
+      toast.success(message)
+    } catch (err) {
+      const message = formatServerDetail(err.response?.data?.detail)
+      setFileError(message)
+      toast.error(message)
+    } finally { setFileLoading(false) }
+  }
+
   const submit = async () => {
     if (!preview || preview.length === 0) { toast.error('No valid questions to upload'); return }
     setLoading(true)
@@ -205,6 +255,40 @@ function JSONUploadForm({ onAdd, onClose }) {
           onChange={e => handleChange(e.target.value)}
           placeholder={'{\n  "questions": [\n    {\n      "question_type": "mcq",\n      "question_text": "Your question here?",\n      "options": ["A text", "B text", "C text", "D text"],\n      "correct_answer": "B",\n      "marks": 1,\n      "negative_marks": 0.33\n    }\n  ]\n}'}
         />
+      </div>
+
+      {/* Direct file upload */}
+      <div className="px-3 py-3 rounded-lg bg-slate-800/50 border border-slate-700/60 space-y-3">
+        <div>
+          <label className="label">JSON file upload</label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              ref={uploadFileRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={handleUploadFileChange}
+              className="input text-sm flex-1"
+            />
+            <button
+              onClick={submitFile}
+              disabled={fileLoading || !selectedFile}
+              className="btn-primary flex items-center justify-center gap-2 text-sm py-2 sm:w-64"
+            >
+              {fileLoading ? <Spinner size={14}/> : <Upload size={14}/>}
+              {fileLoading ? 'Uploading...' : 'Upload Questions File (.json)'}
+            </button>
+          </div>
+        </div>
+        {fileMessage && (
+          <div className="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+            {fileMessage}
+          </div>
+        )}
+        {fileError && (
+          <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            {fileError}
+          </div>
+        )}
       </div>
 
       {/* Error */}
@@ -349,6 +433,14 @@ export default function AdminTestDetail() {
     }
   }
 
+  const uploadQuestionsFile = async (file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await adminAPI.uploadQuestionsFile(testId, fd)
+    load()
+    return res.data
+  }
+
   const deleteQuestion = async (qId) => {
     if (!confirm('Delete this question?')) return
     try {
@@ -416,7 +508,7 @@ export default function AdminTestDetail() {
         </div>
 
         {mode === 'manual' && <QuestionForm onAdd={addQuestion} onClose={() => setMode(null)} />}
-        {mode === 'json' && <JSONUploadForm onAdd={addQuestionsJSON} onClose={() => setMode(null)} />}
+        {mode === 'json' && <JSONUploadForm onAdd={addQuestionsJSON} onUploadFile={uploadQuestionsFile} onClose={() => setMode(null)} />}
 
         <div className="space-y-2">
           {questions.length === 0 ? (
