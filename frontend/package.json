@@ -15,7 +15,9 @@
     "axios": "^1.6.7",
     "react-hot-toast": "^2.4.1",
     "lucide-react": "^0.344.0",
-    "clsx": "^2.1.0"
+    "clsx": "^2.1.0",
+    "katex": "^0.17.0",
+    "react-katex": "^3.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",

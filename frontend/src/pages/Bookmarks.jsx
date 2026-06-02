@@ -5,6 +5,7 @@ import { bookmarkAPI } from '../api/api'
 import toast from 'react-hot-toast'
 import { Bookmark, BookmarkX, ChevronDown, ChevronUp, Search, StickyNote, X, Check } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
+import MathText from '../components/shared/MathText'
 import clsx from 'clsx'
 
 function BookmarkCard({ bm, onRemove }) {
@@ -40,7 +41,7 @@ function BookmarkCard({ bm, onRemove }) {
     <div className="gate-card overflow-hidden">
       <div className="flex items-start gap-3 p-4">
         <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setOpen(o => !o)}>
-          <p className="text-slate-200 text-sm leading-snug line-clamp-2">{bm.question_text}</p>
+          <div className="text-slate-200 text-sm leading-snug line-clamp-2"><MathText>{bm.question_text}</MathText></div>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className={`badge text-xs ${typeColor[bm.question_type] || 'badge-slate'}`}>
               {bm.question_type?.toUpperCase()}
@@ -78,7 +79,7 @@ function BookmarkCard({ bm, onRemove }) {
                     'px-3 py-2 rounded-lg text-xs',
                     isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' : 'bg-slate-800/50 text-slate-400'
                   )}>
-                    <span className="font-mono font-semibold mr-1.5">{letter}.</span>{o}
+                    <span className="font-mono font-semibold mr-1.5">{letter}.</span><MathText>{o}</MathText>
                     {isCorrect && <span className="ml-1 text-green-400">✓</span>}
                   </div>
                 )

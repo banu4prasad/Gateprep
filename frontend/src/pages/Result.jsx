@@ -4,6 +4,7 @@ import Layout from '../components/shared/Layout'
 import { testAPI, bookmarkAPI } from '../api/api'
 import { CheckCircle, XCircle, MinusCircle, ArrowLeft, ChevronDown, ChevronUp, Trophy, RotateCcw, Medal, Bookmark, BookmarkCheck, Clock, TrendingUp } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
+import MathText from '../components/shared/MathText'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -34,7 +35,7 @@ function QuestionReview({ qa, idx, bookmarked, onToggleBookmark }) {
         {qa.is_correct === true ? <CheckCircle size={14} className="text-green-400 flex-shrink-0 mt-0.5" /> :
          qa.is_correct === false ? <XCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" /> :
          <MinusCircle size={14} className="text-slate-500 flex-shrink-0 mt-0.5" />}
-        <p className="text-sm flex-1 line-clamp-2" style={{ color: 'var(--text)' }}>{qa.question_text}</p>
+        <div className="text-sm flex-1 line-clamp-2" style={{ color: 'var(--text)' }}><MathText>{qa.question_text}</MathText></div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className={clsx('text-xs font-mono font-semibold',
             qa.marks_awarded > 0 ? 'text-green-400' : qa.marks_awarded < 0 ? 'text-red-400' : 'text-slate-500')}>
@@ -66,7 +67,7 @@ function QuestionReview({ qa, idx, bookmarked, onToggleBookmark }) {
                     isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' :
                     isSelected ? 'bg-red-500/10 border border-red-500/20 text-red-300' :
                     'border text-slate-400')} style={{ borderColor: 'var(--border)' }}>
-                    <span className="font-mono font-semibold mr-1">{l}.</span>{o}
+                    <span className="font-mono font-semibold mr-1">{l}.</span><MathText>{o}</MathText>
                     {isCorrect && <span className="ml-1 text-green-400">✓</span>}
                     {isSelected && !isCorrect && <span className="ml-1 text-red-400">✗</span>}
                     {isTopperPick && !isSelected && <span className="ml-1 text-amber-400">★ Topper</span>}

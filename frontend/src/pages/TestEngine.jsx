@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { Calculator as CalcIcon, Send, Flag, ChevronLeft, ChevronRight, AlertTriangle, Maximize } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
 import Calculator from '../components/test/Calculator'
+import MathText from '../components/shared/MathText'
 import clsx from 'clsx'
 
 // ── Format time ───────────────────────────────────────────────────
@@ -578,9 +579,9 @@ export default function TestEngine() {
 
             {/* Question text */}
             <div className="mb-4">
-              <p className="leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
-                {q.question_text}
-              </p>
+              <div className="leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
+                <MathText>{q.question_text}</MathText>
+              </div>
               {q.question_image_url && (
                 <img src={q.question_image_url} alt="question"
                      loading="lazy"
@@ -609,7 +610,7 @@ export default function TestEngine() {
                         <span className="text-xs font-semibold mr-2" style={{ color: 'var(--text-muted)' }}>
                           {letter}.
                         </span>
-                        <span className="text-sm" style={{ color: 'var(--text)' }}>{opt}</span>
+                        <div className="text-sm" style={{ color: 'var(--text)' }}><MathText>{opt}</MathText></div>
                         {q.option_images?.[letter] && (
                           <img src={q.option_images[letter]} alt={`option ${letter}`}
                                loading="lazy"
@@ -642,7 +643,7 @@ export default function TestEngine() {
                       <span className="text-xs font-semibold mr-2" style={{ color: 'var(--text-muted)' }}>
                         {letter}.
                       </span>
-                      <span className="text-sm" style={{ color: 'var(--text)' }}>{opt}</span>
+                      <div className="text-sm" style={{ color: 'var(--text)' }}><MathText>{opt}</MathText></div>
                     </div>
                   )
                 })}
