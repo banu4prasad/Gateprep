@@ -1,3 +1,9 @@
+---
+title: Gateprep
+sdk: docker
+app_port: 7860
+---
+
 # GATE Prep Platform v2
 
 A complete GATE exam preparation platform.
