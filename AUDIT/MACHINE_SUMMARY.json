@@ -1,0 +1,30 @@
+{
+    "target": "Local Repository",
+    "type": "repo",
+    "date": "2026-06-02T10:03:10.474383",
+    "git_sha": "f92ce6b1903626aeaa8075322e1d035e7c3c577e",
+    "live_url": null,
+    "run_commands": [
+        "docker compose up --build -d",
+        "cd backend && python -m uvicorn app.main:app",
+        "cd frontend && npm run dev"
+    ],
+    "build_status": "Failed (Docker frontend build issue with overlayfs, but manual setup possible)",
+    "health_checks": {
+        "backend_health": "ok (200)"
+    },
+    "top_3_issues": [
+        "Docker frontend build failure due to containerd overlayfs bug/config",
+        "No test suite found (pytest/jest/vitest missing)",
+        "Missing dependency/security scanning hooks configured"
+    ],
+    "test_status": "No tests found",
+    "coverage": "0%",
+    "observability": "Basic FastAPI logging, no structured metrics found",
+    "secrets_needed": [
+        "DATABASE_URL",
+        "CLOUDINARY_*",
+        "SMTP_*"
+    ],
+    "confidence_overall": "MEDIUM"
+}
