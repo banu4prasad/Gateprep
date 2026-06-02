@@ -78,6 +78,84 @@ class PDFServiceParserTests(unittest.TestCase):
         self.assertEqual([q["correct_answer"] for q in questions], ["B", "A,C"])
         self.assertEqual(questions[1]["question_type"], "msq")
 
+    def test_choice_answers_with_option_prefix_and_explanations(self):
+        questions = _parse_gate_questions(
+            """
+            Q.1 MCQ | +1 -0.33
+            Choose.
+            A. x
+            B. y
+            C. z
+            D. w
+            Answer: Option B
+            Q.2 MCQ | +1 -0.33
+            Choose again.
+            A. x
+            B. y
+            C. z
+            D. w
+            Correct Answer: C. because z is correct
+            Q.3 MSQ | +2 -0
+            Pick all.
+            A. a
+            B. b
+            C. c
+            D. d
+            Answer: A and C are correct
+            """
+        )
+
+        self.assertEqual([q["correct_answer"] for q in questions], ["B", "C", "A,C"])
+        self.assertFalse(any("invalid_choice_answer" in q["warnings"] for q in questions))
+
+    def test_multiple_choice_answer_overrides_mcq_header(self):
+        questions = _parse_gate_questions(
+            """
+            Q.1 MCQ | +1 -0.33
+            Select the true statements.
+            A. true
+            B. false
+            C. also true
+            D. also also true
+            Correct Answer: A;C;D Discuss
+            """
+        )
+
+        self.assertEqual(questions[0]["question_type"], "msq")
+        self.assertEqual(questions[0]["correct_answer"], "A,C,D")
+        self.assertNotIn("mcq_has_multiple_answers", questions[0]["warnings"])
+
+    def test_option_text_before_label_is_recovered(self):
+        questions = _parse_gate_questions(
+            """
+            Q.1 MCQ | +1 -0.33
+            If expression is false, values are respectively:
+            F,T,F
+            A.
+            T,F,T
+            B.
+            T,T,T
+            C.
+            F,F,F
+            D.
+            Correct Answer: B Discuss
+            Q.2 MCQ | +2 -0.67
+            Identify expression.
+            X$Y
+            A.
+            X$¬Y
+            B.
+            ¬X$Y
+            C.
+            D. none of the options
+            Correct Answer: D Discuss
+            """
+        )
+
+        self.assertEqual(questions[0]["options"], ["F,T,F", "T,F,T", "T,T,T", "F,F,F"])
+        self.assertEqual(questions[1]["options"], ["X$Y", "X$¬Y", "¬X$Y", "none of the options"])
+        self.assertFalse(any("too_few_options" in q["warnings"] for q in questions))
+
     def test_nat_numeric_answer_and_range(self):
         questions = _parse_gate_questions(
             """
@@ -94,6 +172,21 @@ class PDFServiceParserTests(unittest.TestCase):
         self.assertEqual(questions[0]["correct_answer"], "-2--1")
         self.assertEqual(questions[1]["correct_answer"], "4,5")
         self.assertFalse(questions[0]["needs_review"])
+
+    def test_nat_answer_with_units_is_normalized(self):
+        questions = _parse_gate_questions(
+            """
+            Q.1 NAT | +1 -0
+            Count the valid rows.
+            Answer: 4 combinations
+            Q.2 NAT | +1 -0
+            Give the accepted interval.
+            Correct Answer: -2 to -1 approximately
+            """
+        )
+
+        self.assertEqual([q["correct_answer"] for q in questions], ["4", "-2--1"])
+        self.assertFalse(any("nat_has_non_numeric_answer" in q["warnings"] for q in questions))
 
     def test_marks_from_section_range(self):
         questions = _parse_gate_questions(

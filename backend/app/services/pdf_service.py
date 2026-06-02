@@ -51,12 +51,26 @@ NUMBERED_RE = re.compile(r"^\s*(?P<num>\d{1,4})\s*[\).:]\s*(?P<rest>.*)$")
 OPTION_MARKER_RE = re.compile(r"(?<![A-Za-z0-9])(?:[\(\[]\s*([A-Da-d])\s*[\)\]]|([A-Da-d])[\).])\s*")
 ANSWER_LINE_RE = re.compile(r"\b(?:Correct\s+Answer|Answer|Ans)\s*[:.)\-]\s*(?P<answer>.+)$", re.IGNORECASE)
 ANSWER_KEY_TITLE_RE = re.compile(r"^\s*(?:answer\s*key|answers?|solutions?)\s*[:\-]?\s*$", re.IGNORECASE)
+CHOICE_ANSWER_VALUE_RE = (
+    r"(?:option\s*)?[\(\[]?\s*[A-Da-d]\s*[\)\].]?"
+    r"(?:\s*(?:[,;/&]|\band\b|\bor\b)\s*(?:option\s*)?[\(\[]?\s*[A-Da-d]\s*[\)\].]?)*"
+)
 ANSWER_VALUE_RE = (
-    r"(?:[A-Da-d](?:\s*[,;/]\s*[A-Da-d])*|"
+    rf"(?:{CHOICE_ANSWER_VALUE_RE}|"
     r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
     r"(?:\s*-\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)?"
     r"(?:\s*[,;/]\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
     r"(?:\s*-\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)?)*)"
+)
+CHOICE_TOKEN_RE = re.compile(r"(?<![A-Za-z0-9])(?:option\s*)?[\(\[]?\s*([A-Da-d])\s*[\)\].]?(?![A-Za-z0-9])", re.IGNORECASE)
+LEADING_CHOICE_ANSWER_RE = re.compile(
+    rf"^\s*(?P<choices>{CHOICE_ANSWER_VALUE_RE})(?=\s|$)",
+    re.IGNORECASE,
+)
+NAT_VALUE_RE = re.compile(
+    r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
+    r"(?:\s*(?:-|to)\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)?",
+    re.IGNORECASE,
 )
 ANSWER_PAIR_RE = re.compile(
     rf"(?:Q\.?\s*|Question\s+)?(?P<num>\d{{1,4}})\s*[\).:\-]\s*"
@@ -452,6 +466,9 @@ def _parse_question_block(
     marks, negative_marks, marks_found = _resolve_marks(raw_text, question_type, block.question_number, mark_rules)
     answer = inline_answer or _lookup_answer(answer_keys, block, question_number_counts)
     answer = _normalize_answer(answer, question_type)
+    if question_type == "mcq" and len(_choice_tokens(answer)) > 1:
+        question_type = "msq"
+        negative_marks = 0.0
 
     section_title = block.section_title
     has_image = bool(IMAGE_CONTEXT_RE.search(question_text))
@@ -527,11 +544,15 @@ def _parse_options_and_question_text(lines: List[SourceLine]) -> tuple[List[str]
                 label = (marker.group(1) or marker.group(2)).upper()
                 next_start = markers[idx + 1].start() if idx + 1 < len(markers) else len(text)
                 value = text[marker.end() : next_start].strip()
+                postfixed_value = False
+                if not value and len(markers) == 1 and _looks_postfixed_option_text(question_lines[-1] if question_lines else ""):
+                    value = question_lines.pop()
+                    postfixed_value = True
                 if label in options_by_label and value:
                     options_by_label[label] = _clean_spaces(f"{options_by_label[label]} {value}")
                 else:
                     options_by_label.setdefault(label, value)
-                current_label = label
+                current_label = None if postfixed_value else label
             continue
 
         if current_label:
@@ -541,6 +562,15 @@ def _parse_options_and_question_text(lines: List[SourceLine]) -> tuple[List[str]
 
     options = [_clean_spaces(options_by_label[label]) for label in ("A", "B", "C", "D") if options_by_label.get(label, "").strip()]
     return question_lines, options
+
+
+def _looks_postfixed_option_text(text: str) -> bool:
+    value = _clean_spaces(text)
+    if not value or len(value) > 80 or value.endswith(("?", ".")):
+        return False
+    if re.search(r"[,;$¬∧∨→↔≠=]", value):
+        return True
+    return len(value.split()) <= 4 and not re.search(r"\b(choose|select|determine|identify|consider|suppose|which)\b", value, re.IGNORECASE)
 
 
 def _resolve_marks(
@@ -704,8 +734,50 @@ def _normalize_answer(answer: str, question_type: str) -> str:
     if not answer:
         return ""
     if question_type in {"mcq", "msq"}:
-        return normalize_choice_answer(answer)
-    return ",".join(token.replace(" ", "") for token in split_answer_tokens(answer))
+        return _normalize_choice_answer(answer)
+    return _normalize_nat_answer(answer)
+
+
+def _normalize_choice_answer(answer: str) -> str:
+    text = _strip_answer_prefix(answer)
+    match = LEADING_CHOICE_ANSWER_RE.match(text)
+    if not match:
+        return normalize_choice_answer(text)
+
+    labels = []
+    for token in CHOICE_TOKEN_RE.finditer(match.group("choices")):
+        label = token.group(1).upper()
+        if label not in labels:
+            labels.append(label)
+    return ",".join(labels)
+
+
+def _normalize_nat_answer(answer: str) -> str:
+    text = _strip_answer_prefix(answer)
+    if is_valid_nat_answer(text):
+        return ",".join(token.replace(" ", "") for token in split_answer_tokens(text))
+
+    values = []
+    for segment in re.split(r"\s*[,;/]\s*", text):
+        match = NAT_VALUE_RE.search(segment)
+        if not match:
+            continue
+        value = match.group(0).replace(" ", "")
+        value = re.sub(r"(?i)to", "-", value)
+        if value and value not in values:
+            values.append(value)
+    return ",".join(values)
+
+
+def _strip_answer_prefix(answer: str) -> str:
+    text = _clean_spaces(str(answer or ""))
+    text = re.sub(
+        r"^(?:correct\s+answer|answer|ans)\s*(?:is)?\s*[:.)\-]?\s*",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    return text.strip()
 
 
 def _choice_tokens(answer: str) -> List[str]:
