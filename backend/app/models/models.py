@@ -92,7 +92,7 @@ class Test(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     questions = relationship("Question", back_populates="test", cascade="all, delete-orphan", order_by="Question.order_index")
-    attempts = relationship("TestAttempt", back_populates="test")
+    attempts = relationship("TestAttempt", back_populates="test", cascade="all, delete-orphan")
     creator = relationship("User", foreign_keys=[created_by])
     series = relationship("TestSeries", back_populates="tests")
 

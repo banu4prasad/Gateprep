@@ -14,6 +14,53 @@ from app.services.cloudinary_service import upload_image, delete_image
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
+PDF_IMPORT_BLOCKING_WARNINGS = {
+    "missing_question_text",
+    "missing_answer",
+    "missing_options",
+    "too_few_options",
+    "too_many_options",
+    "nat_has_non_numeric_answer",
+    "mcq_has_multiple_answers",
+    "invalid_choice_answer",
+    "ambiguous_answer_key",
+}
+
+
+def _pdf_blocking_warnings(question: dict) -> list[str]:
+    warnings = question.get("warnings") or []
+    return [warning for warning in warnings if warning in PDF_IMPORT_BLOCKING_WARNINGS]
+
+
+def _pdf_review_detail(questions: list[dict]) -> str:
+    blocked = []
+    review_only = []
+    for idx, question in enumerate(questions, start=1):
+        label = question.get("question_number") or question.get("global_question_number") or idx
+        warnings = question.get("warnings") or []
+        blocking = _pdf_blocking_warnings(question)
+        if blocking:
+            blocked.append(f"Q{label}: {', '.join(blocking)}")
+        elif question.get("needs_review"):
+            review_only.append(f"Q{label}: {', '.join(warnings) if warnings else 'needs_review'}")
+
+    if not blocked:
+        return ""
+
+    preview = "; ".join(blocked[:8])
+    remaining = len(blocked) - 8
+    if remaining > 0:
+        preview += f"; and {remaining} more"
+
+    suffix = ""
+    if review_only:
+        suffix = f" Non-blocking review warnings: {len(review_only)} question(s)."
+
+    return (
+        f"PDF extraction found {len(questions)} question(s), but {len(blocked)} have blocking issues. "
+        f"{preview}. Fix these or upload JSON with corrected fields.{suffix}"
+    )
+
 
 # ── Users ─────────────────────────────────────────────────────────
 
@@ -122,16 +169,13 @@ async def create_test(
                 detail="No questions could be extracted from PDF."
             )
 
-        review_count = sum(1 for q in extracted if q.get("needs_review") or not q.get("correct_answer"))
-        if review_count:
+        review_detail = _pdf_review_detail(extracted)
+        if review_detail:
             try:
                 os.remove(path)
             except OSError:
                 pass
-            raise HTTPException(
-                status_code=400,
-                detail=f"PDF extraction found {len(extracted)} question(s), but {review_count} need review. Add/verify answer keys, options, and image-dependent content before importing."
-            )
+            raise HTTPException(status_code=400, detail=review_detail)
 
     total_marks = sum(q["marks"] for q in extracted) if extracted else 0.0
     test = Test(
