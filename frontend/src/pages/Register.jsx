@@ -42,7 +42,7 @@ export default function RegisterPage() {
           <div className="w-8 h-8 rounded bg-sky-600 flex items-center justify-center">
             <span className="font-bold text-white">G</span>
           </div>
-          <span className="font-bold text-white text-lg">GATEPrep</span>
+          <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>GATEPrep</span>
         </div>
 
         <h2 className="text-2xl font-bold mb-1" style={{ color: 'var(--text)' }}>Create Account</h2>

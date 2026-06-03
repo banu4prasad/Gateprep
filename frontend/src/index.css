@@ -80,7 +80,13 @@
 
   /* Buttons */
   .btn-primary { @apply bg-sky-600 hover:bg-sky-700 text-white font-medium px-5 py-2 rounded transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed; }
-  .btn-ghost   { @apply bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium px-5 py-2 rounded transition-all active:scale-95; }
+  .btn-ghost {
+    @apply font-medium px-5 py-2 rounded transition-all active:scale-95;
+    background: var(--bg-panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { opacity: 0.85; }
   .btn-danger  { @apply bg-red-600 hover:bg-red-700 text-white font-medium px-5 py-2 rounded transition-all active:scale-95; }
   .btn-success { @apply bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2 rounded transition-all active:scale-95; }
 
@@ -128,6 +134,64 @@
 @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 .timer-critical { animation: timerPulse 1s ease-in-out infinite; }
+
+.theme-text { color: var(--text); }
+.theme-muted { color: var(--text-muted); }
+.theme-bg-panel { background: var(--bg-panel); }
+.theme-border { border-color: var(--border); }
+.theme-hover-bg:hover { background: rgba(148, 163, 184, 0.08); }
+
+[data-theme="light"] .theme-hover-bg:hover {
+  background: rgba(2, 132, 199, 0.08);
+}
+
+/* Light theme compatibility for older dark-mode Tailwind utilities in page content. */
+[data-theme="light"] main .text-white:not([class*="bg-"]) {
+  color: var(--text) !important;
+}
+
+[data-theme="light"] main .text-slate-200,
+[data-theme="light"] main .text-slate-300 {
+  color: var(--text) !important;
+}
+
+[data-theme="light"] main .text-slate-400,
+[data-theme="light"] main .text-slate-500,
+[data-theme="light"] main .text-slate-600,
+[data-theme="light"] main .text-slate-700 {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="light"] main .hover\:text-white:hover,
+[data-theme="light"] main .hover\:text-slate-200:hover,
+[data-theme="light"] main .hover\:text-slate-300:hover {
+  color: var(--text) !important;
+}
+
+[data-theme="light"] main .border-slate-600,
+[data-theme="light"] main .border-slate-700,
+[data-theme="light"] main .border-slate-800 {
+  border-color: var(--border) !important;
+}
+
+[data-theme="light"] main .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border) !important;
+}
+
+[data-theme="light"] main .bg-slate-700,
+[data-theme="light"] main .bg-slate-700\/50,
+[data-theme="light"] main .bg-slate-800\/40,
+[data-theme="light"] main .bg-slate-800\/50,
+[data-theme="light"] main .bg-slate-800\/60 {
+  background-color: var(--bg-panel) !important;
+}
+
+[data-theme="light"] main .hover\:bg-slate-600:hover,
+[data-theme="light"] main .hover\:bg-slate-700:hover,
+[data-theme="light"] main .hover\:bg-slate-800\/30:hover,
+[data-theme="light"] main .hover\:bg-slate-800\/50:hover {
+  background-color: rgba(2, 132, 199, 0.08) !important;
+}
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

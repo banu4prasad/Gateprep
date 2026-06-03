@@ -457,17 +457,17 @@ export default function TestEngine() {
           <div className="text-center max-w-sm p-8 rounded-xl border border-red-500/40"
                style={{ background: 'var(--bg-card)' }}>
             <AlertTriangle size={44} className="text-red-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">You exited fullscreen!</h2>
-            <p className="text-slate-400 text-sm mb-1">The timer is still running.</p>
+            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>You exited fullscreen!</h2>
+            <p className="text-sm mb-1" style={{ color: 'var(--text-muted)' }}>The timer is still running.</p>
             <p className="text-red-400 font-semibold mb-1">Violation {fsViolations}/3</p>
-            <p className="text-slate-500 text-xs mb-5">3 violations = test auto-submitted</p>
+            <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>3 violations = test auto-submitted</p>
             <TimerDisplay
               endTime={endTimeMs}
               onExpire={handleTimerExpire}
               announceWarnings={false}
               className="text-3xl font-mono font-bold mb-6"
               lowClassName="text-red-400 timer-critical"
-              normalClassName="text-white"
+              normalClassName="theme-text"
             />
             <div className="space-y-3">
               <button
