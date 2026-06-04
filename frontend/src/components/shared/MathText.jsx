@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, memo } from 'react'
 import { InlineMath, BlockMath } from 'react-katex'
 
 const MATH_PATTERN = /(\$\$[\s\S]+?\$\$|\$[^$]+\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/g
@@ -92,7 +92,7 @@ function SafeBlockMath({ math }) {
   }
 }
 
-export default function MathText({ children }) {
+const MathText = memo(function MathText({ children }) {
   const text = String(children ?? '')
 
   if (!text.trim()) return null
@@ -152,4 +152,6 @@ export default function MathText({ children }) {
       })}
     </>
   )
-}
+})
+
+export default MathText;
