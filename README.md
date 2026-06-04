@@ -69,6 +69,8 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=480
 CORS_ORIGINS=http://localhost:5173
 UPLOAD_DIR=uploads
+AUTH_COOKIE_SECURE=false
+AUTH_COOKIE_SAMESITE=lax
 
 # Cloudinary (cloudinary.com - free 25GB)
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -135,6 +137,8 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=480
 UPLOAD_DIR=/data/uploads
 CORS_ORIGINS=https://your-vercel-frontend-domain.vercel.app,http://localhost:5173
+AUTH_COOKIE_SECURE=true
+AUTH_COOKIE_SAMESITE=none
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
@@ -159,7 +163,14 @@ For production CORS, set this in the Hugging Face backend environment:
 
 ```
 CORS_ORIGINS=https://your-vercel-frontend-domain.vercel.app,http://localhost:5173
+AUTH_COOKIE_SECURE=true
+AUTH_COOKIE_SAMESITE=none
 ```
+
+Use `AUTH_COOKIE_SAMESITE=strict` only when the frontend and backend are served
+from the same site, such as behind one HTTPS reverse proxy. Cross-site frontend
+and API deployments need `SameSite=None; Secure` or the browser will log in
+successfully but omit the cookie on the next API request.
 
 Render wake-up cron instructions are obsolete for the Hugging Face Spaces
 backend.
