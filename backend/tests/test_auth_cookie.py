@@ -73,7 +73,7 @@ class AuthCookieTests(unittest.TestCase):
         self.assertIn(f"{settings.AUTH_COOKIE_NAME}=", set_cookie)
         self.assertIn("HttpOnly", set_cookie)
         self.assertIn("Secure", set_cookie)
-        self.assertIn("samesite=strict", set_cookie.lower())
+        self.assertIn("samesite=none", set_cookie.lower())
 
         me = self.client.get("/auth/me")
         self.assertEqual(me.status_code, 200)

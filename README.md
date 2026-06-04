@@ -136,7 +136,7 @@ SECRET_KEY=your-32-char-secret-key
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=480
 UPLOAD_DIR=/data/uploads
-CORS_ORIGINS=https://your-vercel-frontend-domain.vercel.app,http://localhost:5173
+CORS_ORIGINS=https://gateprep6901.vercel.app,http://localhost:5173
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAMESITE=none
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -162,7 +162,7 @@ VITE_API_URL=https://banu4prasad-gateprep.hf.space
 For production CORS, set this in the Hugging Face backend environment:
 
 ```
-CORS_ORIGINS=https://your-vercel-frontend-domain.vercel.app,http://localhost:5173
+CORS_ORIGINS=https://gateprep6901.vercel.app,http://localhost:5173
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAMESITE=none
 ```

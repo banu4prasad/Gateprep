@@ -75,11 +75,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-me-in-production-32-chars-minimum"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
-    CORS_ORIGINS: str = "http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:5173,https://gateprep6901.vercel.app"
     UPLOAD_DIR: str = "uploads"
     AUTH_COOKIE_NAME: str = "access_token"
     AUTH_COOKIE_SECURE: bool = True
-    AUTH_COOKIE_SAMESITE: str = "strict"
+    AUTH_COOKIE_SAMESITE: str = "none"
     CLOUDINARY_CLOUD_NAME: str = ""
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
