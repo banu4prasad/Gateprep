@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
 from app.core.database import Base
-from app.models.models import Question, Test, TestAttempt, User, UserAnswer, UserRole
+from app.models.models import PracticeAttemptCounter, Question, Test, TestAttempt, User, UserAnswer, UserRole
 
 
 class ModelCascadeTests(unittest.TestCase):
@@ -32,7 +32,8 @@ class ModelCascadeTests(unittest.TestCase):
                 correct_answer="A",
             )
             attempt = TestAttempt(user_id=user.id, test_id=test.id)
-            db.add_all([question, attempt])
+            counter = PracticeAttemptCounter(user_id=user.id, test_id=test.id, count=2)
+            db.add_all([question, attempt, counter])
             db.commit()
 
             answer = UserAnswer(attempt_id=attempt.id, question_id=question.id, selected_answer="A")
@@ -46,6 +47,7 @@ class ModelCascadeTests(unittest.TestCase):
             self.assertEqual(db.query(Question).count(), 0)
             self.assertEqual(db.query(TestAttempt).count(), 0)
             self.assertEqual(db.query(UserAnswer).count(), 0)
+            self.assertEqual(db.query(PracticeAttemptCounter).count(), 0)
         finally:
             db.close()
 

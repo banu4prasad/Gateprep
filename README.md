@@ -9,7 +9,6 @@ app_port: 7860
 A complete GATE exam preparation platform.
 
 ## Features
-- Email OTP authentication (signup + login)
 - Single active session per user
 - Admin panel (users, tests, series, checklist)
 - GATE-style test interface (fullscreen, tab detection, scientific calculator)
@@ -18,7 +17,6 @@ A complete GATE exam preparation platform.
 - Question images via Cloudinary
 - Timed tests with auto-submit
 - Leaderboard (first attempt only)
-- Result comparison with topper + average score
 - Test series / batches
 - Syllabus checklist
 - Bookmarks with notes
@@ -76,14 +74,7 @@ AUTH_COOKIE_SAMESITE=lax
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-
-# Gmail OTP (myaccount.google.com -> App Passwords)
-SMTP_EMAIL=yourgmail@gmail.com
-SMTP_PASSWORD=xxxx xxxx xxxx xxxx
-OTP_EXPIRE_MINUTES=10
 ```
-
-**Note:** If SMTP not configured, OTP prints to backend terminal (for dev).
 
 For Supabase passwords, URL-encode special characters before adding them to
 `DATABASE_URL`:
@@ -136,21 +127,18 @@ SECRET_KEY=your-32-char-secret-key
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=480
 UPLOAD_DIR=/data/uploads
-CORS_ORIGINS=https://gateprep6901.vercel.app,http://localhost:5173
+CORS_ORIGINS=http://localhost:5173
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAMESITE=none
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
-SMTP_EMAIL=yourgmail@gmail.com
-SMTP_PASSWORD=your-gmail-app-password
-OTP_EXPIRE_MINUTES=10
 ```
 
 `UPLOAD_DIR=/data/uploads` is supported by the Docker image. The image creates
 `/data/uploads` and gives the Hugging Face user ownership before the app starts.
 
-### Frontend: Vercel (free)
+### Frontend: Vercel
 1. Connect GitHub repo
 2. Root dir: `frontend`
 3. Add env:
@@ -180,6 +168,3 @@ backend.
 ## First Login
 Register at /register — first user is auto admin.
 Admin approves other users as aspirants from Users page.
-
-## Sample Questions
-Use sample_questions.json via Admin → Test → Add Questions (JSON).

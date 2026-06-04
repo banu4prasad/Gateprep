@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false))
   }, [])
 
-  // Called after successful login OR register verify
+  // Called after successful login or registration
   const saveUser = useCallback((userData) => {
     const u = {
       id: userData.id ?? userData.user_id,

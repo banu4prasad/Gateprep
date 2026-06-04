@@ -33,7 +33,6 @@ class User(Base):
     hashed_password = Column(String(255), nullable=True)  # nullable for Google OAuth
     role = Column(Enum(UserRole), default=UserRole.user, nullable=False)
     is_active = Column(Boolean, default=True)
-    is_email_verified = Column(Boolean, default=False)
     google_id = Column(String(255), nullable=True, unique=True)
     profile_photo = Column(String(500), nullable=True)
     # Single session — store current session ID, new login replaces it
@@ -42,21 +41,9 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     attempts = relationship("TestAttempt", back_populates="user")
+    practice_counters = relationship("PracticeAttemptCounter", back_populates="user", cascade="all, delete-orphan")
     bookmarks = relationship("Bookmark", back_populates="user", cascade="all, delete-orphan")
     checklist_items = relationship("ChecklistProgress", back_populates="user", cascade="all, delete-orphan")
-
-
-class OTPToken(Base):
-    """Temporary OTP storage — deleted after verification."""
-    __tablename__ = "otp_tokens"
-    id = Column(Integer, primary_key=True)
-    email = Column(String(255), index=True, nullable=False)
-    otp = Column(String(6), nullable=False)
-    purpose = Column(String(20), nullable=False)  # "register" or "login"
-    # Store pending registration data for signup OTP
-    pending_data = Column(JSON, nullable=True)
-    expires_at = Column(DateTime(timezone=True), nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class TestSeries(Base):
@@ -93,6 +80,7 @@ class Test(Base):
 
     questions = relationship("Question", back_populates="test", cascade="all, delete-orphan", order_by="Question.order_index")
     attempts = relationship("TestAttempt", back_populates="test", cascade="all, delete-orphan")
+    practice_counters = relationship("PracticeAttemptCounter", back_populates="test", cascade="all, delete-orphan")
     creator = relationship("User", foreign_keys=[created_by])
     series = relationship("TestSeries", back_populates="tests")
 
@@ -134,6 +122,20 @@ class TestAttempt(Base):
     user = relationship("User", back_populates="attempts")
     test = relationship("Test", back_populates="attempts")
     answers = relationship("UserAnswer", back_populates="attempt", cascade="all, delete-orphan")
+
+
+class PracticeAttemptCounter(Base):
+    __tablename__ = "practice_attempt_counters"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    test_id = Column(Integer, ForeignKey("tests.id"), nullable=False)
+    count = Column(Integer, default=0, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (UniqueConstraint("user_id", "test_id", name="uq_user_test_practice_counter"),)
+
+    user = relationship("User", back_populates="practice_counters")
+    test = relationship("Test", back_populates="practice_counters")
 
 
 class UserAnswer(Base):

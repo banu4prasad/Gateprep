@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { useAuth } from '../context/AuthContext'
 import { testAPI } from '../api/api'
-import { BookOpen, Clock, Target, ArrowRight, CheckCircle, TrendingUp } from 'lucide-react'
+import { BookOpen, Clock, Target, ArrowRight, CheckCircle } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
 
 export default function Dashboard() {
@@ -19,10 +19,7 @@ export default function Dashboard() {
   }, [])
 
   const submitted = history.filter(h => h.status === 'submitted')
-  const bestScore  = submitted.length ? Math.max(...submitted.map(h => h.score||0)) : 0
-  const avgPct     = submitted.length
-    ? Math.round(submitted.reduce((s,h)=>(h.total_marks?s+h.score/h.total_marks*100:s),0) / submitted.length)
-    : 0
+  const completedCount = new Set(submitted.map(h => h.test_id)).size
 
   const attemptMap = Object.fromEntries(history.map(h => [h.test_id, h]))
 
@@ -39,12 +36,10 @@ export default function Dashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {[
             { label: 'Tests Available', value: tests.length, icon: BookOpen, color: 'text-sky-400', bg: 'bg-sky-500/10' },
-            { label: 'Completed', value: submitted.length, icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10' },
-            { label: 'Best Score', value: bestScore.toFixed(1), icon: Target, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-            { label: 'Avg. Score %', value: `${avgPct}%`, icon: TrendingUp, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+            { label: 'Completed', value: completedCount, icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10' },
           ].map(({ label, value, icon: Icon, color, bg }) => (
             <div key={label} className="gate-card p-5 flex flex-col gap-2">
               <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}>

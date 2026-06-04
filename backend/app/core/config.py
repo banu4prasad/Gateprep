@@ -83,9 +83,6 @@ class Settings(BaseSettings):
     CLOUDINARY_CLOUD_NAME: str = ""
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
-    SMTP_EMAIL: str = ""
-    SMTP_PASSWORD: str = ""
-    OTP_EXPIRE_MINUTES: int = 10
 
     @property
     def cors_origins_list(self) -> List[str]:

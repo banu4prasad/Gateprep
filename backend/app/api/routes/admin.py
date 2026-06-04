@@ -94,7 +94,6 @@ def list_users(db: Session = Depends(get_db), _=Depends(require_admin)):
     return [{
         "id": u.id, "email": u.email, "full_name": u.full_name,
         "role": u.role, "is_active": u.is_active,
-        "is_email_verified": u.is_email_verified,
         "google_id": u.google_id is not None,
         "created_at": u.created_at
     } for u in users]

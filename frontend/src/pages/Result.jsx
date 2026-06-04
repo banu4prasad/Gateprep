@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { testAPI, bookmarkAPI } from '../api/api'
-import { CheckCircle, XCircle, MinusCircle, ArrowLeft, ChevronDown, ChevronUp, Trophy, RotateCcw, Medal, Bookmark, BookmarkCheck, Clock, TrendingUp } from 'lucide-react'
+import { CheckCircle, XCircle, MinusCircle, ArrowLeft, ChevronDown, ChevronUp, Trophy, RotateCcw, Medal, Bookmark, BookmarkCheck, Clock, TrendingUp, Download } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
 import MathText from '../components/shared/MathText'
 import toast from 'react-hot-toast'
@@ -22,6 +22,99 @@ function ScoreRing({ pct }) {
       <text x="60" y="72" textAnchor="middle" fill="var(--text-muted)" fontSize="10" fontFamily="DM Sans">score</text>
     </svg>
   )
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[ch]))
+}
+
+function formatDate(value) {
+  if (!value) return '-'
+  return new Date(value).toLocaleString('en-IN')
+}
+
+function buildResultHtml(result) {
+  const rows = (result.answers || []).map((a, idx) => {
+    const status = a.is_correct === true ? 'Correct' : a.is_correct === false ? 'Wrong' : 'Skipped'
+    const options = (a.options || []).map((opt, i) => {
+      const letter = 'ABCD'[i] || `${i + 1}`
+      return `<li><strong>${letter}.</strong> ${escapeHtml(opt)}</li>`
+    }).join('')
+
+    return `
+      <section class="question">
+        <div class="q-head">
+          <strong>Q${idx + 1}</strong>
+          <span class="${status.toLowerCase()}">${status}</span>
+          <span>${escapeHtml(a.marks_awarded)} marks</span>
+        </div>
+        <p>${escapeHtml(a.question_text)}</p>
+        ${options ? `<ol>${options}</ol>` : ''}
+        <div class="answers">
+          <span>Your answer: <strong>${escapeHtml(a.selected_answer || 'Skipped')}</strong></span>
+          <span>Correct answer: <strong>${escapeHtml(a.correct_answer)}</strong></span>
+          <span>Time: <strong>${escapeHtml(a.time_spent_seconds)}s</strong></span>
+        </div>
+      </section>`
+  }).join('')
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(result.test_title)} result</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; color: #111827; line-height: 1.45; }
+    header { border-bottom: 1px solid #d1d5db; margin-bottom: 20px; padding-bottom: 16px; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 16px; }
+    .metric { border: 1px solid #d1d5db; border-radius: 8px; padding: 10px; }
+    .metric strong { display: block; font-size: 20px; }
+    .question { border: 1px solid #d1d5db; border-radius: 8px; padding: 14px; margin: 12px 0; break-inside: avoid; }
+    .q-head, .answers { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .q-head { justify-content: space-between; margin-bottom: 8px; }
+    .correct { color: #15803d; }
+    .wrong { color: #b91c1c; }
+    .skipped { color: #64748b; }
+    ol { margin: 8px 0; padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>${escapeHtml(result.test_title)}</h1>
+    <div>Attempt ${escapeHtml(result.attempt_number)} · ${result.counts_for_leaderboard ? 'Saved first attempt' : 'Practice attempt'} · ${escapeHtml(formatDate(result.submitted_at))}</div>
+    <div class="summary">
+      <div class="metric"><span>Score</span><strong>${escapeHtml(result.score?.toFixed?.(2) ?? result.score)} / ${escapeHtml(result.total_marks)}</strong></div>
+      <div class="metric"><span>Percentage</span><strong>${escapeHtml(Math.round(result.percentage))}%</strong></div>
+      <div class="metric"><span>Correct</span><strong>${escapeHtml(result.correct)}</strong></div>
+      <div class="metric"><span>Wrong</span><strong>${escapeHtml(result.incorrect)}</strong></div>
+      <div class="metric"><span>Skipped</span><strong>${escapeHtml(result.skipped)}</strong></div>
+    </div>
+  </header>
+  ${rows}
+</body>
+</html>`
+}
+
+function downloadResultReport(result) {
+  const slug = (result.test_title || 'result').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const suffix = result.counts_for_leaderboard ? 'result' : 'practice-result'
+  const blob = new Blob([buildResultHtml(result)], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${slug || 'test'}-${suffix}.html`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
 function QuestionReview({ qa, idx, bookmarked, onToggleBookmark }) {
@@ -102,6 +195,7 @@ function QuestionReview({ qa, idx, bookmarked, onToggleBookmark }) {
 export default function ResultPage() {
   const { attemptId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const [result, setResult] = useState(null)
   const [attempts, setAttempts] = useState([])
   const [bookmarked, setBookmarked] = useState(new Set())
@@ -109,16 +203,54 @@ export default function ResultPage() {
   const [filter, setFilter] = useState('all')
 
   useEffect(() => {
-    Promise.all([testAPI.getResult(attemptId), bookmarkAPI.getIds()])
-      .then(([r, b]) => {
+    let cancelled = false
+
+    const load = async () => {
+      setLoading(true)
+      setResult(null)
+      setAttempts([])
+
+      try {
+        let cachedResult = location.state?.result
+
+        if (attemptId?.startsWith('practice-')) {
+          if (!cachedResult) {
+            try {
+              cachedResult = JSON.parse(sessionStorage.getItem(`practice-result:${attemptId}`))
+            } catch {
+              cachedResult = null
+            }
+          }
+
+          const b = await bookmarkAPI.getIds()
+          if (!cancelled) {
+            setResult(cachedResult)
+            setBookmarked(new Set(b.data.ids))
+          }
+          return
+        }
+
+        const [r, b] = await Promise.all([testAPI.getResult(attemptId), bookmarkAPI.getIds()])
+        if (cancelled) return
+
         setResult(r.data)
         setBookmarked(new Set(b.data.ids))
-        return testAPI.getMyAttempts(r.data.test_id)
-      })
-      .then(r => setAttempts(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [attemptId])
+
+        const attemptsRes = await testAPI.getMyAttempts(r.data.test_id)
+        if (!cancelled) setAttempts(attemptsRes.data)
+      } catch {
+        if (!cancelled) setResult(null)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+
+    return () => {
+      cancelled = true
+    }
+  }, [attemptId, location.state])
 
   const toggleBookmark = async (qId) => {
     const res = await bookmarkAPI.toggle(qId)
@@ -139,12 +271,22 @@ export default function ResultPage() {
     navigate(`/tests/${result.test_id}`)
   }
 
+  const handleDownload = () => {
+    downloadResultReport(result)
+    toast.success('Result downloaded')
+  }
+
   if (loading) return <Layout><div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500" /></div></Layout>
   if (!result) return <Layout><p className="text-center py-16" style={{ color: 'var(--text-muted)' }}>Result not found.</p></Layout>
 
   const pct = Math.round(result.percentage)
   const grade = pct >= 75 ? 'Excellent' : pct >= 50 ? 'Good' : 'Needs Work'
   const gradeColor = pct >= 75 ? 'text-green-400' : pct >= 50 ? 'text-amber-400' : 'text-red-400'
+  const rankText = result.rank
+    ? result.counts_for_leaderboard
+      ? ` · Rank #${result.rank}/${result.total_participants}`
+      : ` · First-attempt rank #${result.rank}/${result.total_participants}`
+    : ''
 
   const filtered = result.answers.filter(a =>
     filter === 'all' ? true :
@@ -160,10 +302,16 @@ export default function ResultPage() {
           <Link to="/dashboard" className="flex items-center gap-1.5 text-sm hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
             <ArrowLeft size={14} /> Dashboard
           </Link>
-          <Link to={`/tests/${result.test_id}/leaderboard`}
-            className="flex items-center gap-1.5 text-sm text-sky-400 hover:text-sky-300">
-            <Trophy size={13} /> Leaderboard
-          </Link>
+          <div className="flex items-center gap-3">
+            <button onClick={handleDownload}
+              className="flex items-center gap-1.5 text-sm text-green-400 hover:text-green-300">
+              <Download size={13} /> Download
+            </button>
+            <Link to={`/tests/${result.test_id}/leaderboard`}
+              className="flex items-center gap-1.5 text-sm text-sky-400 hover:text-sky-300">
+              <Trophy size={13} /> Leaderboard
+            </Link>
+          </div>
         </div>
 
         {/* Attempt badge */}
@@ -173,7 +321,7 @@ export default function ResultPage() {
           <Medal size={14} />
           {result.counts_for_leaderboard
             ? `Attempt ${result.attempt_number} · ✓ Counts for leaderboard`
-            : `Attempt ${result.attempt_number} · Practice attempt (not on leaderboard)`}
+            : `Attempt ${result.attempt_number} · Practice result (download to keep)`}
         </div>
 
         {/* Score card */}
@@ -186,7 +334,7 @@ export default function ResultPage() {
             <div className="flex-1 w-full">
               <p className={`font-bold text-2xl mb-1 ${gradeColor}`}>{grade}</p>
               <p className="text-sm mb-1" style={{ color: 'var(--text-muted)' }}>
-                {result.score?.toFixed(2)} / {result.total_marks} marks · Rank #{result.rank}/{result.total_participants}
+                {result.score?.toFixed(2)} / {result.total_marks} marks{rankText}
               </p>
               <div className="grid grid-cols-3 gap-2 mt-3">
                 {[
@@ -212,7 +360,6 @@ export default function ResultPage() {
           <div className="space-y-2">
             {[
               { label: 'Your Score', val: result.score?.toFixed(1), pct: Math.round(result.percentage), color: '#0ea5e9' },
-              { label: 'Average Score', val: result.average_score?.toFixed(1), pct: Math.round(result.average_percentage), color: '#f59e0b' },
               ...(result.topper ? [{ label: `Topper (${result.topper.full_name})`, val: result.topper.score?.toFixed(1), pct: Math.round(result.topper.percentage), color: '#51cf66' }] : []),
             ].map(({ label, val, pct: p, color }) => (
               <div key={label}>

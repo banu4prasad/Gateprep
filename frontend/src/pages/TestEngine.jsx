@@ -234,6 +234,15 @@ export default function TestEngine() {
       const res = await testAPI.submitTest(testIdRef.current, currentAttempt.id, ans)
       if (auto) toast('⏰ Time up! Auto-submitted.', { duration: 5000 })
       else toast.success('Test submitted successfully!')
+
+      if (res.data?.persisted === false && res.data?.result) {
+        const result = res.data.result
+        const resultId = result.client_result_id || result.attempt_id || res.data.id
+        sessionStorage.setItem(`practice-result:${resultId}`, JSON.stringify(result))
+        navigate(`/results/${resultId}`, { state: { result } })
+        return
+      }
+
       navigate(`/results/${res.data.id}`)
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Submit failed. Please try again.')

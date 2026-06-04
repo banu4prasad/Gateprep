@@ -1,13 +1,20 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy import func
 from pydantic import BaseModel
 from fastapi_cache.decorator import cache
 from app.core.database import get_db
 from app.api.deps import require_aspirant, get_current_user
-from app.models.models import Test, Question, TestAttempt, UserAnswer, TestStatus, OTPToken
+from app.models.models import (
+    PracticeAttemptCounter,
+    Question,
+    Test,
+    TestAttempt,
+    TestStatus,
+    UserAnswer,
+)
 from app.services.scoring import evaluate_answer
 
 router = APIRouter(prefix="/tests", tags=["Tests"])
@@ -30,15 +37,64 @@ class ViolationUpdate(BaseModel):
     fullscreen_violations: Optional[int] = None
 
 
-# ── Background task: clean expired OTPs ──────────────────────────
+def _submitted_attempts_query(db: Session, user_id: int, test_id: int):
+    return db.query(TestAttempt).filter(
+        TestAttempt.user_id == user_id,
+        TestAttempt.test_id == test_id,
+        TestAttempt.status == TestStatus.submitted,
+    )
 
-def cleanup_expired_otps(db: Session):
-    """Delete all OTP tokens older than 1 hour. Runs as background task."""
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
-    deleted = db.query(OTPToken).filter(OTPToken.expires_at < cutoff).delete()
-    db.commit()
-    if deleted > 0:
-        print(f"[Cleanup] Deleted {deleted} expired OTP tokens")
+
+def _first_submitted_attempt(db: Session, user_id: int, test_id: int) -> Optional[TestAttempt]:
+    return _submitted_attempts_query(db, user_id, test_id).order_by(TestAttempt.id.asc()).first()
+
+
+def _practice_counter(db: Session, user_id: int, test_id: int) -> Optional[PracticeAttemptCounter]:
+    return db.query(PracticeAttemptCounter).filter(
+        PracticeAttemptCounter.user_id == user_id,
+        PracticeAttemptCounter.test_id == test_id,
+    ).first()
+
+
+def _attempt_progress(
+    db: Session,
+    user_id: int,
+    test_id: int,
+    submitted_count: Optional[int] = None,
+) -> dict:
+    if submitted_count is None:
+        submitted_count = _submitted_attempts_query(db, user_id, test_id).count()
+
+    counter = _practice_counter(db, user_id, test_id)
+    stored_practice_count = counter.count if counter else 0
+    legacy_practice_count = max(submitted_count - 1, 0)
+    practice_count = max(stored_practice_count, legacy_practice_count)
+
+    return {
+        "submitted_count": submitted_count,
+        "practice_count": practice_count,
+        "total_used": (1 if submitted_count > 0 else 0) + practice_count,
+    }
+
+
+def _set_practice_count(db: Session, user_id: int, test_id: int, count: int) -> PracticeAttemptCounter:
+    counter = _practice_counter(db, user_id, test_id)
+    if not counter:
+        counter = PracticeAttemptCounter(user_id=user_id, test_id=test_id, count=0)
+        db.add(counter)
+
+    counter.count = max(counter.count or 0, count)
+    counter.updated_at = datetime.now(timezone.utc)
+    return counter
+
+
+def _has_previous_submission(db: Session, user_id: int, test_id: int, attempt_id: int) -> bool:
+    return db.query(TestAttempt.id).filter(
+        TestAttempt.user_id == user_id,
+        TestAttempt.test_id == test_id,
+        TestAttempt.status == TestStatus.submitted,
+        TestAttempt.id != attempt_id,
+    ).first() is not None
 
 
 # ── Tests ─────────────────────────────────────────────────────────
@@ -81,7 +137,6 @@ def get_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_aspi
 @router.post("/{test_id}/start")
 def start_test(
     test_id: int,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user=Depends(require_aspirant)
 ):
@@ -89,26 +144,23 @@ def start_test(
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
-    # Count existing SUBMITTED attempts only
-    attempt_count = db.query(TestAttempt).filter(
-        TestAttempt.user_id == current_user.id,
-        TestAttempt.test_id == test_id,
-        TestAttempt.status == TestStatus.submitted
-    ).count()
+    progress = _attempt_progress(db, current_user.id, test_id)
 
     # Enforce reattempt limit
-    if attempt_count > MAX_REATTEMPTS:
+    if progress["total_used"] >= MAX_REATTEMPTS + 1:
         raise HTTPException(
             status_code=400,
             detail=f"Maximum attempts ({MAX_REATTEMPTS + 1}) reached for this test."
         )
 
     # Delete any leftover in-progress attempt (user exited without submitting)
-    db.query(TestAttempt).filter(
+    leftovers = db.query(TestAttempt).filter(
         TestAttempt.user_id == current_user.id,
         TestAttempt.test_id == test_id,
         TestAttempt.status == TestStatus.in_progress
-    ).delete()
+    ).all()
+    for leftover in leftovers:
+        db.delete(leftover)
     db.commit()
 
     # Always create a fresh attempt
@@ -122,11 +174,8 @@ def start_test(
     db.commit()
     db.refresh(attempt)
 
-    # Clean up expired OTPs in background (runs async, doesn't slow response)
-    background_tasks.add_task(cleanup_expired_otps, db)
-
-    # attempt_number = previous submitted + 1 (this new attempt)
-    attempt_number  = attempt_count + 1
+    # First attempts are saved. Later attempts are temporary and deleted after submit.
+    attempt_number  = progress["total_used"] + 1
     max_attempts    = MAX_REATTEMPTS + 1
 
     return {
@@ -145,15 +194,6 @@ def _attempt_out(a: TestAttempt) -> dict:
     }
 
 
-def _is_first_attempt(attempt_id: int, user_id: int, test_id: int, db: Session) -> bool:
-    """Check if this is the user's first attempt at this test."""
-    first = db.query(TestAttempt).filter(
-        TestAttempt.user_id == user_id,
-        TestAttempt.test_id == test_id
-    ).order_by(TestAttempt.id.asc()).first()
-    return first and first.id == attempt_id
-
-
 @router.get("/{test_id}/attempt/{attempt_id}/questions")
 def get_questions(
     test_id: int, attempt_id: int,
@@ -162,7 +202,8 @@ def get_questions(
 ):
     attempt = db.query(TestAttempt).filter(
         TestAttempt.id == attempt_id,
-        TestAttempt.user_id == current_user.id
+        TestAttempt.user_id == current_user.id,
+        TestAttempt.test_id == test_id,
     ).first()
     if not attempt:
         raise HTTPException(status_code=404, detail="Attempt not found")
@@ -191,7 +232,8 @@ def update_violations(
 ):
     attempt = db.query(TestAttempt).filter(
         TestAttempt.id == attempt_id,
-        TestAttempt.user_id == current_user.id
+        TestAttempt.user_id == current_user.id,
+        TestAttempt.test_id == test_id,
     ).first()
     if not attempt or attempt.status == TestStatus.submitted:
         raise HTTPException(status_code=400, detail="Invalid attempt")
@@ -213,10 +255,14 @@ def save_answers(
 ):
     attempt = db.query(TestAttempt).filter(
         TestAttempt.id == attempt_id,
-        TestAttempt.user_id == current_user.id
+        TestAttempt.user_id == current_user.id,
+        TestAttempt.test_id == test_id,
     ).first()
     if not attempt or attempt.status == TestStatus.submitted:
         raise HTTPException(status_code=400, detail="Invalid attempt")
+
+    if _has_previous_submission(db, current_user.id, test_id, attempt_id):
+        return {"message": "Practice answers are kept in browser until submit"}
 
     existing = {a.question_id: a for a in attempt.answers}
     for ans in payload.answers:
@@ -234,6 +280,136 @@ def save_answers(
     return {"message": "Saved"}
 
 
+def _percentage(score: Optional[float], total_marks: Optional[float], digits: int = 2) -> float:
+    return round((score or 0) / total_marks * 100, digits) if total_marks else 0
+
+
+def _base_answer_detail(q: Question, selected_answer, is_correct, marks_awarded, time_spent_seconds):
+    return {
+        "question_id": q.id,
+        "question_text": q.question_text,
+        "question_type": q.question_type,
+        "question_image_url": q.question_image_url,
+        "options": q.options,
+        "option_images": q.option_images,
+        "correct_answer": q.correct_answer,
+        "selected_answer": selected_answer,
+        "is_correct": is_correct,
+        "marks_awarded": marks_awarded,
+        "marks": q.marks,
+        "negative_marks": q.negative_marks,
+        "time_spent_seconds": time_spent_seconds,
+        "topper_answer": None,
+        "topper_time_seconds": 0,
+    }
+
+
+def _evaluate_submission(test: Test, answers: List[AnswerSubmit]):
+    submitted_by_question = {ans.question_id: ans for ans in answers}
+    earned = 0.0
+    details = []
+
+    for q in sorted(test.questions, key=lambda x: x.order_index):
+        submitted = submitted_by_question.get(q.id)
+        selected = submitted.selected_answer if submitted else None
+        if selected is not None and selected.strip() == "":
+            selected = None
+        is_correct, marks = evaluate_answer(q, selected)
+        earned += marks
+        details.append(_base_answer_detail(
+            q,
+            selected,
+            is_correct,
+            marks,
+            submitted.time_spent_seconds if submitted else 0,
+        ))
+
+    total_marks = sum(q.marks for q in test.questions)
+    return max(0.0, round(earned, 2)), total_marks, details
+
+
+def _attempt_answer_details(test: Test, answers: list[UserAnswer]):
+    answers_map = {a.question_id: a for a in answers}
+    details = []
+    for q in sorted(test.questions, key=lambda x: x.order_index):
+        ua = answers_map.get(q.id)
+        details.append(_base_answer_detail(
+            q,
+            ua.selected_answer if ua else None,
+            ua.is_correct if ua else None,
+            ua.marks_awarded if ua else 0,
+            ua.time_spent_seconds if ua else 0,
+        ))
+    return details
+
+
+def _result_payload(
+    *,
+    attempt_id,
+    attempt_number: int,
+    attempts_remaining: int,
+    counts_for_leaderboard: bool,
+    persisted: bool,
+    test: Test,
+    score: float,
+    total_marks: float,
+    submitted_at: datetime,
+    tab_violations: int,
+    answer_details: list[dict],
+    current_user,
+    db: Session,
+    client_result_id: Optional[str] = None,
+) -> dict:
+    first_attempts = _get_first_attempts(test.id, db)
+
+    topper = first_attempts[0] if first_attempts else None
+    topper_data = None
+    topper_answers_map = {}
+    if topper:
+        topper_answers_map = {ua.question_id: ua for ua in topper.answers}
+        topper_data = {
+            "user_id": topper.user_id,
+            "full_name": topper.user.full_name,
+            "score": topper.score,
+            "total_marks": topper.total_marks,
+            "percentage": _percentage(topper.score, topper.total_marks),
+        }
+
+    for detail in answer_details:
+        topper_ua = topper_answers_map.get(detail["question_id"])
+        detail["topper_answer"] = topper_ua.selected_answer if topper_ua else None
+        detail["topper_time_seconds"] = topper_ua.time_spent_seconds if topper_ua else 0
+
+    correct = sum(1 for a in answer_details if a["is_correct"] is True)
+    incorrect = sum(1 for a in answer_details if a["is_correct"] is False)
+    skipped = sum(1 for a in answer_details if a["is_correct"] is None)
+    rank = next((i + 1 for i, a in enumerate(first_attempts) if a.user_id == current_user.id), None)
+
+    return {
+        "attempt_id": attempt_id,
+        "client_result_id": client_result_id,
+        "attempt_number": attempt_number,
+        "attempts_remaining": attempts_remaining,
+        "max_attempts": MAX_REATTEMPTS + 1,
+        "counts_for_leaderboard": counts_for_leaderboard,
+        "persisted": persisted,
+        "test_id": test.id,
+        "test_title": test.title,
+        "score": score,
+        "total_marks": total_marks,
+        "percentage": _percentage(score, total_marks),
+        "correct": correct,
+        "incorrect": incorrect,
+        "skipped": skipped,
+        "submitted_at": submitted_at,
+        "tab_violations": tab_violations,
+        "rank": rank,
+        "total_participants": len(first_attempts),
+        "topper": topper_data,
+        "answers": answer_details,
+    }
+
+
 @router.post("/{test_id}/attempt/{attempt_id}/submit")
 def submit_test(
     test_id: int, attempt_id: int,
@@ -243,61 +419,71 @@ def submit_test(
 ):
     attempt = db.query(TestAttempt).filter(
         TestAttempt.id == attempt_id,
-        TestAttempt.user_id == current_user.id
+        TestAttempt.user_id == current_user.id,
+        TestAttempt.test_id == test_id,
     ).first()
     if not attempt:
         raise HTTPException(status_code=404, detail="Attempt not found")
     if attempt.status == TestStatus.submitted:
         raise HTTPException(status_code=400, detail="Already submitted")
 
-    questions = {q.id: q for q in db.query(Question).filter(Question.test_id == test_id).all()}
+    test = db.query(Test).filter(Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Test not found")
+
     db.query(UserAnswer).filter(UserAnswer.attempt_id == attempt_id).delete()
 
-    total_marks = sum(q.marks for q in questions.values())
-    earned = 0.0
+    score, total_marks, answer_details = _evaluate_submission(test, payload.answers)
+    previous_submission_count = _submitted_attempts_query(db, current_user.id, test_id).count()
+    is_first = previous_submission_count == 0
+    submitted_at = datetime.now(timezone.utc)
 
-    is_first = _is_first_attempt(attempt_id, current_user.id, test_id, db)
-
-    for ans in payload.answers:
-        q = questions.get(ans.question_id)
-        if not q:
-            continue
-
-        is_correct, marks = evaluate_answer(q, ans.selected_answer)
-        earned += marks
-
-        # KEY OPTIMIZATION:
-        # First attempt → store full answer data (needed for result review + leaderboard)
-        # Reattempts → only store if answered (skip nulls to save DB space)
-        if is_first:
-            # Always store for first attempt (even skipped, for result review)
+    if is_first:
+        for detail in answer_details:
             db.add(UserAnswer(
                 attempt_id=attempt_id,
-                question_id=ans.question_id,
-                selected_answer=ans.selected_answer,
-                is_correct=is_correct,
-                marks_awarded=marks,
-                time_spent_seconds=ans.time_spent_seconds
+                question_id=detail["question_id"],
+                selected_answer=detail["selected_answer"],
+                is_correct=detail["is_correct"],
+                marks_awarded=detail["marks_awarded"],
+                time_spent_seconds=detail["time_spent_seconds"],
             ))
-        else:
-            # Reattempt: only store answered questions (skip nulls → saves storage)
-            if ans.selected_answer is not None:
-                db.add(UserAnswer(
-                    attempt_id=attempt_id,
-                    question_id=ans.question_id,
-                    selected_answer=ans.selected_answer,
-                    is_correct=is_correct,
-                    marks_awarded=marks,
-                    time_spent_seconds=ans.time_spent_seconds
-                ))
 
-    attempt.status = TestStatus.submitted
-    attempt.submitted_at = datetime.now(timezone.utc)
-    attempt.score = max(0.0, round(earned, 2))
-    attempt.total_marks = total_marks
+        attempt.status = TestStatus.submitted
+        attempt.submitted_at = submitted_at
+        attempt.score = score
+        attempt.total_marks = total_marks
+        db.commit()
+        db.refresh(attempt)
+        return {**_attempt_out(attempt), "persisted": True}
+
+    progress_before = _attempt_progress(db, current_user.id, test_id, previous_submission_count)
+    attempt_number = progress_before["total_used"] + 1
+    attempts_remaining = max(0, MAX_REATTEMPTS + 1 - attempt_number)
+    client_result_id = f"practice-{attempt_id}"
+
+    result = _result_payload(
+        attempt_id=client_result_id,
+        client_result_id=client_result_id,
+        attempt_number=attempt_number,
+        attempts_remaining=attempts_remaining,
+        counts_for_leaderboard=False,
+        persisted=False,
+        test=test,
+        score=score,
+        total_marks=total_marks,
+        submitted_at=submitted_at,
+        tab_violations=attempt.tab_violations,
+        answer_details=answer_details,
+        current_user=current_user,
+        db=db,
+    )
+
+    _set_practice_count(db, current_user.id, test_id, progress_before["practice_count"] + 1)
+    db.delete(attempt)
     db.commit()
-    db.refresh(attempt)
-    return _attempt_out(attempt)
+
+    return {"id": client_result_id, "persisted": False, "result": result}
 
 
 # ── Result ────────────────────────────────────────────────────────
@@ -316,99 +502,29 @@ def get_result(
         raise HTTPException(status_code=404, detail="Result not found")
 
     test = attempt.test
-    answers = attempt.answers
-    questions = {q.id: q for q in test.questions}
-
-    correct = sum(1 for a in answers if a.is_correct is True)
-    incorrect = sum(1 for a in answers if a.is_correct is False)
-    answered_count = len(answers)
-    skipped = len(questions) - answered_count
-    pct = round(attempt.score / attempt.total_marks * 100, 2) if attempt.total_marks else 0
-
-    # Stats from first attempts only
-    first_attempts = _get_first_attempts(test.id, db)
-    avg_score = round(
-        sum(a.score for a in first_attempts if a.score is not None) / len(first_attempts), 2
-    ) if first_attempts else 0
-    avg_pct = round(avg_score / attempt.total_marks * 100, 2) if attempt.total_marks else 0
-
-    # Topper
-    topper = first_attempts[0] if first_attempts else None
-    topper_data = None
-    topper_answers_map = {}
-    if topper:
-        topper_answers_map = {ua.question_id: ua for ua in topper.answers}
-        topper_data = {
-            "user_id": topper.user_id,
-            "full_name": topper.user.full_name,
-            "score": topper.score,
-            "total_marks": topper.total_marks,
-            "percentage": round(topper.score / topper.total_marks * 100, 2) if topper.total_marks else 0,
-        }
-
-    # User rank
-    rank = next((i + 1 for i, a in enumerate(first_attempts) if a.user_id == current_user.id), None)
-
-    # Attempt number
-    all_user_attempts = db.query(TestAttempt).filter(
-        TestAttempt.user_id == current_user.id,
-        TestAttempt.test_id == test.id,
-        TestAttempt.status == TestStatus.submitted
-    ).order_by(TestAttempt.id.asc()).all()
+    all_user_attempts = _submitted_attempts_query(db, current_user.id, test.id).order_by(TestAttempt.id.asc()).all()
     attempt_number = next((i + 1 for i, a in enumerate(all_user_attempts) if a.id == attempt_id), 1)
     is_first = attempt_number == 1
 
-    # Remaining attempts
-    total_attempts_used = len(all_user_attempts)
-    attempts_remaining = max(0, MAX_REATTEMPTS + 1 - total_attempts_used)
+    progress = _attempt_progress(db, current_user.id, test.id, len(all_user_attempts))
+    total_marks = attempt.total_marks or sum(q.marks for q in test.questions)
 
-    # Answer details (full for first attempt, limited for reattempts)
-    answers_map = {a.question_id: a for a in answers}
-    answer_details = []
-    for q in sorted(test.questions, key=lambda x: x.order_index):
-        ua = answers_map.get(q.id)
-        topper_ua = topper_answers_map.get(q.id)
-        answer_details.append({
-            "question_id": q.id,
-            "question_text": q.question_text,
-            "question_type": q.question_type,
-            "question_image_url": q.question_image_url,
-            "options": q.options,
-            "option_images": q.option_images,
-            "correct_answer": q.correct_answer,
-            "selected_answer": ua.selected_answer if ua else None,
-            "is_correct": ua.is_correct if ua else None,
-            "marks_awarded": ua.marks_awarded if ua else 0,
-            "marks": q.marks,
-            "negative_marks": q.negative_marks,
-            "time_spent_seconds": ua.time_spent_seconds if ua else 0,
-            "topper_answer": topper_ua.selected_answer if topper_ua else None,
-            "topper_time_seconds": topper_ua.time_spent_seconds if topper_ua else 0,
-        })
-
-    return {
-        "attempt_id": attempt_id,
-        "attempt_number": attempt_number,
-        "attempts_remaining": attempts_remaining,
-        "max_attempts": MAX_REATTEMPTS + 1,
-        "counts_for_leaderboard": is_first,
-        "test_id": test.id,
-        "test_title": test.title,
-        "score": attempt.score,
-        "total_marks": attempt.total_marks,
-        "percentage": pct,
-        "correct": correct,
-        "incorrect": incorrect,
-        "skipped": skipped,
-        "submitted_at": attempt.submitted_at,
-        "tab_violations": attempt.tab_violations,
-        "rank": rank,
-        "total_participants": len(first_attempts),
-        "average_score": avg_score,
-        "average_percentage": avg_pct,
-        "topper": topper_data,
-        "answers": answer_details
-    }
+    return _result_payload(
+        attempt_id=attempt_id,
+        client_result_id=None,
+        attempt_number=attempt_number,
+        attempts_remaining=max(0, MAX_REATTEMPTS + 1 - progress["total_used"]),
+        counts_for_leaderboard=is_first,
+        persisted=True,
+        test=test,
+        score=attempt.score or 0,
+        total_marks=total_marks,
+        submitted_at=attempt.submitted_at,
+        tab_violations=attempt.tab_violations,
+        answer_details=_attempt_answer_details(test, attempt.answers),
+        current_user=current_user,
+        db=db,
+    )
 
 
 def _get_first_attempts(test_id: int, db: Session) -> list[TestAttempt]:
@@ -509,14 +625,11 @@ def get_leaderboard(test_id: int, db: Session = Depends(get_db), current_user=De
             "is_current_user": attempt.user_id == current_user.id
         })
 
-    avg = round(sum(a.score or 0 for a in first_attempts) / len(first_attempts), 2) if first_attempts else 0
-
     return {
         "test_id": test_id,
         "test_title": test.title,
         "total_participants": len(leaderboard),
         "current_user_rank": current_user_rank,
-        "average_score": avg,
         "leaderboard": leaderboard
     }
 
@@ -525,32 +638,53 @@ def get_leaderboard(test_id: int, db: Session = Depends(get_db), current_user=De
 
 @router.get("/{test_id}/my-attempts")
 def my_attempts(test_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    attempts = db.query(TestAttempt).filter(
-        TestAttempt.user_id == current_user.id,
-        TestAttempt.test_id == test_id,
-        TestAttempt.status == TestStatus.submitted  # only submitted
-    ).order_by(TestAttempt.id.asc()).all()
+    first_attempt = _first_submitted_attempt(db, current_user.id, test_id)
+    if not first_attempt:
+        return []
 
-    total = len(attempts)
+    submitted_count = _submitted_attempts_query(db, current_user.id, test_id).count()
+    progress = _attempt_progress(db, current_user.id, test_id, submitted_count)
+
     return [{
-        "attempt_id": a.id,
-        "attempt_number": i + 1,
-        "counts_for_leaderboard": i == 0,
-        "is_first": i == 0,
-        "status": a.status,
-        "score": a.score,
-        "total_marks": a.total_marks,
-        "percentage": round(a.score / a.total_marks * 100, 1) if a.total_marks and a.score else 0,
-        "started_at": a.started_at,
-        "submitted_at": a.submitted_at,
-        "attempts_remaining": max(0, MAX_REATTEMPTS + 1 - total)
-    } for i, a in enumerate(attempts)]
+        "attempt_id": first_attempt.id,
+        "attempt_number": 1,
+        "counts_for_leaderboard": True,
+        "is_first": True,
+        "status": first_attempt.status,
+        "score": first_attempt.score,
+        "total_marks": first_attempt.total_marks,
+        "percentage": _percentage(first_attempt.score, first_attempt.total_marks, 1),
+        "started_at": first_attempt.started_at,
+        "submitted_at": first_attempt.submitted_at,
+        "attempts_remaining": max(0, MAX_REATTEMPTS + 1 - progress["total_used"])
+    }]
 
 
 @router.get("/my/history")
 def my_history(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    # Only return submitted attempts — in-progress are ignored
-    return db.query(TestAttempt).filter(
+    attempts = db.query(TestAttempt).filter(
         TestAttempt.user_id == current_user.id,
         TestAttempt.status == TestStatus.submitted
-    ).order_by(TestAttempt.started_at.desc()).all()
+    ).order_by(TestAttempt.id.asc()).all()
+
+    first_by_test = {}
+    for attempt in attempts:
+        first_by_test.setdefault(attempt.test_id, attempt)
+
+    first_attempts = sorted(
+        first_by_test.values(),
+        key=lambda a: a.started_at or a.submitted_at or datetime.min,
+        reverse=True,
+    )
+
+    return [{
+        "id": a.id,
+        "test_id": a.test_id,
+        "status": a.status,
+        "started_at": a.started_at,
+        "submitted_at": a.submitted_at,
+        "score": a.score,
+        "total_marks": a.total_marks,
+        "tab_violations": a.tab_violations,
+        "fullscreen_violations": a.fullscreen_violations,
+    } for a in first_attempts]

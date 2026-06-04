@@ -35,7 +35,6 @@ class AuthCookieTests(unittest.TestCase):
                 hashed_password=hash_password("secret123"),
                 role=UserRole.aspirant,
                 is_active=True,
-                is_email_verified=True,
             )
             db.add(self.user)
             db.commit()

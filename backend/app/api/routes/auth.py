@@ -77,7 +77,7 @@ def create_token_for_user(user: User, db: Session, request: Request = None) -> s
     return create_access_token({"sub": user.id, "role": user.role, "sid": session_id, "auth": "cookie"})
 
 
-# ── Register (direct, no OTP) ─────────────────────────────────────
+# ── Register ──────────────────────────────────────────────────────
 
 @router.post("/register", response_model=AuthUserResponse)
 def register(payload: RegisterRequest, request: Request, response: Response, db: Session = Depends(get_db)):
@@ -91,7 +91,6 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
         email=payload.email,
         full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
-        is_email_verified=True,
         role=UserRole.admin if is_first else UserRole.user
     )
     db.add(user)
@@ -102,7 +101,7 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
     return _auth_user_response(user)
 
 
-# ── Login (direct, no OTP) ────────────────────────────────────────
+# ── Login ─────────────────────────────────────────────────────────
 
 @router.post("/login", response_model=AuthUserResponse)
 def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
@@ -149,7 +148,6 @@ def me(current_user: User = Depends(get_current_user)):
         "full_name": current_user.full_name,
         "role": current_user.role,
         "is_active": current_user.is_active,
-        "is_email_verified": current_user.is_email_verified,
         "profile_photo": current_user.profile_photo,
         "created_at": current_user.created_at
     }
