@@ -8,40 +8,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) { setLoading(false); return }
-
-    // Load from cache immediately to prevent flash
-    const stored = localStorage.getItem('user')
-    if (stored) {
-      try { setUser(JSON.parse(stored)) } catch {}
-    }
-
-    // Verify token with backend
     api.get('/auth/me')
-      .then(r => {
-        setUser(r.data)
-        localStorage.setItem('user', JSON.stringify(r.data))
-      })
+      .then(r => setUser(r.data))
       .catch(() => {
-        localStorage.clear()
         setUser(null)
       })
       .finally(() => setLoading(false))
   }, [])
 
   // Called after successful login OR register verify
-  const saveUser = useCallback((tokenData) => {
-    const { access_token, role, full_name, user_id } = tokenData
-    localStorage.setItem('token', access_token)
-    const u = { id: user_id, role, full_name }
-    localStorage.setItem('user', JSON.stringify(u))
+  const saveUser = useCallback((userData) => {
+    const u = {
+      id: userData.id ?? userData.user_id,
+      email: userData.email,
+      role: userData.role,
+      full_name: userData.full_name,
+    }
     setUser(u)
     return u
   }, [])
 
-  const logout = useCallback(() => {
-    localStorage.clear()
+  const logout = useCallback(async () => {
+    try { await api.post('/auth/logout') } catch {}
     setUser(null)
     window.location.href = '/login'
   }, [])

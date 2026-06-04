@@ -6,13 +6,7 @@ const api = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 30000,
-  withCredentials: false,
-})
-
-api.interceptors.request.use(cfg => {
-  const token = localStorage.getItem('token')
-  if (token) cfg.headers['Authorization'] = `Bearer ${token}`
-  return cfg
+  withCredentials: true,
 })
 
 api.interceptors.response.use(
@@ -21,7 +15,6 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       const isAuthRoute = err.config?.url?.includes('/auth/')
       if (!isAuthRoute) {
-        localStorage.clear()
         window.location.href = '/login'
       }
     }

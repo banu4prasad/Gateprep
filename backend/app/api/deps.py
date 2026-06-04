@@ -1,20 +1,23 @@
 from fastapi import Depends, HTTPException, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.models import User, UserRole
 
-bearer_scheme = HTTPBearer()
-
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    request: Request,
     db: Session = Depends(get_db)
 ) -> User:
-    token = credentials.credentials
+    token = request.cookies.get(settings.AUTH_COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     payload = decode_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+    if payload.get("auth") != "cookie":
+        raise HTTPException(status_code=401, detail="Invalid token")
 
     user_id = payload.get("sub")
     session_id = payload.get("sid")

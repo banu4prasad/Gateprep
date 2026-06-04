@@ -1,6 +1,6 @@
 import json
 import os
-import shutil
+import uuid
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.concurrency import run_in_threadpool
@@ -17,6 +17,9 @@ from app.services.cloudinary_service import upload_image, delete_image
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
+MAX_PDF_UPLOAD_SIZE_BYTES = 1 * 1024 * 1024 * 1024
+PDF_UPLOAD_CHUNK_SIZE_BYTES = 8192
+
 PDF_IMPORT_BLOCKING_WARNINGS = {
     "missing_question_text",
     "missing_answer",
@@ -28,6 +31,24 @@ PDF_IMPORT_BLOCKING_WARNINGS = {
     "invalid_choice_answer",
     "ambiguous_answer_key",
 }
+
+
+async def _save_pdf_upload(pdf_file: UploadFile, path: str) -> None:
+    file_size = 0
+
+    try:
+        with open(path, "wb") as f:
+            while chunk := await pdf_file.read(PDF_UPLOAD_CHUNK_SIZE_BYTES):
+                file_size += len(chunk)
+                if file_size > MAX_PDF_UPLOAD_SIZE_BYTES:
+                    raise HTTPException(status_code=413, detail="File too large")
+                f.write(chunk)
+    except HTTPException:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        raise
 
 
 def _pdf_blocking_warnings(question: dict) -> list[str]:
@@ -162,11 +183,11 @@ async def create_test(
     if pdf_file and pdf_file.filename:
         if not pdf_file.filename.lower().endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Only PDF files accepted")
-        safe = f"test_{title[:30].replace(' ', '_')}_{pdf_file.filename}"
-        path = os.path.join(settings.UPLOAD_DIR, safe)
-        with open(path, "wb") as f:
-            shutil.copyfileobj(pdf_file.file, f)
-        pdf_filename = safe
+        safe_filename = f"{uuid.uuid4().hex}.pdf"
+        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+        path = os.path.join(settings.UPLOAD_DIR, safe_filename)
+        await _save_pdf_upload(pdf_file, path)
+        pdf_filename = safe_filename
         extracted = await run_in_threadpool(extract_questions_from_pdf, path)
         if not extracted:
             try:
