@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -10,8 +11,9 @@ from app.core.security import (
     create_access_token,
     decode_token,
     generate_session_id,
+    hash_password_reset_token,
 )
-from app.models.models import User, UserRole
+from app.models.models import PasswordResetToken, User, UserRole
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -26,11 +28,25 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str
+
 class AuthUserResponse(BaseModel):
     id: int
     email: EmailStr
     role: str
     full_name: str
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _auth_cookie_max_age_seconds() -> int:
@@ -136,6 +152,51 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 
     _clear_auth_cookie(response)
     return {"message": "Logged out"}
+
+
+# ── Reset Password ────────────────────────────────────────────────
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+    token = payload.token.strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    if len(payload.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    reset_token = (
+        db.query(PasswordResetToken)
+        .filter(PasswordResetToken.token_hash == hash_password_reset_token(token))
+        .first()
+    )
+    now = _utcnow()
+    if (
+        not reset_token
+        or reset_token.used_at is not None
+        or _as_utc(reset_token.expires_at) < now
+    ):
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    user.hashed_password = hash_password(payload.password)
+    user.current_session_id = None
+    user.current_ip = None
+    reset_token.used_at = now
+    (
+        db.query(PasswordResetToken)
+        .filter(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.id != reset_token.id,
+        )
+        .update({PasswordResetToken.used_at: now}, synchronize_session=False)
+    )
+    db.commit()
+
+    return {"message": "Password reset successful. Please sign in."}
 
 
 # ── Me ────────────────────────────────────────────────────────────

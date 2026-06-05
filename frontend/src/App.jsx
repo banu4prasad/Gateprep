@@ -7,6 +7,8 @@ import Spinner from './components/shared/Spinner'
 
 const LoginPage        = lazy(() => import('./pages/Login'))
 const RegisterPage     = lazy(() => import('./pages/Register'))
+const ForgotPassword   = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword    = lazy(() => import('./pages/ResetPassword'))
 const PendingPage      = lazy(() => import('./pages/Pending'))
 
 const AdminDashboard   = lazy(() => import('./pages/AdminDashboard'))
@@ -33,6 +35,8 @@ export default function App() {
             {/* Public */}
             <Route path="/login"    element={<GuestRoute><LoginPage /></GuestRoute>} />
             <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pending"  element={<PendingPage />} />
 
             {/* Admin */}

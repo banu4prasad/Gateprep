@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import hashlib
 import secrets
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -16,6 +17,12 @@ def verify_password(plain: str, hashed: str) -> bool:
 def generate_session_id() -> str:
     """Unique session ID stored in DB — invalidates old sessions."""
     return secrets.token_hex(32)
+
+def generate_password_reset_token() -> str:
+    return secrets.token_urlsafe(48)
+
+def hash_password_reset_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()

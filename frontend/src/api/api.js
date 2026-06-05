@@ -4,6 +4,7 @@ import api from './client'
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login:    (data) => api.post('/auth/login', data),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
   logout:   ()     => api.post('/auth/logout'),
   me:       ()     => api.get('/auth/me'),
 }
@@ -13,6 +14,7 @@ export const adminAPI = {
   getUsers:         ()              => api.get('/admin/users'),
   updateRole:       (id, role)      => api.patch(`/admin/users/${id}/role`, { role }),
   toggleStatus:     (id)            => api.patch(`/admin/users/${id}/status`),
+  createPasswordReset: (id)         => api.post(`/admin/users/${id}/password-reset`),
   getTests:         ()              => api.get('/admin/tests'),
   getTest:          (id)            => api.get(`/admin/tests/${id}`),
   createTest:       (form)          => api.post('/admin/tests', form, { headers: { 'Content-Type': 'multipart/form-data' } }),

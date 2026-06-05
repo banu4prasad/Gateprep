@@ -31,8 +31,8 @@ def get_current_user(
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    # Single session check — token must match current session
-    if session_id and user.current_session_id and session_id != user.current_session_id:
+    # Single session check — token must match the currently stored session.
+    if not session_id or user.current_session_id != session_id:
         raise HTTPException(
             status_code=401,
             detail="Session expired. You logged in from another device."

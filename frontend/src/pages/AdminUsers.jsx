@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/shared/Layout'
 import { adminAPI } from '../api/api'
 import toast from 'react-hot-toast'
-import { Users, Search, ShieldCheck, UserX, UserCheck, RefreshCw } from 'lucide-react'
+import { Copy, KeyRound, Search, UserX, UserCheck, RefreshCw, X } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
-import clsx from 'clsx'
 
 const ROLES = ['admin', 'aspirant', 'user']
 const roleStyle = { admin: 'badge-blue', aspirant: 'badge-green', user: 'badge-amber' }
@@ -14,6 +13,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [updating, setUpdating] = useState({})
+  const [resetLink, setResetLink] = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -44,6 +44,30 @@ export default function AdminUsers() {
       toast.error('Failed')
     } finally {
       setUpdating(u => ({ ...u, [userId]: false }))
+    }
+  }
+
+  const createResetLink = async (userId) => {
+    const key = `reset-${userId}`
+    setUpdating(u => ({ ...u, [key]: true }))
+    try {
+      const res = await adminAPI.createPasswordReset(userId)
+      setResetLink(res.data)
+      toast.success('Reset link created')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to create reset link')
+    } finally {
+      setUpdating(u => ({ ...u, [key]: false }))
+    }
+  }
+
+  const copyResetLink = async () => {
+    if (!resetLink?.reset_url) return
+    try {
+      await navigator.clipboard.writeText(resetLink.reset_url)
+      toast.success('Reset link copied')
+    } catch {
+      toast.error('Could not copy link')
     }
   }
 
@@ -138,6 +162,13 @@ export default function AdminUsers() {
                                 {u.is_active ? 'Disable' : 'Enable'}
                               </button>
                             )}
+                            <button
+                              onClick={() => createResetLink(u.id)}
+                              disabled={updating[`reset-${u.id}`]}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-medium hover:bg-sky-500/20 transition-colors disabled:opacity-50"
+                            >
+                              {updating[`reset-${u.id}`] ? <Spinner size={13} /> : <KeyRound size={13} />} Reset
+                            </button>
                           </>
                         )}
                       </div>
@@ -149,6 +180,52 @@ export default function AdminUsers() {
                 )}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {resetLink && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="gate-card w-full max-w-lg p-5 animate-slide-up">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="text-lg font-bold text-white">Password Reset Link</h2>
+                  <p className="text-sm text-slate-400 mt-1">{resetLink.full_name} · {resetLink.email}</p>
+                </div>
+                <button
+                  onClick={() => setResetLink(null)}
+                  className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <label className="label">Reset Link</label>
+              <input
+                value={resetLink.reset_url}
+                readOnly
+                className="input font-mono text-xs"
+                aria-label="Password reset link"
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Expires {new Date(resetLink.expires_at).toLocaleString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </p>
+
+              <div className="flex items-center justify-end gap-3 mt-5">
+                <button onClick={() => setResetLink(null)} className="btn-ghost">
+                  Close
+                </button>
+                <button onClick={copyResetLink} className="btn-primary flex items-center gap-2">
+                  <Copy size={15} /> Copy Link
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

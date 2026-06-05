@@ -76,6 +76,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
     CORS_ORIGINS: str = "http://localhost:5173,https://gateprep6901.vercel.app"
+    FRONTEND_URL: str = "http://localhost:5173"
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 30
     UPLOAD_DIR: str = "uploads"
     AUTH_COOKIE_NAME: str = "access_token"
     AUTH_COOKIE_SECURE: bool = True

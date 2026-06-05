@@ -82,7 +82,12 @@ export default function LoginPage() {
                   placeholder="you@example.com" className="input" autoFocus />
               </div>
               <div>
-                <label className="label">Password</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="label mb-0">Password</label>
+                  <Link to="/forgot-password" className="text-xs text-sky-400 hover:text-sky-300 font-medium">
+                    Forgot password?
+                  </Link>
+                </div>
                 <div className="relative">
                   <input type={show ? 'text' : 'password'} required value={form.password}
                     onChange={handle('password')} placeholder="••••••••" className="input pr-10" />

@@ -44,6 +44,26 @@ class User(Base):
     practice_counters = relationship("PracticeAttemptCounter", back_populates="user", cascade="all, delete-orphan")
     bookmarks = relationship("Bookmark", back_populates="user", cascade="all, delete-orphan")
     checklist_items = relationship("ChecklistProgress", back_populates="user", cascade="all, delete-orphan")
+    password_reset_tokens = relationship(
+        "PasswordResetToken",
+        foreign_keys="PasswordResetToken.user_id",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String(64), unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User", foreign_keys=[user_id], back_populates="password_reset_tokens")
+    creator = relationship("User", foreign_keys=[created_by])
 
 
 class TestSeries(Base):

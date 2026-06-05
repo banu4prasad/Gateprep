@@ -1,7 +1,9 @@
 import json
 import os
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
+from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import func
@@ -9,8 +11,9 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from app.core.database import get_db
 from app.core.config import settings
+from app.core.security import generate_password_reset_token, hash_password_reset_token
 from app.api.deps import require_admin
-from app.models.models import User, Test, Question, QuestionType, UserRole
+from app.models.models import PasswordResetToken, User, Test, Question, QuestionType, UserRole
 from app.services.answer_utils import is_valid_nat_answer, normalize_question_type, split_answer_tokens
 from app.services.pdf_service import extract_questions_from_pdf
 from app.services.cloudinary_service import upload_image, delete_image
@@ -31,6 +34,14 @@ PDF_IMPORT_BLOCKING_WARNINGS = {
     "invalid_choice_answer",
     "ambiguous_answer_key",
 }
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _password_reset_url(token: str) -> str:
+    return f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?{urlencode({'token': token})}"
 
 
 async def _save_pdf_upload(pdf_file: UploadFile, path: str) -> None:
@@ -123,6 +134,42 @@ def toggle_status(user_id: int, db: Session = Depends(get_db), _=Depends(require
     user.is_active = not user.is_active
     db.commit()
     return {"message": f"User {'activated' if user.is_active else 'deactivated'}", "is_active": user.is_active}
+
+
+@router.post("/users/{user_id}/password-reset")
+def create_password_reset_link(user_id: int, db: Session = Depends(get_db), current=Depends(require_admin)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    now = _utcnow()
+    (
+        db.query(PasswordResetToken)
+        .filter(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used_at.is_(None),
+        )
+        .update({PasswordResetToken.used_at: now}, synchronize_session=False)
+    )
+
+    token = generate_password_reset_token()
+    expires_at = now + timedelta(minutes=settings.PASSWORD_RESET_EXPIRE_MINUTES)
+    reset_token = PasswordResetToken(
+        user_id=user.id,
+        created_by=current.id,
+        token_hash=hash_password_reset_token(token),
+        expires_at=expires_at,
+    )
+    db.add(reset_token)
+    db.commit()
+
+    return {
+        "user_id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "reset_url": _password_reset_url(token),
+        "expires_at": expires_at,
+    }
 
 
 # ── Tests ─────────────────────────────────────────────────────────
