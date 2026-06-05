@@ -454,7 +454,7 @@ export default function TestEngine() {
   if (!q) return null
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden select-none"
+    <div className="theme-light-surface h-screen flex flex-col overflow-hidden select-none"
          style={{ background: 'var(--bg)' }}
          onCopy={e => e.preventDefault()}
          onCut={e => e.preventDefault()}>
@@ -498,7 +498,7 @@ export default function TestEngine() {
       )}
 
       {/* ── Top bar ────────────────────────────────────────────── */}
-      <div className="flex items-center px-4 h-12 border-b flex-shrink-0"
+      <div className="app-header flex items-center px-4 h-12 border-b flex-shrink-0"
            style={{ background: 'var(--header-bg)', borderColor: 'var(--border)' }}>
         <div className="flex items-center gap-2 mr-3 flex-shrink-0">
           <div className="w-6 h-6 rounded bg-sky-600 flex items-center justify-center">
@@ -527,7 +527,7 @@ export default function TestEngine() {
           {/* Attempt count */}
           {attemptNumber && (
             <span className="text-xs font-medium hidden sm:block"
-                  style={{ color: 'var(--text-muted)' }}>
+                  style={{ color: 'var(--header-muted)' }}>
               Attempt {attemptNumber}/{maxAttempts}
             </span>
           )}
@@ -785,9 +785,9 @@ export default function TestEngine() {
             <div className="space-y-1.5 mb-5 text-sm">
               {[
                 ['Total Questions', questions.length, 'var(--text)'],
-                ['Answered',        answered,         '#51cf66'],
-                ['Not Answered',    notAnswered,      '#ff6b6b'],
-                ['Marked',          marked.size,      '#845ef7'],
+                ['Answered',        answered,         'var(--success-text)'],
+                ['Not Answered',    notAnswered,      'var(--danger-text)'],
+                ['Marked',          marked.size,      'var(--marked-text)'],
               ].map(([label, val, color]) => (
                 <div key={label} className="flex justify-between py-1.5 border-b"
                      style={{ borderColor: 'var(--border)' }}>

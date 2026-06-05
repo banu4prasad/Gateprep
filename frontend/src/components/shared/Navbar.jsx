@@ -28,7 +28,7 @@ export default function Navbar() {
   const links = isAdmin ? adminLinks : aspirantLinks
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 gap-4 border-b"
+    <nav className="app-header fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 gap-4 border-b"
          style={{ background: 'var(--header-bg)', borderColor: 'var(--border)', backdropFilter: 'blur(8px)' }}>
       <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 mr-4 flex-shrink-0">
         <div className="w-7 h-7 rounded bg-sky-600 flex items-center justify-center">

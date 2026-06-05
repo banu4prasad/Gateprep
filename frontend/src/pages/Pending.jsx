@@ -4,7 +4,7 @@ import { Clock, LogOut } from 'lucide-react'
 export default function PendingPage() {
   const { user, logout } = useAuth()
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg)' }}>
+    <div className="theme-light-surface min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg)' }}>
       <div className="text-center max-w-md animate-slide-up">
         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-6">
           <Clock size={28} className="text-amber-400" />

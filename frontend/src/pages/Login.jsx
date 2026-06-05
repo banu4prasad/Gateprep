@@ -55,14 +55,14 @@ export default function LoginPage() {
           {[['MCQ', 'Single correct'], ['MSQ', 'Multi-select'], ['NAT', 'Numerical']].map(([t, d]) => (
             <div key={t} className="p-3 rounded border border-slate-700 bg-slate-800/40">
               <p className="font-bold text-sky-400">{t}</p>
-              <p className="text-slate-500 text-xs mt-0.5">{d}</p>
+              <p className="text-slate-300 text-xs mt-0.5">{d}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="theme-light-surface flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md animate-slide-up">
           <div className="lg:hidden flex items-center gap-2 mb-8">
             <div className="w-8 h-8 rounded bg-sky-600 flex items-center justify-center">

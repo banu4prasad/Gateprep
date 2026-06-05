@@ -11,10 +11,18 @@
     --border: #2d3748;
     --text: #e2e8f0;
     --text-muted: #94a3b8;
-    --brand: #0ea5e9;
-    --brand-light: #38bdf8;
+    --brand: #38bdf8;
+    --brand-light: #7dd3fc;
     --header-bg: #0d0d1a;
+    --header-text: #ffffff;
+    --header-muted: #94a3b8;
+    --header-accent: #38bdf8;
     --sidebar-bg: #0f3460;
+    --success-text: #51cf66;
+    --danger-text: #f87171;
+    --warning-text: #f59e0b;
+    --info-text: #38bdf8;
+    --marked-text: #a78bfa;
   }
 
   [data-theme="light"] {
@@ -23,11 +31,19 @@
     --bg-panel: #e8f0fe;
     --border: #cbd5e0;
     --text: #1a202c;
-    --text-muted: #718096;
-    --brand: #0284c7;
-    --brand-light: #0ea5e9;
+    --text-muted: #475569;
+    --brand: #0369a1;
+    --brand-light: #075985;
     --header-bg: #1e3a5f;
+    --header-text: #ffffff;
+    --header-muted: #cbd5e1;
+    --header-accent: #7dd3fc;
     --sidebar-bg: #dbeafe;
+    --success-text: #166534;
+    --danger-text: #b91c1c;
+    --warning-text: #92400e;
+    --info-text: #0369a1;
+    --marked-text: #7e22ce;
   }
 
   * { box-sizing: border-box; }
@@ -73,13 +89,13 @@
     @apply w-9 h-9 rounded flex items-center justify-center text-xs font-semibold cursor-pointer border-2 transition-all select-none;
   }
   .q-dot-not-visited  { @apply bg-gray-200 border-gray-300 text-gray-700; }
-  .q-dot-not-answered { background: #ff6b6b; border-color: #ff5252; @apply text-white; }
-  .q-dot-answered     { background: #51cf66; border-color: #40c057; @apply text-white; }
-  .q-dot-marked       { background: #845ef7; border-color: #7048e8; @apply text-white; }
-  .q-dot-answered-marked { background: #845ef7; border-color: #7048e8; @apply text-white relative; }
+  .q-dot-not-answered { background: #b91c1c; border-color: #991b1b; @apply text-white; }
+  .q-dot-answered     { background: #15803d; border-color: #166534; @apply text-white; }
+  .q-dot-marked       { background: #7e22ce; border-color: #6b21a8; @apply text-white; }
+  .q-dot-answered-marked { background: #7e22ce; border-color: #6b21a8; @apply text-white relative; }
 
   /* Buttons */
-  .btn-primary { @apply bg-sky-600 hover:bg-sky-700 text-white font-medium px-5 py-2 rounded transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply bg-sky-700 hover:bg-sky-800 text-white font-medium px-5 py-2 rounded transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed; }
   .btn-ghost {
     @apply font-medium px-5 py-2 rounded transition-all active:scale-95;
     background: var(--bg-panel);
@@ -88,7 +104,7 @@
   }
   .btn-ghost:hover { opacity: 0.85; }
   .btn-danger  { @apply bg-red-600 hover:bg-red-700 text-white font-medium px-5 py-2 rounded transition-all active:scale-95; }
-  .btn-success { @apply bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2 rounded transition-all active:scale-95; }
+  .btn-success { @apply bg-green-700 hover:bg-green-800 text-white font-medium px-5 py-2 rounded transition-all active:scale-95; }
 
   /* Form inputs */
   .input {
@@ -140,9 +156,48 @@
 .theme-bg-panel { background: var(--bg-panel); }
 .theme-border { border-color: var(--border); }
 .theme-hover-bg:hover { background: rgba(148, 163, 184, 0.08); }
+.app-header { color: var(--header-text); }
+.app-header .text-white,
+.app-header .hover\:text-white:hover {
+  color: var(--header-text) !important;
+}
+.app-header .text-slate-200,
+.app-header .text-slate-300,
+.app-header .text-slate-400,
+.app-header .text-slate-500,
+.app-header .hover\:text-slate-200:hover,
+.app-header .hover\:text-slate-300:hover {
+  color: var(--header-muted) !important;
+}
+.app-header .text-sky-400 {
+  color: var(--header-accent) !important;
+}
+.app-header .subject-tab { color: var(--header-muted); }
+.app-header .subject-tab.active {
+  border-color: var(--header-accent);
+  color: var(--header-accent);
+}
+
+.bg-sky-600 { background-color: #0369a1 !important; }
+.hover\:bg-sky-600:hover { background-color: #075985 !important; }
+.bg-amber-500 { background-color: #92400e !important; }
 
 [data-theme="light"] .theme-hover-bg:hover {
   background: rgba(2, 132, 199, 0.08);
+}
+
+[data-theme="dark"] main .text-slate-500,
+[data-theme="dark"] main .text-slate-600,
+[data-theme="dark"] main .text-slate-700,
+[data-theme="dark"] main .text-green-400\/50,
+[data-theme="dark"] main .text-green-400\/70,
+[data-theme="dark"] main .text-sky-400\/70,
+[data-theme="dark"] main .text-sky-400\/80 {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] main .text-orange-500 {
+  color: #fb923c !important;
 }
 
 /* Light theme compatibility for older dark-mode Tailwind utilities in page content. */
@@ -166,6 +221,87 @@
 [data-theme="light"] main .hover\:text-slate-200:hover,
 [data-theme="light"] main .hover\:text-slate-300:hover {
   color: var(--text) !important;
+}
+
+[data-theme="light"] .theme-light-surface .text-white:not([class*="bg-"]) {
+  color: var(--text) !important;
+}
+
+[data-theme="light"] .theme-light-surface .text-slate-200,
+[data-theme="light"] .theme-light-surface .text-slate-300 {
+  color: var(--text) !important;
+}
+
+[data-theme="light"] .theme-light-surface .text-slate-400,
+[data-theme="light"] .theme-light-surface .text-slate-500,
+[data-theme="light"] .theme-light-surface .text-slate-600,
+[data-theme="light"] .theme-light-surface .text-slate-700 {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="light"] .theme-light-surface .hover\:text-white:hover,
+[data-theme="light"] .theme-light-surface .hover\:text-slate-200:hover,
+[data-theme="light"] .theme-light-surface .hover\:text-slate-300:hover {
+  color: var(--text) !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .text-sky-300,
+[data-theme="light"] :is(main, .theme-light-surface) .text-sky-400,
+[data-theme="light"] :is(main, .theme-light-surface) .text-sky-400\/70,
+[data-theme="light"] :is(main, .theme-light-surface) .text-sky-400\/80,
+[data-theme="light"] :is(main, .theme-light-surface) .text-sky-500 {
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .hover\:text-sky-300:hover,
+[data-theme="light"] :is(main, .theme-light-surface) .hover\:text-sky-400:hover {
+  color: #075985 !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .text-green-300,
+[data-theme="light"] :is(main, .theme-light-surface) .text-green-400,
+[data-theme="light"] :is(main, .theme-light-surface) .text-green-400\/50,
+[data-theme="light"] :is(main, .theme-light-surface) .text-green-400\/70 {
+  color: #166534 !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .hover\:text-green-300:hover,
+[data-theme="light"] :is(main, .theme-light-surface) .hover\:text-green-400:hover {
+  color: #14532d !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .text-amber-300,
+[data-theme="light"] :is(main, .theme-light-surface) .text-amber-400 {
+  color: #92400e !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .hover\:text-amber-300:hover,
+[data-theme="light"] :is(main, .theme-light-surface) .hover\:text-amber-400:hover {
+  color: #78350f !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .text-red-300,
+[data-theme="light"] :is(main, .theme-light-surface) .text-red-400 {
+  color: #b91c1c !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .hover\:text-red-300:hover,
+[data-theme="light"] :is(main, .theme-light-surface) .hover\:text-red-400:hover {
+  color: #991b1b !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .text-purple-400 {
+  color: #7e22ce !important;
+}
+
+[data-theme="light"] :is(main, .theme-light-surface) .text-orange-400,
+[data-theme="light"] :is(main, .theme-light-surface) .text-orange-500 {
+  color: #9a3412 !important;
+}
+
+[data-theme="light"] .app-header .text-red-400,
+[data-theme="light"] .app-header .hover\:text-red-400:hover {
+  color: #fca5a5 !important;
 }
 
 [data-theme="light"] main .border-slate-600,
@@ -206,6 +342,6 @@
 }
 .calc-btn:hover { opacity: 0.85; }
 .calc-btn-op { background: #1e4080; color: white; }
-.calc-btn-eq { background: #16a34a; color: white; @apply text-lg; }
+.calc-btn-eq { background: #15803d; color: white; @apply text-lg; }
 .calc-btn-clear { background: #dc2626; color: white; }
 .calc-btn-backspace { background: #92400e; color: white; }

@@ -36,7 +36,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
+    <div className="theme-light-surface min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-md animate-slide-up">
         <div className="flex items-center gap-2 mb-8">
           <div className="w-8 h-8 rounded bg-sky-600 flex items-center justify-center">

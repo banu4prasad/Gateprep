@@ -11,7 +11,7 @@ import clsx from 'clsx'
 function ScoreRing({ pct }) {
   const r = 48, c = 2 * Math.PI * r
   const filled = (pct / 100) * c
-  const color = pct >= 75 ? '#51cf66' : pct >= 50 ? '#f59e0b' : '#ff6b6b'
+  const color = pct >= 75 ? 'var(--success-text)' : pct >= 50 ? 'var(--warning-text)' : 'var(--danger-text)'
   return (
     <svg width="120" height="120" viewBox="0 0 120 120">
       <circle cx="60" cy="60" r={r} fill="none" stroke="var(--border)" strokeWidth="10"/>
@@ -359,8 +359,8 @@ export default function ResultPage() {
           </h3>
           <div className="space-y-2">
             {[
-              { label: 'Your Score', val: result.score?.toFixed(1), pct: Math.round(result.percentage), color: '#0ea5e9' },
-              ...(result.topper ? [{ label: `Topper (${result.topper.full_name})`, val: result.topper.score?.toFixed(1), pct: Math.round(result.topper.percentage), color: '#51cf66' }] : []),
+              { label: 'Your Score', val: result.score?.toFixed(1), pct: Math.round(result.percentage), color: 'var(--info-text)' },
+              ...(result.topper ? [{ label: `Topper (${result.topper.full_name})`, val: result.topper.score?.toFixed(1), pct: Math.round(result.topper.percentage), color: 'var(--success-text)' }] : []),
             ].map(({ label, val, pct: p, color }) => (
               <div key={label}>
                 <div className="flex justify-between text-xs mb-1">

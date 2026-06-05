@@ -29,6 +29,35 @@ function normalizeMath(math) {
     .replace(/(^|[^\\])\bOmega\b/g, '$1\\Omega')
 }
 
+function mathAriaLabel(math) {
+  const label = normalizeMath(math)
+    .replace(/\\frac/g, ' fraction ')
+    .replace(/\\sqrt/g, ' square root ')
+    .replace(/\\sum/g, ' summation ')
+    .replace(/\\int/g, ' integral ')
+    .replace(/\\log/g, ' log ')
+    .replace(/\\ln/g, ' natural log ')
+    .replace(/\\sin/g, ' sine ')
+    .replace(/\\cos/g, ' cosine ')
+    .replace(/\\tan/g, ' tangent ')
+    .replace(/\\Theta/g, ' Theta ')
+    .replace(/\\Omega/g, ' Omega ')
+    .replace(/\\alpha/g, ' alpha ')
+    .replace(/\\beta/g, ' beta ')
+    .replace(/\\gamma/g, ' gamma ')
+    .replace(/\\theta/g, ' theta ')
+    .replace(/\\pi/g, ' pi ')
+    .replace(/\\infty/g, ' infinity ')
+    .replace(/\^/g, ' to the power of ')
+    .replace(/_/g, ' subscript ')
+    .replace(/\\/g, ' ')
+    .replace(/[{}]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return `Math expression: ${label}`
+}
+
 function isStandaloneMath(text) {
   const trimmed = text.trim()
   if (!RAW_LATEX_HINT.test(trimmed)) return false
@@ -67,28 +96,36 @@ function splitLegacyMath(text) {
 }
 
 function SafeInlineMath({ math }) {
+  const ariaLabel = mathAriaLabel(math)
+
   try {
     return (
-      <InlineMath
-        math={normalizeMath(math)}
-        renderError={() => <span>{math}</span>}
-      />
+      <span role="math" aria-label={ariaLabel}>
+        <InlineMath
+          math={normalizeMath(math)}
+          renderError={() => <span>{math}</span>}
+        />
+      </span>
     )
   } catch {
-    return <span>{math}</span>
+    return <span role="math" aria-label={ariaLabel}>{math}</span>
   }
 }
 
 function SafeBlockMath({ math }) {
+  const ariaLabel = mathAriaLabel(math)
+
   try {
     return (
-      <BlockMath
-        math={normalizeMath(math)}
-        renderError={() => <span>{math}</span>}
-      />
+      <div role="math" aria-label={ariaLabel}>
+        <BlockMath
+          math={normalizeMath(math)}
+          renderError={() => <span>{math}</span>}
+        />
+      </div>
     )
   } catch {
-    return <span>{math}</span>
+    return <div role="math" aria-label={ariaLabel}>{math}</div>
   }
 }
 
