@@ -291,7 +291,7 @@ class QuestionIn(BaseModel):
             self.negative_marks = 0.0
         else:
             if not is_valid_nat_answer(self.correct_answer):
-                raise ValueError("NAT correct_answer must be a number or range like 41.5-42.5")
+                raise ValueError("NAT correct_answer must be a number or range like 41.5-42.5 or 41.5:42.5")
             self.options = []
             self.negative_marks = 0.0
 
@@ -372,7 +372,7 @@ class QuestionFileImport(BaseModel):
             self.negative_marks = 0.0
         else:
             if not is_valid_nat_answer(self.correct_answer):
-                raise ValueError("NAT correct_answer must be a number or range like 41.5-42.5")
+                raise ValueError("NAT correct_answer must be a number or range like 41.5-42.5 or 41.5:42.5")
             self.options = []
             self.negative_marks = 0.0
 

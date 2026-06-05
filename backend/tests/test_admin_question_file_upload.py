@@ -88,6 +88,38 @@ class AdminQuestionFileUploadTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_upload_questions_file_accepts_nat_colon_range(self):
+        payload = {
+            "questions": [
+                {
+                    "question_type": "nat",
+                    "question_text": "Probability that the slot is empty.",
+                    "options": [],
+                    "correct_answer": "0.44:0.45",
+                    "marks": 2,
+                    "negative_marks": 0,
+                    "order_index": 17,
+                }
+            ]
+        }
+
+        response = self.client.post(
+            f"/admin/tests/{self.test_id}/questions/upload-file",
+            files={"file": ("questions.json", json.dumps(payload), "application/json")},
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["imported_count"], 1)
+
+        db = self.SessionLocal()
+        try:
+            question = db.query(Question).one()
+            self.assertEqual(question.question_type, QuestionType.nat)
+            self.assertEqual(question.correct_answer, "0.44:0.45")
+            self.assertEqual(question.order_index, 17)
+        finally:
+            db.close()
+
     def test_upload_questions_file_rejects_invalid_questions_without_insert(self):
         payload = [
             {

@@ -34,6 +34,10 @@ app.include_router(checklist.router)
 if os.path.exists(settings.UPLOAD_DIR):
     app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "GATE Prep API", "health": "/health"}
+
 @app.on_event("startup")
 async def init_cache():
     try:
