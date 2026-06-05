@@ -52,6 +52,8 @@ export default function Navbar() {
 
       <div className="flex items-center gap-2 flex-shrink-0">
         <button onClick={toggle}
+          title="Toggle theme"
+          aria-label="Toggle theme"
           className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors">
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
@@ -60,6 +62,8 @@ export default function Navbar() {
           <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
         </div>
         <button onClick={logout}
+          title="Log out"
+          aria-label="Log out"
           className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
           <LogOut size={14} />
         </button>
