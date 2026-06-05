@@ -130,7 +130,7 @@ ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=480
 UPLOAD_DIR=/data/uploads
 CORS_ORIGINS=http://localhost:5173
-FRONTEND_URL=https://gateprep6901.vercel.app
+FRONTEND_URL=http://localhost:5173
 PASSWORD_RESET_EXPIRE_MINUTES=30
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAMESITE=none
@@ -154,7 +154,7 @@ VITE_API_URL=https://banu4prasad-gateprep.hf.space
 For production CORS, set this in the Hugging Face backend environment:
 
 ```
-CORS_ORIGINS=https://gateprep6901.vercel.app,http://localhost:5173
+CORS_ORIGINS=http://localhost:5173
 AUTH_COOKIE_SECURE=true
 AUTH_COOKIE_SAMESITE=none
 ```
