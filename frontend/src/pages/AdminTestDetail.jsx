@@ -124,19 +124,21 @@ function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
     ]
   }, null, 2)
 
+  const extractQuestions = (parsed) => {
+    if (Array.isArray(parsed)) return parsed
+    if (parsed?.questions && Array.isArray(parsed.questions)) return parsed.questions
+    throw new Error('JSON root must be an array or an object with a "questions" array')
+  }
+
   const validate = (val) => {
     setError('')
     setPreview(null)
     if (!val.trim()) return
     try {
       const parsed = JSON.parse(val)
-      if (!parsed.questions || !Array.isArray(parsed.questions)) {
-        setError('JSON must have a "questions" array')
-        return
-      }
-      setPreview(parsed.questions)
+      setPreview(extractQuestions(parsed))
     } catch (e) {
-      setError('Invalid JSON: ' + e.message)
+      setError(e instanceof SyntaxError ? 'Invalid JSON: ' + e.message : e.message)
     }
   }
 
@@ -210,12 +212,15 @@ function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
   const submit = async () => {
     if (!preview || preview.length === 0) { toast.error('No valid questions to upload'); return }
     setLoading(true)
+    setError('')
     try {
       await onAdd(preview)
       toast.success(`${preview.length} questions added!`)
       onClose()
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to add questions')
+      const message = formatServerDetail(err.response?.data?.detail) || 'Failed to add questions'
+      setError(message)
+      toast.error(message)
     } finally { setLoading(false) }
   }
 
@@ -226,41 +231,10 @@ function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
         <button onClick={onClose} className="text-slate-500 hover:text-slate-300"><X size={16}/></button>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2">
-        <button onClick={() => fileRef.current?.click()} className="btn-ghost flex items-center gap-2 text-sm py-2">
-          <Upload size={14}/> Load JSON File
-        </button>
-        <button onClick={loadSample} className="btn-ghost flex items-center gap-2 text-sm py-2">
-          <FileJson size={14}/> Load Sample
-        </button>
-        <input type="file" accept=".json" ref={fileRef} className="hidden" onChange={loadFile} />
-      </div>
-
-      {/* JSON format hint */}
-      <div className="px-3 py-2 rounded-lg bg-slate-800/60 border border-slate-700/50 text-xs text-slate-500">
-        Format: <span className="text-slate-400 font-mono">{"{ \"questions\": [ { question_type, question_text, options, correct_answer, marks, negative_marks } ] }"}</span>
-        <br/>
-        question_type: <span className="text-sky-400">mcq</span> / <span className="text-amber-400">msq</span> / <span className="text-green-400">nat</span> &nbsp;·&nbsp;
-        correct_answer: <span className="text-sky-400">A</span> or <span className="text-amber-400">A,C</span> or <span className="text-green-400">42</span>
-      </div>
-
-      {/* Text area */}
-      <div>
-        <label className="label">Paste JSON here</label>
-        <textarea
-          className="input resize-none font-mono text-xs"
-          rows={10}
-          value={text}
-          onChange={e => handleChange(e.target.value)}
-          placeholder={'{\n  "questions": [\n    {\n      "question_type": "mcq",\n      "question_text": "Your question here?",\n      "options": ["A text", "B text", "C text", "D text"],\n      "correct_answer": "B",\n      "marks": 1,\n      "negative_marks": 0.33\n    }\n  ]\n}'}
-        />
-      </div>
-
       {/* Direct file upload */}
       <div className="px-3 py-3 rounded-lg bg-slate-800/50 border border-slate-700/60 space-y-3">
         <div>
-          <label className="label">JSON file upload</label>
+          <label className="label">Upload JSON file directly</label>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               ref={uploadFileRef}
@@ -289,6 +263,37 @@ function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
             {fileError}
           </div>
         )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2">
+        <button onClick={() => fileRef.current?.click()} className="btn-ghost flex items-center gap-2 text-sm py-2">
+          <Upload size={14}/> Load File into Editor
+        </button>
+        <button onClick={loadSample} className="btn-ghost flex items-center gap-2 text-sm py-2">
+          <FileJson size={14}/> Load Sample
+        </button>
+        <input type="file" accept=".json" ref={fileRef} className="hidden" onChange={loadFile} />
+      </div>
+
+      {/* JSON format hint */}
+      <div className="px-3 py-2 rounded-lg bg-slate-800/60 border border-slate-700/50 text-xs text-slate-500">
+        Format: <span className="text-slate-400 font-mono">{"{ \"questions\": [ { question_type, question_text, options, correct_answer, marks, negative_marks } ] }"}</span>
+        <br/>
+        question_type: <span className="text-sky-400">mcq</span> / <span className="text-amber-400">msq</span> / <span className="text-green-400">nat</span> &nbsp;·&nbsp;
+        correct_answer: <span className="text-sky-400">A</span> or <span className="text-amber-400">A,C</span> or <span className="text-green-400">42</span>
+      </div>
+
+      {/* Text area */}
+      <div>
+        <label className="label">Paste JSON here</label>
+        <textarea
+          className="input resize-none font-mono text-xs"
+          rows={10}
+          value={text}
+          onChange={e => handleChange(e.target.value)}
+          placeholder={'{\n  "questions": [\n    {\n      "question_type": "mcq",\n      "question_text": "Your question here?",\n      "options": ["A text", "B text", "C text", "D text"],\n      "correct_answer": "B",\n      "marks": 1,\n      "negative_marks": 0.33\n    }\n  ]\n}'}
+        />
       </div>
 
       {/* Error */}
@@ -412,25 +417,17 @@ export default function AdminTestDetail() {
   useEffect(load, [testId])
 
   const addQuestion = async (q) => {
-    try {
-      await adminAPI.addQuestions(testId, [q])
-      load()
-      setMode(null)
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to add question')
-    }
+    await adminAPI.addQuestions(testId, [q])
+    load()
+    setMode(null)
   }
 
   const addQuestionsJSON = async (qs) => {
-    try {
-      const CHUNK = 20
-      for (let i = 0; i < qs.length; i += CHUNK) {
-        await adminAPI.addQuestions(testId, qs.slice(i, i + CHUNK))
-      }
-      load()
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to upload questions')
+    const CHUNK = 20
+    for (let i = 0; i < qs.length; i += CHUNK) {
+      await adminAPI.addQuestions(testId, qs.slice(i, i + CHUNK))
     }
+    load()
   }
 
   const uploadQuestionsFile = async (file) => {
