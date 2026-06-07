@@ -47,7 +47,7 @@ export default function LeaderboardPage() {
           <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
             <Trophy size={26} className="text-amber-400"/>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{data.test_title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{data.test_title}</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">{data.total_participants} participant{data.total_participants !== 1 ? 's' : ''} · First attempt only</p>
           {data.current_user_rank && (
             <div className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-sky-500/10 border border-brand-500/20">
@@ -67,16 +67,16 @@ export default function LeaderboardPage() {
           <>
             {/* Top 3 podium */}
             {top3.length > 0 && (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {/* Reorder: 2nd, 1st, 3rd for podium effect */}
                 {[top3[1], top3[0], top3[2]].map((entry, podiumIdx) => {
                   if (!entry) return <div key={podiumIdx}/>
                   const actualRank = entry.rank
                   const m = MEDAL_COLORS[actualRank] || {}
-                  const heights = ['h-28', 'h-36', 'h-24']
+                  const heights = ['h-24 sm:h-28', 'h-28 sm:h-36', 'h-20 sm:h-24']
                   return (
                     <div key={entry.user_id} className={clsx(
-                      'gate-card border p-4 flex flex-col items-center justify-end text-center',
+                      'gate-card border p-2.5 sm:p-4 flex flex-col items-center justify-end text-center',
                       m.bg, heights[podiumIdx],
                       entry.is_current_user && 'ring-2 ring-brand-500/50'
                     )}>
@@ -94,15 +94,15 @@ export default function LeaderboardPage() {
             )}
 
             {/* Full table */}
-            <div className="gate-card overflow-hidden">
+            <div className="gate-card overflow-hidden overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-800">
-                    <th className="text-left px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider w-12">Rank</th>
-                    <th className="text-left px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">Name</th>
-                    <th className="text-right px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">Score</th>
-                    <th className="text-right px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">%</th>
-                    <th className="text-right px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider hidden sm:table-cell">Date</th>
+                    <th className="text-left px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider w-12">Rank</th>
+                    <th className="text-left px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">Name</th>
+                    <th className="text-right px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">Score</th>
+                    <th className="text-right px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">%</th>
+                    <th className="text-right px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider hidden sm:table-cell">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60">
@@ -113,12 +113,12 @@ export default function LeaderboardPage() {
                         'transition-colors',
                         entry.is_current_user ? 'bg-sky-500/5' : 'hover:bg-slate-100 dark:bg-slate-800/30'
                       )} style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 53px' }}>
-                        <td className="px-5 py-3.5">
+                        <td className="px-3 sm:px-5 py-3.5">
                           <div className="flex items-center justify-center w-7 h-7">
                             {m ? m.icon : <span className="text-slate-500 dark:text-slate-400 font-mono text-sm">#{entry.rank}</span>}
                           </div>
                         </td>
-                        <td className="px-5 py-3.5">
+                        <td className="px-3 sm:px-5 py-3.5">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
                               <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{entry.full_name[0]?.toUpperCase()}</span>
@@ -129,15 +129,15 @@ export default function LeaderboardPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5 text-right font-mono text-slate-600 dark:text-slate-300">
+                        <td className="px-3 sm:px-5 py-3.5 text-right font-mono text-slate-600 dark:text-slate-300">
                           {entry.score}/{entry.total_marks}
                         </td>
-                        <td className="px-5 py-3.5 text-right">
+                        <td className="px-3 sm:px-5 py-3.5 text-right">
                           <span className={clsx('font-semibold', entry.percentage >= 75 ? 'text-green-400' : entry.percentage >= 50 ? 'text-amber-400' : 'text-red-400')}>
                             {entry.percentage}%
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-right text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">
+                        <td className="px-3 sm:px-5 py-3.5 text-right text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">
                           {entry.submitted_at ? new Date(entry.submitted_at).toLocaleDateString('en-IN') : '-'}
                         </td>
                       </tr>

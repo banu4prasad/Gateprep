@@ -242,7 +242,7 @@ export default function AdminTests() {
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Tests</h1>
             <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{tests.length} total</p>
@@ -253,7 +253,7 @@ export default function AdminTests() {
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div className="flex gap-1 p-1 rounded-lg w-fit overflow-x-auto" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
           {[['all','All'], ['weekly_quiz','Weekly Quiz'], ['test_series','Test Series']].map(([v, l]) => (
             <button key={v} onClick={() => setFilter(v)}
               className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${

@@ -154,6 +154,7 @@ export default function TestEngine() {
   const [started, setStarted]             = useState(false)
   const [starting, setStarting]           = useState(false)
   const [accepted, setAccepted]           = useState(false)
+  const [showPalette, setShowPalette]     = useState(false)
 
   // ── Refs (stable, never cause re-renders) ─────────────────────
   const submitLockRef    = useRef(false)
@@ -499,10 +500,9 @@ export default function TestEngine() {
     [attempt?.started_at, test?.duration_minutes]
   )
 
-  const sidebar = useMemo(() => {
+  const sidebarContent = useMemo(() => {
     return (
-      <div className="w-52 border-l flex flex-col flex-shrink-0 overflow-y-auto"
-           style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)', contain: 'layout style paint' }}>
+      <>
         <div className="p-3 border-b text-center" style={{ borderColor: 'var(--border)' }}>
           <div className="w-9 h-9 rounded-full bg-sky-700 flex items-center justify-center mx-auto mb-1">
             <span className="text-slate-900 dark:text-white font-bold text-sm">U</span>
@@ -538,7 +538,7 @@ export default function TestEngine() {
                     : !visited.has(q2.id) ? 'not-visited'
                     : getQStatus(q2.id, q?.id, answers, marked)
                   return (
-                    <button key={q2.id} onClick={() => setCurrent(qIdx)}
+                    <button key={q2.id} onClick={() => { setCurrent(qIdx); setShowPalette(false) }}
                       className={STATUS_CLASS[status] || STATUS_CLASS['not-visited']}>
                       {qIdx + 1}
                     </button>
@@ -555,7 +555,7 @@ export default function TestEngine() {
             {submitting ? <Spinner size={12} /> : <Send size={12} />} Submit Test
           </button>
         </div>
-      </div>
+      </>
     )
   }, [answered, answers, marked, notAnswered, q?.id, questions, subjects, submitting, visited])
 
@@ -581,7 +581,7 @@ export default function TestEngine() {
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           {[
             ['Duration', `${test?.duration_minutes || 0} min`],
             ['Questions', test?.question_count || 0],
@@ -686,7 +686,7 @@ export default function TestEngine() {
       )}
 
       {/* ── Top bar ────────────────────────────────────────────── */}
-      <div className="app-header flex items-center px-4 h-12 border-b flex-shrink-0"
+      <div className="app-header flex items-center px-2 sm:px-4 h-12 border-b flex-shrink-0"
            style={{ background: 'var(--header-bg)', borderColor: 'var(--border)' }}>
         <div className="flex items-center gap-2 mr-3 flex-shrink-0">
           <div className="w-6 h-6 rounded bg-sky-600 flex items-center justify-center">
@@ -750,7 +750,7 @@ export default function TestEngine() {
       </div>
 
       {/* ── Question type info bar ─────────────────────────────── */}
-      <div className="px-4 py-1.5 text-xs border-b flex items-center gap-4 flex-shrink-0"
+      <div className="px-3 sm:px-4 py-1.5 text-xs border-b flex items-center flex-wrap gap-2 sm:gap-4 flex-shrink-0"
            style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
         <span style={{ color: 'var(--text-muted)' }}>
           Question Type:{' '}
@@ -872,35 +872,65 @@ export default function TestEngine() {
           </div>
 
           {/* Bottom action bar */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-t flex-shrink-0"
+          <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 border-t flex-shrink-0 gap-1"
                style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <button onClick={markAndNext}
-                className="flex items-center gap-1.5 px-3 py-2 rounded border text-xs font-medium"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2.5 sm:py-2 rounded border text-xs font-medium"
                 style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)', color: 'var(--text)' }}>
-                <Flag size={12} className="text-purple-400" /> Mark & Next
+                <Flag size={14} className="text-purple-400" /> <span className="hidden sm:inline">Mark & Next</span>
               </button>
               <button onClick={clearResponse}
-                className="px-3 py-2 rounded border text-xs font-medium"
+                className="px-2 sm:px-3 py-2.5 sm:py-2 rounded border text-xs font-medium"
                 style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)', color: 'var(--text)' }}>
                 Clear
               </button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <button onClick={() => current > 0 && setCurrent(c => c - 1)} disabled={current === 0}
-                className="flex items-center gap-1 px-3 py-2 rounded border text-xs font-medium disabled:opacity-40"
+                className="flex items-center gap-1 px-2 sm:px-3 py-2.5 sm:py-2 rounded border text-xs font-medium disabled:opacity-40"
                 style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)', color: 'var(--text)' }}>
-                <ChevronLeft size={13} /> Prev
+                <ChevronLeft size={13} /> <span className="hidden sm:inline">Prev</span>
               </button>
               <button onClick={saveAndNext}
-                className="flex items-center gap-1 px-4 py-2 rounded text-xs font-semibold bg-sky-700 hover:bg-sky-600 text-white transition-colors">
+                className="flex items-center gap-1 px-3 sm:px-4 py-2.5 sm:py-2 rounded text-xs font-semibold bg-sky-700 hover:bg-sky-600 text-white transition-colors">
                 Save & Next <ChevronRight size={13} />
               </button>
             </div>
           </div>
         </div>
 
-        {sidebar}
+        {/* Desktop sidebar */}
+        <div className="hidden md:flex w-52 border-l flex-col flex-shrink-0 overflow-y-auto"
+             style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)', contain: 'layout style paint' }}>
+          {sidebarContent}
+        </div>
+
+        {/* Mobile floating palette toggle */}
+        <button
+          onClick={() => setShowPalette(true)}
+          className="md:hidden fixed bottom-16 right-4 z-30 flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-lg text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 transition-colors"
+        >
+          Q{current + 1}/{questions.length}
+        </button>
+
+        {/* Mobile palette drawer */}
+        {showPalette && (
+          <div className="md:hidden fixed inset-0 z-40 flex">
+            {/* Backdrop */}
+            <div className="flex-1" onClick={() => setShowPalette(false)}
+                 style={{ background: 'rgba(0,0,0,0.6)' }} />
+            {/* Drawer */}
+            <div className="w-64 flex flex-col overflow-y-auto animate-slide-in-right"
+                 style={{ background: 'var(--sidebar-bg)' }}>
+              <div className="flex items-center justify-between p-3 border-b" style={{ borderColor: 'var(--border)' }}>
+                <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Question Palette</span>
+                <button onClick={() => setShowPalette(false)} className="p-1 rounded" style={{ color: 'var(--text-muted)' }}>✕</button>
+              </div>
+              {sidebarContent}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Calculator popup */}

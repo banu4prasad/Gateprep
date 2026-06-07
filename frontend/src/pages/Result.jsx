@@ -137,7 +137,7 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
             <Clock size={10} /> {qa.time_spent_seconds}s
           </span>
           <button onClick={e => { e.stopPropagation(); onToggleBookmark(qa.question_id) }}
-            className={clsx('p-1 rounded transition-colors', isBookmarked ? 'text-sky-400' : 'text-slate-600 hover:text-sky-400')}>
+            className={clsx('p-2 rounded transition-colors', isBookmarked ? 'text-sky-400' : 'text-slate-600 hover:text-sky-400')}>
             {isBookmarked ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
           </button>
           {open ? <ChevronUp size={13} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={13} style={{ color: 'var(--text-muted)' }} />}
@@ -148,7 +148,7 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
         <div className="px-4 pb-3 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
           {/* Options */}
           {qa.options?.length > 0 && (
-            <div className="grid grid-cols-2 gap-1.5 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
               {qa.options.map((o, i) => {
                 const l = 'ABCD'[i]
                 const isCorrect = qa.correct_answer?.includes(l)
@@ -169,7 +169,7 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
             </div>
           )}
           {qa.question_type === 'nat' && (
-            <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-xs">
               <div className="px-3 py-2 rounded bg-green-500/10 border border-green-500/20 text-green-300">
                 ✓ Correct: <span className="font-mono">{qa.correct_answer}</span>
               </div>
@@ -300,7 +300,7 @@ export default function ResultPage() {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto space-y-5 animate-fade-in">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <Link to="/dashboard" className="flex items-center gap-1.5 text-sm hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
             <ArrowLeft size={14} /> Dashboard
           </Link>
@@ -317,7 +317,7 @@ export default function ResultPage() {
         </div>
 
         {/* Attempt badge */}
-        <div className={clsx('flex items-center gap-2 px-4 py-2 rounded border text-sm',
+        <div className={clsx('flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm rounded border',
           result.counts_for_leaderboard ? 'border-sky-500/20 text-sky-300' : 'border-amber-500/20 text-amber-300')}
           style={{ background: result.counts_for_leaderboard ? 'rgba(14,165,233,0.08)' : 'rgba(245,158,11,0.08)' }}>
           <Medal size={14} />
@@ -383,7 +383,7 @@ export default function ResultPage() {
             <h3 className="font-semibold mb-3" style={{ color: 'var(--text)' }}>Your Attempts</h3>
             <div className="space-y-2">
               {attempts.map(a => (
-                <div key={a.attempt_id} className={clsx('flex items-center justify-between px-3 py-2 rounded border',
+                <div key={a.attempt_id} className={clsx('flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2 rounded border',
                   a.attempt_id === parseInt(attemptId) ? 'border-sky-500/30' : '')}
                   style={{ borderColor: a.attempt_id === parseInt(attemptId) ? undefined : 'var(--border)', background: a.attempt_id === parseInt(attemptId) ? 'rgba(14,165,233,0.06)' : 'transparent' }}>
                   <div className="flex items-center gap-2">
@@ -415,12 +415,12 @@ export default function ResultPage() {
 
         {/* Question review */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
             <h3 className="font-semibold" style={{ color: 'var(--text)' }}>
               Question Review
               <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>(click bookmark icon)</span>
             </h3>
-            <div className="flex gap-1 p-1 rounded" style={{ background: 'var(--bg-card)' }}>
+            <div className="flex flex-wrap gap-1 p-1 rounded" style={{ background: 'var(--bg-card)' }}>
               {['all', 'correct', 'incorrect', 'skipped'].map(f => (
                 <button key={f} onClick={() => setFilter(f)}
                   className={clsx('px-2.5 py-1 rounded text-xs font-medium capitalize transition-colors',

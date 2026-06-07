@@ -70,7 +70,7 @@ function BookmarkCard({ bm, onRemove }) {
         <div className="px-4 pb-4 border-t border-slate-200 dark:border-slate-800 pt-3 space-y-3">
           {/* Options */}
           {bm.options?.length > 0 && (
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {bm.options.map((o, i) => {
                 const letter = 'ABCD'[i]
                 const isCorrect = bm.correct_answer?.includes(letter)
@@ -156,20 +156,20 @@ export default function BookmarksPage() {
     <Layout>
       <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
             <Bookmark size={26} className="text-sky-400" /> Bookmarks
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">{bookmarks.length} saved question{bookmarks.length !== 1 ? 's' : ''}</p>
         </div>
 
         {/* Filters */}
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search questions or notes..." className="input pl-10 text-sm" />
           </div>
           {subjects.length > 1 && (
-            <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)} className="input text-sm w-40">
+            <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)} className="input text-sm w-full sm:w-40">
               {subjects.map(s => <option key={s} value={s}>{s === 'all' ? 'All subjects' : s}</option>)}
             </select>
           )}

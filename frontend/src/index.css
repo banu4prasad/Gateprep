@@ -160,7 +160,9 @@
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
 .timer-critical { animation: timerPulse 1s ease-in-out infinite; }
+.animate-slide-in-right { animation: slideInRight 0.25s ease-out forwards; }
 
 .theme-text { color: var(--text); }
 .theme-muted { color: var(--text-muted); }
@@ -213,3 +215,47 @@
 .calc-btn-eq { background: #15803d; color: white; @apply text-lg; }
 .calc-btn-clear { background: #dc2626; color: white; }
 .calc-btn-backspace { background: #92400e; color: white; }
+
+/* ── Mobile Utilities ──────────────────────────────────────────── */
+
+/* Safe area padding for iOS notch / home indicator */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-top { padding-top: env(safe-area-inset-top, 0px); }
+
+/* Bottom nav spacing — 56px nav + safe area */
+.pb-mobile-nav {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Scrollbar hide for horizontal scrollers */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Touch target enforcement — 44x44px per WCAG */
+@media (max-width: 640px) {
+  .btn-primary,
+  .btn-ghost,
+  .btn-danger,
+  .btn-success {
+    min-height: 44px;
+  }
+
+  .q-option {
+    @apply py-3.5;
+  }
+}
+
+/* Mobile bottom navigation */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--header-bg);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+

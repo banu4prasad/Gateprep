@@ -102,7 +102,8 @@ export default function AdminUsers() {
         {loading ? (
           <div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500" /></div>
         ) : (
-          <div className="gate-card overflow-hidden">
+          <>
+            <div className="gate-card overflow-hidden hidden md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800">
@@ -181,6 +182,64 @@ export default function AdminUsers() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile card view */}
+          <div className="space-y-3 md:hidden">
+            {filtered.map(u => (
+              <div key={u.id} className="gate-card p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sky-400 text-sm font-semibold">{u.full_name[0]?.toUpperCase()}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate" style={{ color: 'var(--text)' }}>{u.full_name}</p>
+                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`badge ${roleStyle[u.role] || 'badge-slate'}`}>{u.role}</span>
+                  <span className={`badge ${u.is_active ? 'badge-green' : 'badge-red'}`}>
+                    {u.is_active ? 'Active' : 'Disabled'}
+                  </span>
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    Joined {new Date(u.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                  {updating[u.id] ? <Spinner size={14} className="text-sky-400" /> : (
+                    <>
+                      {u.role === 'user' && (
+                        <button onClick={() => changeRole(u.id, 'aspirant')}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/20 transition-colors">
+                          <UserCheck size={13} /> Approve
+                        </button>
+                      )}
+                      {u.role === 'aspirant' && (
+                        <button onClick={() => changeRole(u.id, 'user')}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors">
+                          <UserX size={13} /> Revoke
+                        </button>
+                      )}
+                      {u.role !== 'admin' && (
+                        <button onClick={() => toggleStatus(u.id)}
+                          className="px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-xs font-medium">
+                          {u.is_active ? 'Disable' : 'Enable'}
+                        </button>
+                      )}
+                      <button onClick={() => createResetLink(u.id)} disabled={updating[`reset-${u.id}`]}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-medium hover:bg-sky-500/20 transition-colors disabled:opacity-50">
+                        {updating[`reset-${u.id}`] ? <Spinner size={13} /> : <KeyRound size={13} />} Reset
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+            {filtered.length === 0 && (
+              <p className="text-center py-12" style={{ color: 'var(--text-muted)' }}>No users found</p>
+            )}
+          </div>
+          </>
         )}
 
         {resetLink && (

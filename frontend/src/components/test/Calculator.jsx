@@ -104,8 +104,8 @@ export default function Calculator({ onClose }) {
   )
 
   return (
-    <div className="fixed z-50 shadow-2xl rounded-lg overflow-hidden select-none"
-         style={{ top: '70px', right: '16px', width: '320px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+    <div className="fixed z-50 shadow-2xl rounded-lg overflow-hidden select-none sm:w-[320px] left-4 right-4 sm:left-auto sm:right-4"
+         style={{ top: '70px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b"
            style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)' }}>
