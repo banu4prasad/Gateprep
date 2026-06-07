@@ -127,11 +127,11 @@ function QuestionReview({ qa, idx, bookmarked, onToggleBookmark }) {
         <span className="text-xs font-mono mt-0.5 w-5 flex-shrink-0" style={{ color: 'var(--text-muted)' }}>Q{idx + 1}</span>
         {qa.is_correct === true ? <CheckCircle size={14} className="text-green-400 flex-shrink-0 mt-0.5" /> :
          qa.is_correct === false ? <XCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" /> :
-         <MinusCircle size={14} className="text-slate-500 flex-shrink-0 mt-0.5" />}
+         <MinusCircle size={14} className="text-slate-500 dark:text-slate-400 flex-shrink-0 mt-0.5" />}
         <div className="text-sm flex-1 line-clamp-2" style={{ color: 'var(--text)' }}><MathText>{qa.question_text}</MathText></div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className={clsx('text-xs font-mono font-semibold',
-            qa.marks_awarded > 0 ? 'text-green-400' : qa.marks_awarded < 0 ? 'text-red-400' : 'text-slate-500')}>
+            qa.marks_awarded > 0 ? 'text-green-400' : qa.marks_awarded < 0 ? 'text-red-400' : 'text-slate-500 dark:text-slate-400')}>
             {qa.marks_awarded > 0 ? '+' : ''}{qa.marks_awarded}
           </span>
           <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
@@ -159,7 +159,7 @@ function QuestionReview({ qa, idx, bookmarked, onToggleBookmark }) {
                   <div key={i} className={clsx('px-3 py-2 rounded text-xs',
                     isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' :
                     isSelected ? 'bg-red-500/10 border border-red-500/20 text-red-300' :
-                    'border text-slate-400')} style={{ borderColor: 'var(--border)' }}>
+                    'border text-slate-500 dark:text-slate-400')} style={{ borderColor: 'var(--border)' }}>
                     <span className="font-mono font-semibold mr-1">{l}.</span><MathText>{o}</MathText>
                     {isCorrect && <span className="ml-1 text-green-400">✓</span>}
                     {isSelected && !isCorrect && <span className="ml-1 text-red-400">✗</span>}
@@ -174,7 +174,7 @@ function QuestionReview({ qa, idx, bookmarked, onToggleBookmark }) {
               <div className="px-3 py-2 rounded bg-green-500/10 border border-green-500/20 text-green-300">
                 ✓ Correct: <span className="font-mono">{qa.correct_answer}</span>
               </div>
-              <div className="px-3 py-2 rounded border text-slate-400" style={{ borderColor: 'var(--border)' }}>
+              <div className="px-3 py-2 rounded border text-slate-500 dark:text-slate-400" style={{ borderColor: 'var(--border)' }}>
                 You: <span className="font-mono">{qa.selected_answer || 'Skipped'}</span>
               </div>
             </div>
@@ -340,7 +340,7 @@ export default function ResultPage() {
                 {[
                   ['Correct', result.correct, 'text-green-400', 'rgba(81,207,102,0.1)', 'rgba(81,207,102,0.2)'],
                   ['Wrong', result.incorrect, 'text-red-400', 'rgba(255,107,107,0.1)', 'rgba(255,107,107,0.2)'],
-                  ['Skipped', result.skipped, 'text-slate-400', 'rgba(100,116,139,0.1)', 'rgba(100,116,139,0.2)'],
+                  ['Skipped', result.skipped, 'text-slate-500 dark:text-slate-400', 'rgba(100,116,139,0.1)', 'rgba(100,116,139,0.2)'],
                 ].map(([label, val, cls, bg, border]) => (
                   <div key={label} className="rounded p-2 text-center" style={{ background: bg, border: `1px solid ${border}` }}>
                     <p className={`text-xl font-bold ${cls}`}>{val}</p>
@@ -422,7 +422,7 @@ export default function ResultPage() {
               {['all', 'correct', 'incorrect', 'skipped'].map(f => (
                 <button key={f} onClick={() => setFilter(f)}
                   className={clsx('px-2.5 py-1 rounded text-xs font-medium capitalize transition-colors',
-                    filter === f ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200')}>
+                    filter === f ? 'bg-sky-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200')}>
                   {f}
                 </button>
               ))}

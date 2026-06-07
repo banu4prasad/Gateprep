@@ -163,7 +163,7 @@ export default function ChecklistPage() {
                           'flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-medium transition-all',
                           done
                             ? 'border-green-500/30 text-green-400'
-                            : 'text-slate-500 hover:border-slate-500'
+                            : 'text-slate-500 dark:text-slate-400 hover:border-slate-500'
                         )}
                         style={{
                           background: done ? 'rgba(81,207,102,0.08)' : 'transparent',

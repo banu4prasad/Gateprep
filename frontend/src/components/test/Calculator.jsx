@@ -117,7 +117,7 @@ export default function Calculator({ onClose }) {
             <button onClick={() => setIsDeg(false)}
               className={`px-2 py-0.5 rounded ${!isDeg ? 'bg-sky-600 text-white' : ''}`}>Rad</button>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-200"><X size={16} /></button>
+          <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200"><X size={16} /></button>
         </div>
       </div>
 

@@ -8,6 +8,11 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     document.documentElement.style.colorScheme = theme
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
     localStorage.setItem('theme', theme)
   }, [theme])
 

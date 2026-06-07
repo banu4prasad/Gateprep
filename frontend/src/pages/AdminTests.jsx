@@ -88,7 +88,7 @@ function CreateTestModal({ onClose, onCreated }) {
                   className={`py-2.5 rounded border text-sm font-medium transition-all ${
                     form.category === v
                       ? 'bg-sky-600/20 border-sky-500 text-sky-400'
-                      : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                      : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
                   }`}>
                   {l}
                 </button>
@@ -119,7 +119,7 @@ function CreateTestModal({ onClose, onCreated }) {
                       className={`py-2.5 rounded border text-sm font-medium transition-all ${
                         form.series_name === value
                           ? 'bg-sky-600/20 border-sky-500 text-sky-400'
-                          : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                          : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
                       }`}>
                       {label}
                     </button>
@@ -135,7 +135,7 @@ function CreateTestModal({ onClose, onCreated }) {
                       className={`py-2.5 rounded border text-sm font-medium transition-all ${
                         form.test_type === value
                           ? 'bg-sky-600/20 border-sky-500 text-sky-400'
-                          : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                          : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
                       }`}>
                       {label}
                     </button>
@@ -257,7 +257,7 @@ export default function AdminTests() {
           {[['all','All'], ['weekly_quiz','Weekly Quiz'], ['test_series','Test Series']].map(([v, l]) => (
             <button key={v} onClick={() => setFilter(v)}
               className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-                filter === v ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                filter === v ? 'bg-sky-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200'
               }`}>{l}</button>
           ))}
         </div>

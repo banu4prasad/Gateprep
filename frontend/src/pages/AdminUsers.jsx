@@ -81,8 +81,8 @@ export default function AdminUsers() {
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-white">Users</h1>
-            <p className="text-slate-400 mt-1">{users.length} registered · {users.filter(u=>u.role==='user').length} pending approval</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Users</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">{users.length} registered · {users.filter(u=>u.role==='user').length} pending approval</p>
           </div>
           <button onClick={load} className="btn-ghost flex items-center gap-2">
             <RefreshCw size={15} /> Refresh
@@ -91,7 +91,7 @@ export default function AdminUsers() {
 
         {/* Search */}
         <div className="relative">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search by name or email..."
@@ -105,24 +105,24 @@ export default function AdminUsers() {
           <div className="gate-card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-800">
+                <tr className="border-b border-slate-200 dark:border-slate-800">
                   {['Name', 'Email', 'Role', 'Status', 'Joined', 'Actions'].map(h => (
-                    <th key={h} className="text-left px-5 py-3.5 text-slate-500 font-medium text-xs uppercase tracking-wider">{h}</th>
+                    <th key={h} className="text-left px-5 py-3.5 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {filtered.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-800/30 transition-colors">
+                  <tr key={u.id} className="hover:bg-slate-100 dark:bg-slate-800/30 transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-sky-500/20 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
                           <span className="text-sky-400 text-xs font-semibold">{u.full_name[0]?.toUpperCase()}</span>
                         </div>
-                        <span className="font-medium text-slate-200">{u.full_name}</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-200">{u.full_name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-slate-400">{u.email}</td>
+                    <td className="px-5 py-4 text-slate-500 dark:text-slate-400">{u.email}</td>
                     <td className="px-5 py-4">
                       <span className={`badge ${roleStyle[u.role] || 'badge-slate'}`}>{u.role}</span>
                     </td>
@@ -131,7 +131,7 @@ export default function AdminUsers() {
                         {u.is_active ? 'Active' : 'Disabled'}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-slate-500">
+                    <td className="px-5 py-4 text-slate-500 dark:text-slate-400">
                       {new Date(u.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
                     </td>
                     <td className="px-5 py-4">
@@ -157,7 +157,7 @@ export default function AdminUsers() {
                             {u.role !== 'admin' && (
                               <button
                                 onClick={() => toggleStatus(u.id)}
-                                className="px-3 py-1.5 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-400 text-xs font-medium hover:bg-slate-700 transition-colors"
+                                className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-xs font-medium hover:bg-slate-200 dark:bg-slate-700 transition-colors"
                               >
                                 {u.is_active ? 'Disable' : 'Enable'}
                               </button>
@@ -176,7 +176,7 @@ export default function AdminUsers() {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-12 text-slate-500">No users found</td></tr>
+                  <tr><td colSpan={6} className="text-center py-12 text-slate-500 dark:text-slate-400">No users found</td></tr>
                 )}
               </tbody>
             </table>
@@ -188,12 +188,12 @@ export default function AdminUsers() {
             <div className="gate-card w-full max-w-lg p-5 animate-slide-up">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                  <h2 className="text-lg font-bold text-white">Password Reset Link</h2>
-                  <p className="text-sm text-slate-400 mt-1">{resetLink.full_name} · {resetLink.email}</p>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Password Reset Link</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{resetLink.full_name} · {resetLink.email}</p>
                 </div>
                 <button
                   onClick={() => setResetLink(null)}
-                  className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                  className="p-1.5 rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors"
                   aria-label="Close"
                 >
                   <X size={18} />
@@ -207,7 +207,7 @@ export default function AdminUsers() {
                 className="input font-mono text-xs"
                 aria-label="Password reset link"
               />
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                 Expires {new Date(resetLink.expires_at).toLocaleString('en-IN', {
                   day: '2-digit',
                   month: 'short',

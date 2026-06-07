@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import Session, aliased, joinedload
 from sqlalchemy import func
 from pydantic import BaseModel
 from fastapi_cache.decorator import cache
@@ -124,10 +124,11 @@ def get_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_aspi
     test = db.query(Test).filter(Test.id == test_id).first()
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
+    question_count = db.query(Question).filter(Question.test_id == test_id).count()
     return {
         "id": test.id, "title": test.title, "description": test.description,
         "duration_minutes": test.duration_minutes, "total_marks": test.total_marks,
-        "question_count": len(test.questions), "series_id": test.series_id,
+        "question_count": question_count, "series_id": test.series_id,
         "created_at": test.created_at
     }
 
@@ -544,6 +545,7 @@ def _get_first_attempts(test_id: int, db: Session) -> list[TestAttempt]:
 
         return (
             db.query(FirstAttempt)
+            .options(joinedload(FirstAttempt.user))
             .order_by(
                 FirstAttempt.score.desc(),
                 FirstAttempt.id.asc(),
@@ -568,6 +570,7 @@ def _get_first_attempts(test_id: int, db: Session) -> list[TestAttempt]:
 
     return (
         db.query(TestAttempt)
+        .options(joinedload(TestAttempt.user))
         .join(first_attempt_ids_subquery, TestAttempt.id == first_attempt_ids_subquery.c.attempt_id)
         .filter(first_attempt_ids_subquery.c.attempt_rank == 1)
         .order_by(

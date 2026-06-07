@@ -34,8 +34,8 @@ function QuestionForm({ onAdd, onClose }) {
   return (
     <div className="gate-card p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="font-semibold text-white">Add Question Manually</h4>
-        <button onClick={onClose} className="text-slate-500 hover:text-slate-300"><X size={16}/></button>
+        <h4 className="font-semibold text-slate-900 dark:text-white">Add Question Manually</h4>
+        <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300"><X size={16}/></button>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
@@ -227,12 +227,12 @@ function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
   return (
     <div className="gate-card p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="font-semibold text-white">Upload Questions via JSON</h4>
-        <button onClick={onClose} className="text-slate-500 hover:text-slate-300"><X size={16}/></button>
+        <h4 className="font-semibold text-slate-900 dark:text-white">Upload Questions via JSON</h4>
+        <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300"><X size={16}/></button>
       </div>
 
       {/* Direct file upload */}
-      <div className="px-3 py-3 rounded-lg bg-slate-800/50 border border-slate-700/60 space-y-3">
+      <div className="px-3 py-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-200 dark:border-slate-700/60 space-y-3">
         <div>
           <label className="label">Upload JSON file directly</label>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -277,8 +277,8 @@ function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
       </div>
 
       {/* JSON format hint */}
-      <div className="px-3 py-2 rounded-lg bg-slate-800/60 border border-slate-700/50 text-xs text-slate-500">
-        Format: <span className="text-slate-400 font-mono">{"{ \"questions\": [ { question_type, question_text, options, correct_answer, marks, negative_marks } ] }"}</span>
+      <div className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-200 dark:border-slate-700/50 text-xs text-slate-500 dark:text-slate-400">
+        Format: <span className="text-slate-500 dark:text-slate-400 font-mono">{"{ \"questions\": [ { question_type, question_text, options, correct_answer, marks, negative_marks } ] }"}</span>
         <br/>
         question_type: <span className="text-sky-400">mcq</span> / <span className="text-amber-400">msq</span> / <span className="text-green-400">nat</span> &nbsp;·&nbsp;
         correct_answer: <span className="text-sky-400">A</span> or <span className="text-amber-400">A,C</span> or <span className="text-green-400">42</span>
@@ -342,7 +342,7 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
       <div className="flex items-start gap-3 p-4 cursor-pointer" onClick={() => setOpen(o=>!o)}>
         <span className="font-mono text-slate-600 text-sm mt-0.5 w-6 flex-shrink-0">Q{idx+1}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-slate-200 text-sm line-clamp-2">{q.question_text}</p>
+          <p className="text-slate-700 dark:text-slate-200 text-sm line-clamp-2">{q.question_text}</p>
           <div className="flex items-center gap-2 mt-2">
             <span className={`badge text-xs ${typeColor[q.question_type]}`}>{q.question_type.toUpperCase()}</span>
             <span className="text-slate-600 text-xs">{q.marks}M</span>
@@ -353,18 +353,18 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
           <button onClick={e=>{e.stopPropagation();onDelete(q.id)}} className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors">
             <Trash2 size={13}/>
           </button>
-          {open ? <ChevronUp size={15} className="text-slate-500"/> : <ChevronDown size={15} className="text-slate-500"/>}
+          {open ? <ChevronUp size={15} className="text-slate-500 dark:text-slate-400"/> : <ChevronDown size={15} className="text-slate-500 dark:text-slate-400"/>}
         </div>
       </div>
       {open && (
-        <div className="px-4 pb-4 border-t border-slate-800 pt-3 space-y-3">
+        <div className="px-4 pb-4 border-t border-slate-200 dark:border-slate-800 pt-3 space-y-3">
           {q.options?.length > 0 && (
             <div className="grid grid-cols-2 gap-1.5">
               {q.options.map((o,i) => {
                 const letter = 'ABCD'[i]
                 const isCorrect = q.correct_answer?.includes(letter)
                 return (
-                  <div key={i} className={`px-3 py-2 rounded-lg text-xs ${isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' : 'bg-slate-800/50 text-slate-400'}`}>
+                  <div key={i} className={`px-3 py-2 rounded-lg text-xs ${isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400'}`}>
                     <span className="font-mono font-semibold mr-1.5">{letter}.</span>{o}
                   </div>
                 )
@@ -372,24 +372,24 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
             </div>
           )}
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-500">Answer:</span>
+            <span className="text-slate-500 dark:text-slate-400">Answer:</span>
             <span className="font-mono text-green-400 font-semibold">{q.correct_answer}</span>
             <span className="text-slate-600 ml-2">·</span>
-            <span className="text-slate-500">+{q.marks}M</span>
-            {q.negative_marks > 0 && <span className="text-slate-500">/ -{q.negative_marks}M</span>}
+            <span className="text-slate-500 dark:text-slate-400">+{q.marks}M</span>
+            {q.negative_marks > 0 && <span className="text-slate-500 dark:text-slate-400">/ -{q.negative_marks}M</span>}
           </div>
 
           {/* Image upload section */}
-          <div className="border-t border-slate-800 pt-3">
-            <p className="text-xs text-slate-500 mb-2">Question Image (optional)</p>
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Question Image (optional)</p>
             {q.question_image_url ? (
               <div className="flex items-start gap-3">
-                <img src={q.question_image_url} alt="question" className="max-h-32 rounded border border-slate-700 cursor-pointer" onClick={() => window.open(q.question_image_url, '_blank')} />
+                <img src={q.question_image_url} alt="question" className="max-h-32 rounded border border-slate-300 dark:border-slate-700 cursor-pointer" onClick={() => window.open(q.question_image_url, '_blank')} />
                 <button onClick={() => onDeleteImage(q.id, 'question')} className="text-xs text-red-400 hover:text-red-300 mt-1">Remove</button>
               </div>
             ) : (
               <label className="flex items-center gap-2 cursor-pointer w-fit">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-dashed border-slate-600 text-xs text-slate-400 hover:border-sky-500 hover:text-sky-400 transition-colors">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-dashed border-slate-300 dark:border-slate-600 text-xs text-slate-500 dark:text-slate-400 hover:border-sky-500 hover:text-sky-400 transition-colors">
                   <Upload size={13}/> Upload Image
                 </div>
                 <input type="file" accept="image/*" className="hidden" onChange={e => { if(e.target.files[0]) onUploadImage(q.id, e.target.files[0]) }} />
@@ -473,14 +473,14 @@ export default function AdminTestDetail() {
     <Layout>
       <div className="space-y-6 animate-fade-in max-w-3xl">
         <div>
-          <Link to="/admin/tests" className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-sm mb-4 w-fit">
+          <Link to="/admin/tests" className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300 text-sm mb-4 w-fit">
             <ArrowLeft size={15}/> Back to Tests
           </Link>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-white">{test?.title}</h1>
-              <p className="text-slate-400 mt-1 text-sm">{test?.description}</p>
-              <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{test?.title}</h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">{test?.description}</p>
+              <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 dark:text-slate-400">
                 <span>{test?.duration_minutes} min</span>
                 <span>{questions.length} questions</span>
                 <span>{test?.total_marks} marks</span>
@@ -510,7 +510,7 @@ export default function AdminTestDetail() {
         <div className="space-y-2">
           {questions.length === 0 ? (
             <div className="gate-card p-10 text-center">
-              <p className="text-slate-500 mb-3">No questions yet.</p>
+              <p className="text-slate-500 dark:text-slate-400 mb-3">No questions yet.</p>
               <div className="flex gap-3 justify-center">
                 <button onClick={() => setMode('json')} className="btn-ghost flex items-center gap-2 text-sm">
                   <FileJson size={14}/> Upload JSON

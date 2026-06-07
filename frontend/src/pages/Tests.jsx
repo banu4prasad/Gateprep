@@ -29,8 +29,8 @@ function TestCard({ test, attempt }) {
 
       {pct !== null && (
         <div className={clsx('text-xs px-2.5 py-1.5 rounded',
-          pct >= 75 ? 'bg-green-500/10 text-green-400' :
-          pct >= 50 ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
+          pct >= 75 ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
+          pct >= 50 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'
         )}>
           Score: {attempt.score?.toFixed(1)}/{attempt.total_marks} ({pct}%)
         </div>
@@ -39,8 +39,7 @@ function TestCard({ test, attempt }) {
       <div className="pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
         {done ? (
           <Link to={`/results/${attempt.id}`}
-            className="flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium w-full"
-            style={{ background: 'var(--bg-panel)', color: 'var(--text)' }}>
+            className="flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium w-full border border-sky-500/30 text-sky-600 dark:text-sky-400 bg-sky-500/5 hover:bg-sky-500/10 transition-colors">
             View Result <ArrowRight size={12} />
           </Link>
         ) : (

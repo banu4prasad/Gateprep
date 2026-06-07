@@ -41,7 +41,7 @@ function BookmarkCard({ bm, onRemove }) {
     <div className="gate-card overflow-hidden">
       <div className="flex items-start gap-3 p-4">
         <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setOpen(o => !o)}>
-          <div className="text-slate-200 text-sm leading-snug line-clamp-2"><MathText>{bm.question_text}</MathText></div>
+          <div className="text-slate-700 dark:text-slate-200 text-sm leading-snug line-clamp-2"><MathText>{bm.question_text}</MathText></div>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className={`badge text-xs ${typeColor[bm.question_type] || 'badge-slate'}`}>
               {bm.question_type?.toUpperCase()}
@@ -57,7 +57,7 @@ function BookmarkCard({ bm, onRemove }) {
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button onClick={() => setOpen(o => !o)} className="p-1.5 text-slate-600 hover:text-slate-300">
+          <button onClick={() => setOpen(o => !o)} className="p-1.5 text-slate-600 hover:text-slate-600 dark:text-slate-300">
             {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
           <button onClick={remove} disabled={removing} className="p-1.5 text-slate-600 hover:text-red-400 transition-colors">
@@ -67,7 +67,7 @@ function BookmarkCard({ bm, onRemove }) {
       </div>
 
       {open && (
-        <div className="px-4 pb-4 border-t border-slate-800 pt-3 space-y-3">
+        <div className="px-4 pb-4 border-t border-slate-200 dark:border-slate-800 pt-3 space-y-3">
           {/* Options */}
           {bm.options?.length > 0 && (
             <div className="grid grid-cols-2 gap-1.5">
@@ -77,7 +77,7 @@ function BookmarkCard({ bm, onRemove }) {
                 return (
                   <div key={i} className={clsx(
                     'px-3 py-2 rounded-lg text-xs',
-                    isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' : 'bg-slate-800/50 text-slate-400'
+                    isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400'
                   )}>
                     <span className="font-mono font-semibold mr-1.5">{letter}.</span><MathText>{o}</MathText>
                     {isCorrect && <span className="ml-1 text-green-400">✓</span>}
@@ -110,13 +110,13 @@ function BookmarkCard({ bm, onRemove }) {
                   <button onClick={saveNote} disabled={savingNote} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs hover:bg-green-500/20 transition-colors">
                     {savingNote ? <Spinner size={12} /> : <Check size={12} />} Save
                   </button>
-                  <button onClick={() => { setEditingNote(false); setNote(bm.note || '') }} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-700 text-slate-400 text-xs hover:bg-slate-600 transition-colors">
+                  <button onClick={() => { setEditingNote(false); setNote(bm.note || '') }} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
                     <X size={12} /> Cancel
                   </button>
                 </div>
               </div>
             ) : (
-              <button onClick={() => setEditingNote(true)} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-sky-400 transition-colors">
+              <button onClick={() => setEditingNote(true)} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-sky-400 transition-colors">
                 <StickyNote size={12} />
                 {bm.note ? <span className="text-sky-400/80">{bm.note}</span> : 'Add note'}
               </button>
@@ -156,16 +156,16 @@ export default function BookmarksPage() {
     <Layout>
       <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
             <Bookmark size={26} className="text-sky-400" /> Bookmarks
           </h1>
-          <p className="text-slate-400 mt-1">{bookmarks.length} saved question{bookmarks.length !== 1 ? 's' : ''}</p>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">{bookmarks.length} saved question{bookmarks.length !== 1 ? 's' : ''}</p>
         </div>
 
         {/* Filters */}
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search questions or notes..." className="input pl-10 text-sm" />
           </div>
           {subjects.length > 1 && (
@@ -180,7 +180,7 @@ export default function BookmarksPage() {
         ) : bookmarks.length === 0 ? (
           <div className="gate-card p-12 text-center">
             <Bookmark size={40} className="text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-400 font-medium">No bookmarks yet</p>
+            <p className="text-slate-500 dark:text-slate-400 font-medium">No bookmarks yet</p>
             <p className="text-slate-600 text-sm mt-1">
               Click the <span className="text-sky-400">Bookmark</span> button during a test to save questions here
             </p>
@@ -189,7 +189,7 @@ export default function BookmarksPage() {
             </Link>
           </div>
         ) : filtered.length === 0 ? (
-          <p className="text-center text-slate-500 py-8">No bookmarks match your search</p>
+          <p className="text-center text-slate-500 dark:text-slate-400 py-8">No bookmarks match your search</p>
         ) : (
           <div className="space-y-2">
             {filtered.map(bm => (

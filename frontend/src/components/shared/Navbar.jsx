@@ -32,9 +32,9 @@ export default function Navbar() {
          style={{ background: 'var(--header-bg)', borderColor: 'var(--border)', backdropFilter: 'blur(8px)' }}>
       <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 mr-4 flex-shrink-0">
         <div className="w-7 h-7 rounded bg-sky-600 flex items-center justify-center">
-          <span className="font-bold text-white text-sm">G</span>
+          <span className="font-bold text-slate-900 dark:text-white text-sm">G</span>
         </div>
-        <span className="font-bold text-white text-sm hidden sm:block">GATEPrep</span>
+        <span className="font-bold text-slate-900 dark:text-white text-sm hidden sm:block">GATEPrep</span>
       </Link>
 
       <div className="flex items-center gap-0.5 flex-1 overflow-x-auto">
@@ -42,10 +42,10 @@ export default function Navbar() {
           <Link key={to} to={to} className={clsx(
             'flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors',
             location.pathname === to || (to !== '/admin' && to !== '/dashboard' && location.pathname.startsWith(to))
-              ? 'bg-sky-600/20 text-sky-400'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+              ? 'bg-sky-600/20 text-sky-600 dark:text-sky-400'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-500 dark:text-slate-400 dark:hover:text-slate-700 dark:text-slate-200 dark:hover:bg-slate-100 dark:bg-slate-800/50'
           )}>
-            <Icon size={13} /> {label}
+            <Icon size={16} /> <span className="hidden sm:inline">{label}</span>
           </Link>
         ))}
       </div>
@@ -54,17 +54,17 @@ export default function Navbar() {
         <button onClick={toggle}
           title="Toggle theme"
           aria-label="Toggle theme"
-          className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors">
+          className="p-1.5 rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors">
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
         <div className="text-right hidden sm:block">
-          <p className="text-xs font-medium text-white leading-none">{user?.full_name}</p>
-          <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
+          <p className="text-xs font-medium text-slate-900 dark:text-white leading-none">{user?.full_name}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{user?.role}</p>
         </div>
         <button onClick={logout}
           title="Log out"
           aria-label="Log out"
-          className="p-1.5 rounded text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+          className="p-1.5 rounded text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
           <LogOut size={14} />
         </button>
       </div>

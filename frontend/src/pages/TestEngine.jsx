@@ -66,7 +66,7 @@ const TimerDisplay = ({
   announceWarnings = true,
   className = 'flex items-center gap-1.5 px-3 py-1 rounded font-mono font-bold text-sm border',
   lowClassName = 'bg-red-500/20 border-red-500/50 text-red-400 timer-critical',
-  normalClassName = 'bg-slate-800 border-slate-700 text-slate-200'
+  normalClassName = 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
 }) => {
   const getRemaining = useCallback(
     () => Number.isFinite(endTime) ? Math.max(0, endTime - Date.now()) : null,
@@ -502,9 +502,9 @@ export default function TestEngine() {
            style={{ background: 'var(--header-bg)', borderColor: 'var(--border)' }}>
         <div className="flex items-center gap-2 mr-3 flex-shrink-0">
           <div className="w-6 h-6 rounded bg-sky-600 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">G</span>
+            <span className="text-slate-900 dark:text-white font-bold text-xs">G</span>
           </div>
-          <span className="text-white text-sm font-semibold hidden md:block truncate max-w-[160px]">
+          <span className="text-slate-900 dark:text-white text-sm font-semibold hidden md:block truncate max-w-[160px]">
             {test?.title}
           </span>
         </div>
@@ -545,7 +545,7 @@ export default function TestEngine() {
               'flex items-center gap-1 px-2 py-1 rounded text-xs border transition-colors',
               showCalc
                 ? 'bg-sky-600 border-sky-500 text-white'
-                : 'border-slate-700 text-slate-400 hover:text-white hover:border-slate-500'
+                : 'border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:border-slate-500'
             )}>
             <CalcIcon size={13} /> Calc
           </button>
@@ -647,7 +647,7 @@ export default function TestEngine() {
                         'w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
                         sel ? 'border-amber-500 bg-amber-500' : 'border-slate-500'
                       )}>
-                        {sel && <span className="text-white text-xs font-bold">✓</span>}
+                        {sel && <span className="text-slate-900 dark:text-white text-xs font-bold">✓</span>}
                       </div>
                       <span className="text-xs font-semibold mr-2" style={{ color: 'var(--text-muted)' }}>
                         {letter}.
@@ -711,12 +711,13 @@ export default function TestEngine() {
           </div>
         </div>
 
-        {/* Right sidebar - Question palette */}
+  {useMemo(() => {
+    return (
         <div className="w-52 border-l flex flex-col flex-shrink-0 overflow-y-auto"
              style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)' }}>
           <div className="p-3 border-b text-center" style={{ borderColor: 'var(--border)' }}>
             <div className="w-9 h-9 rounded-full bg-sky-700 flex items-center justify-center mx-auto mb-1">
-              <span className="text-white font-bold text-sm">U</span>
+              <span className="text-slate-900 dark:text-white font-bold text-sm">U</span>
             </div>
           </div>
 
@@ -767,6 +768,8 @@ export default function TestEngine() {
             </button>
           </div>
         </div>
+    )
+  }, [questions, answers, visited, marked, current, submitting, subjects, answered, notAnswered])}
       </div>
 
       {/* Calculator popup */}
