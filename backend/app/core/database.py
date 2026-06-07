@@ -5,7 +5,9 @@ from app.core.config import settings
 
 from typing import Any
 engine_kwargs: dict[str, Any] = {"pool_pre_ping": True}
-if not settings.sqlalchemy_database_url.startswith("sqlite"):
+if settings.sqlalchemy_database_url.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
     engine_kwargs.update(
         {
             "pool_size": 20,

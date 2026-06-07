@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const BASE_URL = import.meta.env.PROD
   ? '/api'
   : rawApiUrl.split(',')[0].trim()

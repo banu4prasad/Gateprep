@@ -10,9 +10,42 @@ jobs:
   e2e:
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    env:
+      API_URL: http://127.0.0.1:8000
+      VITE_API_URL: http://127.0.0.1:8000
+      BASE_URL: http://127.0.0.1:5173
+      DATABASE_URL: sqlite:///./e2e.sqlite3
+      SECRET_KEY: e2e-secret-key-for-github-actions-only
+      AUTH_COOKIE_SECURE: "false"
+      AUTH_COOKIE_SAMESITE: lax
+      CORS_ORIGINS: http://127.0.0.1:5173
+      FRONTEND_URL: http://127.0.0.1:5173
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: python -m pip install -r requirements.txt
+
+      - name: Seed E2E users
+        working-directory: ./backend
+        run: python -m app.scripts.seed_e2e
+
+      - name: Start backend
+        working-directory: ./backend
+        run: |
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/gateprep-api.log 2>&1 &
+          echo $! > /tmp/gateprep-api.pid
+
+      - name: Wait for backend
+        run: curl --fail --retry 30 --retry-all-errors --retry-delay 2 http://127.0.0.1:8000/health
 
       - uses: actions/setup-node@v4
         with:
@@ -31,13 +64,10 @@ jobs:
       - name: Run E2E tests
         working-directory: ./frontend
         run: npx playwright test
-        env:
-          BASE_URL: http://localhost:5173
-          # In a real CI environment, you would also start the backend server 
-          # and set the appropriate environment variables.
-          # For example:
-          # TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          # TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+
+      - name: Show backend logs
+        if: ${{ failure() }}
+        run: tail -200 /tmp/gateprep-api.log
 
       - name: Upload test report
         uses: actions/upload-artifact@v4

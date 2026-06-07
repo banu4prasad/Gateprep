@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const authFile = 'e2e/.auth/user.json';
+const apiURL = (process.env.API_URL || process.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 
 setup('authenticate', async ({ page }) => {
   // Ensure the .auth directory exists
@@ -16,7 +17,7 @@ setup('authenticate', async ({ page }) => {
   const password = process.env.TEST_USER_PASSWORD || 'testpassword';
 
   // Seed user if it doesn't exist (ignores 400 if already exists)
-  await page.request.post('http://localhost:8000/auth/register', {
+  await page.request.post(`${apiURL}/auth/register`, {
     data: {
       email,
       password,

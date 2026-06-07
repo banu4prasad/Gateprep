@@ -151,6 +151,9 @@ export default function TestEngine() {
   const [showFsWarning, setShowFsWarning]   = useState(false)
   const [attemptNumber, setAttemptNumber] = useState(null)
   const [maxAttempts, setMaxAttempts]     = useState(6)
+  const [started, setStarted]             = useState(false)
+  const [starting, setStarting]           = useState(false)
+  const [accepted, setAccepted]           = useState(false)
 
   // ── Refs (stable, never cause re-renders) ─────────────────────
   const submitLockRef    = useRef(false)
@@ -166,45 +169,103 @@ export default function TestEngine() {
   const loadedRef        = useRef(false) // prevent tab detection on initial load
 
   // Keep refs in sync with state
+  useEffect(() => { testIdRef.current = testId }, [testId])
   useEffect(() => { attemptRef.current  = attempt }, [attempt])
   useEffect(() => { answersRef.current  = answers }, [answers])
   useEffect(() => { questionsRef.current = questions }, [questions])
   useEffect(() => { timingsRef.current  = timings }, [timings])
 
-  // ── Load test ──────────────────────────────────────────────────
+  // ── Load test metadata ─────────────────────────────────────────
   useEffect(() => {
+    let cancelled = false
+
     ;(async () => {
+      setLoading(true)
+      setStarted(false)
+      setAccepted(false)
+      setAttempt(null)
+      setQuestions([])
+      setAnswers({})
+      setTimings({})
+      setMarked(new Set())
+      setVisited(new Set())
+      setCurrent(0)
+      attemptRef.current = null
+      questionsRef.current = []
+      answersRef.current = {}
+      timingsRef.current = {}
+      loadedRef.current = false
+
       try {
-        const [testRes, attemptRes] = await Promise.all([
-          testAPI.getTest(testId),
-          testAPI.startTest(testId)
-        ])
+        const testRes = await testAPI.getTest(testId)
+        if (cancelled) return
         setTest(testRes.data)
-        setAttempt(attemptRes.data)
-        attemptRef.current = attemptRes.data
-        setAttemptNumber(attemptRes.data.attempt_number || 1)
-        setMaxAttempts(attemptRes.data.max_attempts || 6)
-
-        const qRes = await testAPI.getQuestions(testId, attemptRes.data.id)
-        setQuestions(qRes.data)
-        questionsRef.current = qRes.data
-        if (qRes.data[0]) setVisited(new Set([qRes.data[0].id]))
-
-        // Tab detection enabled after 2s delay to prevent false positive on load
-        setTimeout(() => { loadedRef.current = true }, 2000)
-
       } catch (err) {
         toast.error(err.response?.data?.detail || 'Failed to load test')
         navigate('/tests')
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     })()
 
     return () => {
+      cancelled = true
       clearInterval(autoSaveRef.current)
     }
-  }, [testId])
+  }, [testId, navigate])
+
+  const beginTest = useCallback(async () => {
+    if (!accepted || starting || started) return
+
+    setStarting(true)
+    loadedRef.current = false
+
+    try {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen?.()
+        }
+      } catch {
+        // Browsers may reject fullscreen in some environments; show recovery after load.
+      }
+
+      const attemptRes = await testAPI.startTest(testId)
+      setAttempt(attemptRes.data)
+      attemptRef.current = attemptRes.data
+      setAttemptNumber(attemptRes.data.attempt_number || 1)
+      setMaxAttempts(attemptRes.data.max_attempts || 6)
+
+      const qRes = await testAPI.getQuestions(testId, attemptRes.data.id)
+      setQuestions(qRes.data)
+      questionsRef.current = qRes.data
+      setVisited(qRes.data[0] ? new Set([qRes.data[0].id]) : new Set())
+      setAnswers({})
+      setTimings({})
+      setMarked(new Set())
+      setCurrent(0)
+      setNatInput('')
+      setTabViolations(0)
+      setFsViolations(0)
+      setShowFsWarning(false)
+      tabViolRef.current = 0
+      fsViolRef.current = 0
+      answersRef.current = {}
+      timingsRef.current = {}
+      setStarted(true)
+
+      setTimeout(() => {
+        loadedRef.current = true
+        if (!document.fullscreenElement) {
+          setShowFsWarning(true)
+        }
+      }, 2000)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to start test')
+      navigate('/tests')
+    } finally {
+      setStarting(false)
+    }
+  }, [accepted, navigate, starting, started, testId])
 
   // ── Submit (stable ref — never recreated) ─────────────────────
   const doSubmitCore = useCallback(async (auto = false) => {
@@ -263,15 +324,6 @@ export default function TestEngine() {
   const handleTimerExpire = useCallback(() => {
     doSubmitRef.current(true)
   }, [])
-
-  // ── Enter fullscreen on load ───────────────────────────────────
-  useEffect(() => {
-    if (!loading && questions.length > 0) {
-      setTimeout(() => {
-        document.documentElement.requestFullscreen?.().catch(() => {})
-      }, 500)
-    }
-  }, [loading, questions.length])
 
   // ── Fullscreen exit detection ────────────────────────────────
   useEffect(() => {
@@ -447,13 +499,147 @@ export default function TestEngine() {
     [attempt?.started_at, test?.duration_minutes]
   )
 
+  const sidebar = useMemo(() => {
+    return (
+      <div className="w-52 border-l flex flex-col flex-shrink-0 overflow-y-auto"
+           style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)', contain: 'layout style paint' }}>
+        <div className="p-3 border-b text-center" style={{ borderColor: 'var(--border)' }}>
+          <div className="w-9 h-9 rounded-full bg-sky-700 flex items-center justify-center mx-auto mb-1">
+            <span className="text-slate-900 dark:text-white font-bold text-sm">U</span>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="p-2 border-b space-y-1.5" style={{ borderColor: 'var(--border)' }}>
+          {[
+            ['q-dot-answered',     `Answered (${answered})`],
+            ['q-dot-not-answered', `Not Answered (${notAnswered})`],
+            ['q-dot-not-visited',  `Not Visited (${questions.length - visited.size})`],
+            ['q-dot-marked',       `Marked (${marked.size})`],
+          ].map(([cls, label]) => (
+            <div key={label} className="flex items-center gap-2">
+              <div className={`q-dot w-6 h-6 text-[9px] ${cls}`} />
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Subject sections */}
+        {subjects.map(subj => {
+          const subjQs = questions.filter(q2 => (q2.subject || 'General') === subj)
+          return (
+            <div key={subj} className="p-2 border-b" style={{ borderColor: 'var(--border)' }}>
+              <p className="text-xs font-semibold mb-2 truncate" style={{ color: 'var(--text)' }}>{subj}</p>
+              <div className="grid grid-cols-5 gap-1">
+                {subjQs.map(q2 => {
+                  const qIdx = questions.indexOf(q2)
+                  const isCur = q2.id === q?.id
+                  const status = isCur ? 'current'
+                    : !visited.has(q2.id) ? 'not-visited'
+                    : getQStatus(q2.id, q?.id, answers, marked)
+                  return (
+                    <button key={q2.id} onClick={() => setCurrent(qIdx)}
+                      className={STATUS_CLASS[status] || STATUS_CLASS['not-visited']}>
+                      {qIdx + 1}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+
+        <div className="p-2 mt-auto">
+          <button onClick={() => setShowConfirm(true)} disabled={submitting}
+            className="btn-primary w-full flex items-center justify-center gap-1.5 text-xs py-2">
+            {submitting ? <Spinner size={12} /> : <Send size={12} />} Submit Test
+          </button>
+        </div>
+      </div>
+    )
+  }, [answered, answers, marked, notAnswered, q?.id, questions, subjects, submitting, visited])
+
   // ── Loading state ──────────────────────────────────────────────
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
       <Spinner size={36} className="text-sky-500" />
     </div>
   )
-  if (!q) return null
+
+  if (!started) return (
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
+      <div className="gate-card w-full max-w-2xl p-6 animate-fade-in">
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text)' }}>
+              General Instructions
+            </h1>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{test?.title}</p>
+          </div>
+          <button onClick={() => navigate('/tests')} className="btn-ghost text-sm px-3 py-2">
+            Back
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {[
+            ['Duration', `${test?.duration_minutes || 0} min`],
+            ['Questions', test?.question_count || 0],
+            ['Marks', test?.total_marks || 0],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded border p-3 text-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-panel)' }}>
+              <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
+              <p className="font-semibold" style={{ color: 'var(--text)' }}>{value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-3 text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+          <p>The test opens in fullscreen mode after you click Begin Test.</p>
+          <p>Leaving fullscreen or switching tabs may be counted as a violation.</p>
+          <p>The timer starts only after the attempt is created.</p>
+        </div>
+
+        <label className="flex items-start gap-3 mb-6 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={accepted}
+            onChange={e => setAccepted(e.target.checked)}
+            className="mt-1"
+          />
+          <span className="text-sm" style={{ color: 'var(--text)' }}>
+            I have read and understood the instructions.
+          </span>
+        </label>
+
+        <button
+          onClick={beginTest}
+          disabled={!accepted || starting}
+          className="btn-primary w-full flex items-center justify-center gap-2"
+        >
+          {starting ? <Spinner size={18} /> : <Maximize size={18} />}
+          {starting ? 'Starting Test...' : 'Begin Test'}
+        </button>
+      </div>
+    </div>
+  )
+
+  if (!q) return (
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
+      <div className="gate-card w-full max-w-md p-6 text-center">
+        <AlertTriangle size={36} className="text-amber-400 mx-auto mb-3" />
+        <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>
+          No Questions Available
+        </h1>
+        <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+          This test does not have any questions to display.
+        </p>
+        <button onClick={() => navigate('/tests')} className="btn-primary w-full">
+          Back to Tests
+        </button>
+      </div>
+    </div>
+  )
 
   return (
     <div className="theme-light-surface h-screen flex flex-col overflow-hidden select-none"
@@ -714,65 +900,7 @@ export default function TestEngine() {
           </div>
         </div>
 
-  {useMemo(() => {
-    return (
-        <div className="w-52 border-l flex flex-col flex-shrink-0 overflow-y-auto"
-             style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)', contain: 'layout style paint' }}>
-          <div className="p-3 border-b text-center" style={{ borderColor: 'var(--border)' }}>
-            <div className="w-9 h-9 rounded-full bg-sky-700 flex items-center justify-center mx-auto mb-1">
-              <span className="text-slate-900 dark:text-white font-bold text-sm">U</span>
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="p-2 border-b space-y-1.5" style={{ borderColor: 'var(--border)' }}>
-            {[
-              ['q-dot-answered',     `Answered (${answered})`],
-              ['q-dot-not-answered', `Not Answered (${notAnswered})`],
-              ['q-dot-not-visited',  `Not Visited (${questions.length - visited.size})`],
-              ['q-dot-marked',       `Marked (${marked.size})`],
-            ].map(([cls, label]) => (
-              <div key={label} className="flex items-center gap-2">
-                <div className={`q-dot w-6 h-6 text-[9px] ${cls}`} />
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Subject sections */}
-          {subjects.map(subj => {
-            const subjQs = questions.filter(q2 => (q2.subject || 'General') === subj)
-            return (
-              <div key={subj} className="p-2 border-b" style={{ borderColor: 'var(--border)' }}>
-                <p className="text-xs font-semibold mb-2 truncate" style={{ color: 'var(--text)' }}>{subj}</p>
-                <div className="grid grid-cols-5 gap-1">
-                  {subjQs.map(q2 => {
-                    const qIdx = questions.indexOf(q2)
-                    const isCur = q2.id === q?.id
-                    const status = isCur ? 'current'
-                      : !visited.has(q2.id) ? 'not-visited'
-                      : getQStatus(q2.id, q?.id, answers, marked)
-                    return (
-                      <button key={q2.id} onClick={() => setCurrent(qIdx)}
-                        className={STATUS_CLASS[status] || STATUS_CLASS['not-visited']}>
-                        {qIdx + 1}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-
-          <div className="p-2 mt-auto">
-            <button onClick={() => setShowConfirm(true)} disabled={submitting}
-              className="btn-primary w-full flex items-center justify-center gap-1.5 text-xs py-2">
-              {submitting ? <Spinner size={12} /> : <Send size={12} />} Submit Test
-            </button>
-          </div>
-        </div>
-    )
-  }, [questions, answers, visited, marked, current, submitting, subjects, answered, notAnswered])}
+        {sidebar}
       </div>
 
       {/* Calculator popup */}

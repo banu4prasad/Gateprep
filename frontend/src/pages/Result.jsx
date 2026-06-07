@@ -275,6 +275,16 @@ export default function ResultPage() {
     toast.success('Result downloaded')
   }
 
+  const filtered = useMemo(() => {
+    if (!result?.answers) return []
+    return result.answers.filter(a =>
+      filter === 'all' ? true :
+      filter === 'correct' ? a.is_correct === true :
+      filter === 'incorrect' ? a.is_correct === false :
+      a.is_correct === null
+    )
+  }, [result?.answers, filter])
+
   if (loading) return <Layout><div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500" /></div></Layout>
   if (!result) return <Layout><p className="text-center py-16" style={{ color: 'var(--text-muted)' }}>Result not found.</p></Layout>
 
@@ -286,16 +296,6 @@ export default function ResultPage() {
       ? ` · Rank #${result.rank}/${result.total_participants}`
       : ` · First-attempt rank #${result.rank}/${result.total_participants}`
     : ''
-
-  const filtered = useMemo(() => {
-    if (!result?.answers) return []
-    return result.answers.filter(a =>
-      filter === 'all' ? true :
-      filter === 'correct' ? a.is_correct === true :
-      filter === 'incorrect' ? a.is_correct === false :
-      a.is_correct === null
-    )
-  }, [result?.answers, filter])
 
   return (
     <Layout>
