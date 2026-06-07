@@ -15,6 +15,8 @@ setup('authenticate', async ({ page }) => {
 
   const email = process.env.TEST_USER_EMAIL || 'test@example.com';
   const password = process.env.TEST_USER_PASSWORD || 'testpassword';
+  const authEmail = process.env.AUTH_TEST_USER_EMAIL || 'auth-flow@example.com';
+  const authPassword = process.env.AUTH_TEST_USER_PASSWORD || password;
 
   // Seed user if it doesn't exist (ignores 400 if already exists)
   await page.request.post(`${apiURL}/auth/register`, {
@@ -22,6 +24,13 @@ setup('authenticate', async ({ page }) => {
       email,
       password,
       full_name: 'Test User'
+    }
+  });
+  await page.request.post(`${apiURL}/auth/register`, {
+    data: {
+      email: authEmail,
+      password: authPassword,
+      full_name: 'Auth Flow User'
     }
   });
 

@@ -26,9 +26,11 @@ def main() -> None:
     admin_password = os.getenv("E2E_ADMIN_PASSWORD", "testpassword")
     test_email = os.getenv("TEST_USER_EMAIL", "test@example.com")
     test_password = os.getenv("TEST_USER_PASSWORD", "testpassword")
+    auth_test_email = os.getenv("AUTH_TEST_USER_EMAIL", "auth-flow@example.com")
+    auth_test_password = os.getenv("AUTH_TEST_USER_PASSWORD", test_password)
 
-    if admin_email == test_email:
-        raise SystemExit("E2E admin and test user emails must be different.")
+    if len({admin_email, test_email, auth_test_email}) != 3:
+        raise SystemExit("E2E admin, test user, and auth test user emails must be different.")
 
     with SessionLocal() as db:
         _upsert_user(
@@ -45,9 +47,16 @@ def main() -> None:
             password=test_password,
             role=UserRole.aspirant,
         )
+        _upsert_user(
+            db,
+            email=auth_test_email,
+            full_name="Auth Flow User",
+            password=auth_test_password,
+            role=UserRole.aspirant,
+        )
         db.commit()
 
-    print(f"Seeded E2E users: {admin_email}, {test_email}")
+    print(f"Seeded E2E users: {admin_email}, {test_email}, {auth_test_email}")
 
 
 if __name__ == "__main__":

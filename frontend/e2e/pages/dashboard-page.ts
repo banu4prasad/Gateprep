@@ -5,7 +5,7 @@ export class DashboardPage {
   readonly availableTestsHeading: Locator;
 
   constructor(private page: Page) {
-    this.heading = page.locator('h1');
+    this.heading = page.getByRole('heading', { name: /^Hello,/ });
     this.availableTestsHeading = page.getByRole('heading', { name: 'Available Tests' });
   }
 

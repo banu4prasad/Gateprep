@@ -7,8 +7,8 @@ test.describe('Authentication Flow', () => {
   test('Successful login redirects to dashboard', async ({ loginPage, page }) => {
     await loginPage.goto();
     // Use test credentials
-    const email = process.env.TEST_USER_EMAIL || 'test@example.com';
-    const password = process.env.TEST_USER_PASSWORD || 'testpassword';
+    const email = process.env.AUTH_TEST_USER_EMAIL || 'auth-flow@example.com';
+    const password = process.env.AUTH_TEST_USER_PASSWORD || process.env.TEST_USER_PASSWORD || 'testpassword';
     
     await loginPage.login(email, password);
     
