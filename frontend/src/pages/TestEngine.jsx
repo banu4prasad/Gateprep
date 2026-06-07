@@ -593,7 +593,8 @@ export default function TestEngine() {
               </div>
               {q.question_image_url && (
                 <img src={q.question_image_url} alt="question"
-                     loading="lazy"
+                     loading="eager"
+                     fetchpriority="high"
                      className="mt-3 max-w-full max-h-64 rounded cursor-pointer border"
                      style={{ borderColor: 'var(--border)' }}
                      onClick={() => window.open(q.question_image_url, '_blank')} />
@@ -714,7 +715,7 @@ export default function TestEngine() {
   {useMemo(() => {
     return (
         <div className="w-52 border-l flex flex-col flex-shrink-0 overflow-y-auto"
-             style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)' }}>
+             style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)', contain: 'layout style paint' }}>
           <div className="p-3 border-b text-center" style={{ borderColor: 'var(--border)' }}>
             <div className="w-9 h-9 rounded-full bg-sky-700 flex items-center justify-center mx-auto mb-1">
               <span className="text-slate-900 dark:text-white font-bold text-sm">U</span>

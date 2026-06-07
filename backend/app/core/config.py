@@ -1,8 +1,9 @@
-from pydantic_settings import BaseSettings
-from pathlib import Path
 import ipaddress
 import re
+from pathlib import Path
 from typing import List
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
 
@@ -46,9 +47,9 @@ def normalize_database_url(database_url: str) -> str:
         raise ValueError(PASSWORD_URL_ENCODING_MESSAGE)
 
     if raw_url.startswith("postgresql://"):
-        raw_url = "postgresql+psycopg2://" + raw_url[len("postgresql://"):]
+        raw_url = "postgresql+psycopg2://" + raw_url[len("postgresql://") :]
     elif raw_url.startswith("postgres://"):
-        raw_url = "postgresql+psycopg2://" + raw_url[len("postgres://"):]
+        raw_url = "postgresql+psycopg2://" + raw_url[len("postgres://") :]
 
     try:
         url = make_url(raw_url)
@@ -89,17 +90,15 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> List[str]:
         return [
-            origin.strip()
-            for origin in self.CORS_ORIGINS.split(",")
-            if origin.strip()
+            origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()
         ]
 
     @property
     def sqlalchemy_database_url(self) -> str:
         return normalize_database_url(self.DATABASE_URL)
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env")
+
 
 settings = Settings()
 Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)

@@ -2,9 +2,10 @@ import math
 import re
 from typing import Any, Optional
 
-
 _NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
-_NAT_RANGE_RE = re.compile(rf"^\s*({_NUMBER})\s*(?:-|:|to)\s*({_NUMBER})\s*$", re.IGNORECASE)
+_NAT_RANGE_RE = re.compile(
+    rf"^\s*({_NUMBER})\s*(?:-|:|to)\s*({_NUMBER})\s*$", re.IGNORECASE
+)
 _ANSWER_SPLIT_RE = re.compile(r"\s*[,;/]\s*")
 
 

@@ -16,7 +16,9 @@ from app.models.models import User, UserRole
 class AuthCookieTests(unittest.TestCase):
     def setUp(self):
         self.original_cookie_secure = settings.AUTH_COOKIE_SECURE
+        self.original_cookie_samesite = settings.AUTH_COOKIE_SAMESITE
         settings.AUTH_COOKIE_SECURE = True
+        settings.AUTH_COOKIE_SAMESITE = "none"
         self.addCleanup(self._restore_cookie_secure)
 
         self.engine = create_engine(
@@ -58,6 +60,7 @@ class AuthCookieTests(unittest.TestCase):
 
     def _restore_cookie_secure(self):
         settings.AUTH_COOKIE_SECURE = self.original_cookie_secure
+        settings.AUTH_COOKIE_SAMESITE = self.original_cookie_samesite
 
     def test_login_sets_httponly_cookie_without_returning_access_token(self):
         response = self.client.post(

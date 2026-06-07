@@ -112,7 +112,7 @@ export default function LeaderboardPage() {
                       <tr key={entry.user_id} className={clsx(
                         'transition-colors',
                         entry.is_current_user ? 'bg-sky-500/5' : 'hover:bg-slate-100 dark:bg-slate-800/30'
-                      )}>
+                      )} style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 53px' }}>
                         <td className="px-5 py-3.5">
                           <div className="flex items-center justify-center w-7 h-7">
                             {m ? m.icon : <span className="text-slate-500 dark:text-slate-400 font-mono text-sm">#{entry.rank}</span>}

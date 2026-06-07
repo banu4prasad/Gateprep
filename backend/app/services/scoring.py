@@ -5,17 +5,17 @@ MCQ:  +marks if correct, -negative_marks if wrong, 0 if skipped
 MSQ:  +marks only if ALL correct options selected exactly, 0 otherwise (no negative)
 NAT:  +marks if answer in range (or exact match), 0 otherwise (no negative)
 """
+
 from typing import Optional
+
 from app.models.models import Question
-from app.services.answer_utils import (
-    normalize_question_type,
-    parse_float,
-    parse_nat_range,
-    split_answer_tokens,
-)
+from app.services.answer_utils import (normalize_question_type, parse_float,
+                                       parse_nat_range, split_answer_tokens)
 
 
-def evaluate_answer(question: Question, selected: Optional[str]) -> tuple[bool | None, float]:
+def evaluate_answer(
+    question: Question, selected: Optional[str]
+) -> tuple[bool | None, float]:
     """
     Returns (is_correct, marks_awarded).
     is_correct: True / False / None (skipped)

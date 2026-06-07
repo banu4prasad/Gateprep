@@ -15,12 +15,9 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from app.services.answer_utils import (
-    is_valid_nat_answer,
-    normalize_choice_answer,
-    parse_float,
-    split_answer_tokens,
-)
+from app.services.answer_utils import (is_valid_nat_answer,
+                                       normalize_choice_answer, parse_float,
+                                       split_answer_tokens)
 
 logger = logging.getLogger(__name__)
 
@@ -41,16 +38,25 @@ QUESTION_HEADER_RE = re.compile(
     r"\s*(?P<rest>.*)$",
     re.IGNORECASE,
 )
-Q_PREFIX_RE = re.compile(r"^\s*(?:Q\.?\s*|Question\s+)(?P<num>\d{1,4})\s*[\).:\-]?\s*(?P<rest>.*)$", re.IGNORECASE)
+Q_PREFIX_RE = re.compile(
+    r"^\s*(?:Q\.?\s*|Question\s+)(?P<num>\d{1,4})\s*[\).:\-]?\s*(?P<rest>.*)$",
+    re.IGNORECASE,
+)
 TYPE_BEFORE_NUM_RE = re.compile(
     rf"^\s*\[?\s*(?P<type>{TYPE_TOKEN_RE})\s*\]?\s*"
     r"(?:Q\.?\s*|Question\s+)?(?P<num>\d{1,4})\s*[\).:\-]?\s*(?P<rest>.*)$",
     re.IGNORECASE,
 )
 NUMBERED_RE = re.compile(r"^\s*(?P<num>\d{1,4})\s*[\).:]\s*(?P<rest>.*)$")
-OPTION_MARKER_RE = re.compile(r"(?<![A-Za-z0-9])(?:[\(\[]\s*([A-Da-d])\s*[\)\]]|([A-Da-d])[\).])\s*")
-ANSWER_LINE_RE = re.compile(r"\b(?:Correct\s+Answer|Answer|Ans)\s*[:.)\-]\s*(?P<answer>.+)$", re.IGNORECASE)
-ANSWER_KEY_TITLE_RE = re.compile(r"^\s*(?:answer\s*key|answers?|solutions?)\s*[:\-]?\s*$", re.IGNORECASE)
+OPTION_MARKER_RE = re.compile(
+    r"(?<![A-Za-z0-9])(?:[\(\[]\s*([A-Da-d])\s*[\)\]]|([A-Da-d])[\).])\s*"
+)
+ANSWER_LINE_RE = re.compile(
+    r"\b(?:Correct\s+Answer|Answer|Ans)\s*[:.)\-]\s*(?P<answer>.+)$", re.IGNORECASE
+)
+ANSWER_KEY_TITLE_RE = re.compile(
+    r"^\s*(?:answer\s*key|answers?|solutions?)\s*[:\-]?\s*$", re.IGNORECASE
+)
 CHOICE_ANSWER_VALUE_RE = (
     r"(?:option\s*)?[\(\[]?\s*[A-Da-d]\s*[\)\].]?"
     r"(?:\s*(?:[,;/&]|\band\b|\bor\b)\s*(?:option\s*)?[\(\[]?\s*[A-Da-d]\s*[\)\].]?)*"
@@ -62,7 +68,10 @@ ANSWER_VALUE_RE = (
     r"(?:\s*[,;/]\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
     r"(?:\s*-\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)?)*)"
 )
-CHOICE_TOKEN_RE = re.compile(r"(?<![A-Za-z0-9])(?:option\s*)?[\(\[]?\s*([A-Da-d])\s*[\)\].]?(?![A-Za-z0-9])", re.IGNORECASE)
+CHOICE_TOKEN_RE = re.compile(
+    r"(?<![A-Za-z0-9])(?:option\s*)?[\(\[]?\s*([A-Da-d])\s*[\)\].]?(?![A-Za-z0-9])",
+    re.IGNORECASE,
+)
 LEADING_CHOICE_ANSWER_RE = re.compile(
     rf"^\s*(?P<choices>{CHOICE_ANSWER_VALUE_RE})(?=\s|$)",
     re.IGNORECASE,
@@ -87,8 +96,12 @@ SOLUTION_ANSWER_RE = re.compile(
     rf"(?:(?:Correct\s+Answer|Answer|Ans)\s*[:\-]?\s*)?(?P<answer>{ANSWER_VALUE_RE})(?=\s|$)",
     re.IGNORECASE,
 )
-MARKS_INLINE_RE = re.compile(r"\+?(?P<marks>\d+(?:\.\d+)?)\s*-\s*(?P<negative>\d+(?:\.\d+)?)")
-MARKS_WORD_RE = re.compile(r"[\[(]\s*(?P<marks>\d+(?:\.\d+)?)\s*marks?\s*[\])]", re.IGNORECASE)
+MARKS_INLINE_RE = re.compile(
+    r"\+?(?P<marks>\d+(?:\.\d+)?)\s*-\s*(?P<negative>\d+(?:\.\d+)?)"
+)
+MARKS_WORD_RE = re.compile(
+    r"[\[(]\s*(?P<marks>\d+(?:\.\d+)?)\s*marks?\s*[\])]", re.IGNORECASE
+)
 MARK_RULE_RE = re.compile(
     r"(?:Q\.?\s*)?(?P<start>\d{1,4})\s*(?:to|\-|through)\s*(?:Q\.?\s*)?(?P<end>\d{1,4})"
     r".*?\bcarry\s+(?P<marks>one|two|three|four|five|\d+(?:\.\d+)?)\s+marks?\s+each",
@@ -181,7 +194,10 @@ def _extract_pages(pdf_path: str) -> List[PageText]:
         import pdfplumber
 
         with pdfplumber.open(pdf_path) as pdf:
-            pages = [PageText(i + 1, page.extract_text() or "") for i, page in enumerate(pdf.pages)]
+            pages = [
+                PageText(i + 1, page.extract_text() or "")
+                for i, page in enumerate(pdf.pages)
+            ]
             if any(page.text.strip() for page in pages):
                 logger.info("Extracted %s pages with pdfplumber", len(pages))
                 return pages
@@ -207,8 +223,12 @@ def _parse_gate_questions(text: str) -> List[Dict[str, Any]]:
     return _parse_pages([PageText(1, text)], source_filename=None)
 
 
-def _parse_pages(pages: List[PageText], source_filename: Optional[str]) -> List[Dict[str, Any]]:
-    normalized_pages = [PageText(page.page_number, _normalize_text(page.text)) for page in pages]
+def _parse_pages(
+    pages: List[PageText], source_filename: Optional[str]
+) -> List[Dict[str, Any]]:
+    normalized_pages = [
+        PageText(page.page_number, _normalize_text(page.text)) for page in pages
+    ]
     lines = _page_lines(normalized_pages)
     profiles = _select_profiles(lines)
     answer_keys = _parse_answer_key_sections(lines)
@@ -217,23 +237,36 @@ def _parse_pages(pages: List[PageText], source_filename: Optional[str]) -> List[
 
     question_number_counts: Dict[int, int] = {}
     for block in blocks:
-        question_number_counts[block.question_number] = question_number_counts.get(block.question_number, 0) + 1
+        question_number_counts[block.question_number] = (
+            question_number_counts.get(block.question_number, 0) + 1
+        )
 
     seen_in_section: set[tuple[str, int]] = set()
     questions: List[Dict[str, Any]] = []
     for block in blocks:
-        parsed = _parse_question_block(block, answer_keys, mark_rules, question_number_counts, source_filename)
+        parsed = _parse_question_block(
+            block, answer_keys, mark_rules, question_number_counts, source_filename
+        )
         duplicate_key = (parsed.get("section_title") or "", parsed["question_number"])
         duplicate = duplicate_key in seen_in_section
         seen_in_section.add(duplicate_key)
         questions.append(_validate_and_score(parsed, duplicate=duplicate))
 
     needs_review = sum(1 for question in questions if question.get("needs_review"))
-    logger.info("Selected PDF parser profile(s): %s", ", ".join(profiles) if profiles else "generic_profile")
+    logger.info(
+        "Selected PDF parser profile(s): %s",
+        ", ".join(profiles) if profiles else "generic_profile",
+    )
     logger.info("PDF parser pages extracted: %s", len(pages))
-    logger.info("PDF parser sections detected: %s", len({q.get("section_title") for q in questions if q.get("section_title")}))
+    logger.info(
+        "PDF parser sections detected: %s",
+        len({q.get("section_title") for q in questions if q.get("section_title")}),
+    )
     logger.info("PDF parser question blocks detected: %s", len(blocks))
-    logger.info("PDF parser answers detected: %s", sum(len(v) for v in answer_keys.by_number.values()))
+    logger.info(
+        "PDF parser answers detected: %s",
+        sum(len(v) for v in answer_keys.by_number.values()),
+    )
     logger.info("PDF parser questions returned: %s", len(questions))
     logger.info("PDF parser questions needing review: %s", needs_review)
     return questions
@@ -264,7 +297,10 @@ def _select_profiles(lines: List[SourceLine]) -> List[str]:
         profiles.append("separate_answer_key_profile")
     if ANSWER_LINE_RE.search(text):
         profiles.append("inline_answer_profile")
-    if any(_parse_question_boundary(line.text) and _extract_question_type(line.text) for line in lines):
+    if any(
+        _parse_question_boundary(line.text) and _extract_question_type(line.text)
+        for line in lines
+    ):
         profiles.append("typed_numbered_question_profile")
     if any(len(list(OPTION_MARKER_RE.finditer(line.text))) > 1 for line in lines):
         profiles.append("compact_question_profile")
@@ -292,7 +328,12 @@ def _parse_answer_key_sections(lines: List[SourceLine]) -> AnswerKeys:
         if not in_key:
             solution_match = SOLUTION_ANSWER_RE.search(text)
             if solution_match:
-                _store_answer(keys, int(solution_match.group("num")), _clean_answer_value(solution_match.group("answer")), None)
+                _store_answer(
+                    keys,
+                    int(solution_match.group("num")),
+                    _clean_answer_value(solution_match.group("answer")),
+                    None,
+                )
             continue
 
         keys.line_indexes.add(line.index)
@@ -305,7 +346,9 @@ def _parse_answer_key_sections(lines: List[SourceLine]) -> AnswerKeys:
     return keys
 
 
-def _store_answer(keys: AnswerKeys, q_num: int, answer: str, section_title: Optional[str]) -> None:
+def _store_answer(
+    keys: AnswerKeys, q_num: int, answer: str, section_title: Optional[str]
+) -> None:
     if not answer:
         return
     keys.by_number.setdefault(q_num, []).append(answer)
@@ -335,11 +378,15 @@ def _parse_mark_rules(lines: List[SourceLine]) -> List[MarkRule]:
         raw_marks = match.group("marks").lower()
         marks = WORD_NUMBERS.get(raw_marks, parse_float(raw_marks))
         if marks is not None:
-            rules.append(MarkRule(int(match.group("start")), int(match.group("end")), marks))
+            rules.append(
+                MarkRule(int(match.group("start")), int(match.group("end")), marks)
+            )
     return rules
 
 
-def _detect_question_blocks(lines: List[SourceLine], answer_key_line_indexes: set[int]) -> List[QuestionBlock]:
+def _detect_question_blocks(
+    lines: List[SourceLine], answer_key_line_indexes: set[int]
+) -> List[QuestionBlock]:
     blocks: List[QuestionBlock] = []
     current: Optional[QuestionBlock] = None
     recent_context: List[str] = []
@@ -365,12 +412,17 @@ def _detect_question_blocks(lines: List[SourceLine], answer_key_line_indexes: se
             candidate_section = _latest_section_title(recent_context)
             if candidate_section and (current_section is None or boundary.number == 1):
                 current_section = candidate_section
-            elif last_question_number is not None and boundary.number <= last_question_number:
+            elif (
+                last_question_number is not None
+                and boundary.number <= last_question_number
+            ):
                 section_index += 1
                 current_section = candidate_section or f"Section {section_index + 1}"
 
             global_question_number += 1
-            occurrence_counts[boundary.number] = occurrence_counts.get(boundary.number, 0) + 1
+            occurrence_counts[boundary.number] = (
+                occurrence_counts.get(boundary.number, 0) + 1
+            )
             current = QuestionBlock(
                 question_number=boundary.number,
                 global_question_number=global_question_number,
@@ -381,7 +433,9 @@ def _detect_question_blocks(lines: List[SourceLine], answer_key_line_indexes: se
                 occurrence_index=occurrence_counts[boundary.number],
             )
             if boundary.rest:
-                current.lines.append(SourceLine(boundary.rest, line.page_number, line.index))
+                current.lines.append(
+                    SourceLine(boundary.rest, line.page_number, line.index)
+                )
 
             recent_context.clear()
             last_question_number = boundary.number
@@ -428,7 +482,9 @@ def _parse_question_boundary(text: str) -> Optional[QuestionBoundary]:
         if number > 500:
             return None
         rest = numbered.group("rest").strip()
-        return QuestionBoundary(number=number, declared_type=_extract_question_type(rest), rest=rest)
+        return QuestionBoundary(
+            number=number, declared_type=_extract_question_type(rest), rest=rest
+        )
 
     return None
 
@@ -453,7 +509,9 @@ def _parse_question_block(
             text = remainder.strip()
         text = _strip_question_metadata(text)
         if text:
-            cleaned_lines.append(SourceLine(text, source_line.page_number, source_line.index))
+            cleaned_lines.append(
+                SourceLine(text, source_line.page_number, source_line.index)
+            )
 
     question_lines, options = _parse_options_and_question_text(cleaned_lines)
     question_text = _clean_spaces(" ".join(question_lines))
@@ -463,7 +521,9 @@ def _parse_question_block(
     if not question_type:
         question_type = _infer_question_type(question_text, options, inline_answer)
 
-    marks, negative_marks, marks_found = _resolve_marks(raw_text, question_type, block.question_number, mark_rules)
+    marks, negative_marks, marks_found = _resolve_marks(
+        raw_text, question_type, block.question_number, mark_rules
+    )
     answer = inline_answer or _lookup_answer(answer_keys, block, question_number_counts)
     answer = _normalize_answer(answer, question_type)
     if question_type == "mcq" and len(_choice_tokens(answer)) > 1:
@@ -490,7 +550,9 @@ def _parse_question_block(
         "has_image": has_image,
         "_type_found": type_found,
         "_marks_found": marks_found,
-        "_answer_source": "inline" if inline_answer else "answer_key" if answer else None,
+        "_answer_source": (
+            "inline" if inline_answer else "answer_key" if answer else None
+        ),
     }
 
 
@@ -505,7 +567,9 @@ def _extract_inline_answer(text: str) -> tuple[str, str]:
 
 def _clean_answer_value(value: str) -> str:
     text = str(value or "").strip()
-    text = re.split(r"\s+(?:because|since|for)\b", text, maxsplit=1, flags=re.IGNORECASE)[0]
+    text = re.split(
+        r"\s+(?:because|since|for)\b", text, maxsplit=1, flags=re.IGNORECASE
+    )[0]
     text = text.strip().strip("[]()")
     if re.fullmatch(r"[A-Da-d](?:\s*[,;/]\s*[A-Da-d])*[.)]?", text):
         text = text.rstrip(".)")
@@ -516,15 +580,21 @@ def _strip_question_metadata(text: str) -> str:
     if not text:
         return text
     match = QUESTION_HEADER_RE.match(text)
-    if match and (match.group("type") or match.group("marks") or match.group("bracket_marks")):
+    if match and (
+        match.group("type") or match.group("marks") or match.group("bracket_marks")
+    ):
         return match.group("rest").strip()
-    text = re.sub(rf"^\s*\[?\s*{TYPE_TOKEN_RE}\s*\]?\s*(?:\|\s*)?", "", text, flags=re.IGNORECASE)
+    text = re.sub(
+        rf"^\s*\[?\s*{TYPE_TOKEN_RE}\s*\]?\s*(?:\|\s*)?", "", text, flags=re.IGNORECASE
+    )
     text = MARKS_INLINE_RE.sub("", text, count=1).strip()
     text = MARKS_WORD_RE.sub("", text, count=1).strip()
     return text.strip(" |")
 
 
-def _parse_options_and_question_text(lines: List[SourceLine]) -> tuple[List[str], List[str]]:
+def _parse_options_and_question_text(
+    lines: List[SourceLine],
+) -> tuple[List[str], List[str]]:
     question_lines: List[str] = []
     options_by_label: Dict[str, str] = {}
     current_label: Optional[str] = None
@@ -536,31 +606,49 @@ def _parse_options_and_question_text(lines: List[SourceLine]) -> tuple[List[str]
             prefix = text[: markers[0].start()].strip()
             if prefix:
                 if current_label:
-                    options_by_label[current_label] = _clean_spaces(f"{options_by_label.get(current_label, '')} {prefix}")
+                    options_by_label[current_label] = _clean_spaces(
+                        f"{options_by_label.get(current_label, '')} {prefix}"
+                    )
                 else:
                     question_lines.append(prefix)
 
             for idx, marker in enumerate(markers):
                 label = (marker.group(1) or marker.group(2)).upper()
-                next_start = markers[idx + 1].start() if idx + 1 < len(markers) else len(text)
+                next_start = (
+                    markers[idx + 1].start() if idx + 1 < len(markers) else len(text)
+                )
                 value = text[marker.end() : next_start].strip()
                 postfixed_value = False
-                if not value and len(markers) == 1 and _looks_postfixed_option_text(question_lines[-1] if question_lines else ""):
+                if (
+                    not value
+                    and len(markers) == 1
+                    and _looks_postfixed_option_text(
+                        question_lines[-1] if question_lines else ""
+                    )
+                ):
                     value = question_lines.pop()
                     postfixed_value = True
                 if label in options_by_label and value:
-                    options_by_label[label] = _clean_spaces(f"{options_by_label[label]} {value}")
+                    options_by_label[label] = _clean_spaces(
+                        f"{options_by_label[label]} {value}"
+                    )
                 else:
                     options_by_label.setdefault(label, value)
                 current_label = None if postfixed_value else label
             continue
 
         if current_label:
-            options_by_label[current_label] = _clean_spaces(f"{options_by_label.get(current_label, '')} {text}")
+            options_by_label[current_label] = _clean_spaces(
+                f"{options_by_label.get(current_label, '')} {text}"
+            )
         elif text:
             question_lines.append(text)
 
-    options = [_clean_spaces(options_by_label[label]) for label in ("A", "B", "C", "D") if options_by_label.get(label, "").strip()]
+    options = [
+        _clean_spaces(options_by_label[label])
+        for label in ("A", "B", "C", "D")
+        if options_by_label.get(label, "").strip()
+    ]
     return question_lines, options
 
 
@@ -570,7 +658,11 @@ def _looks_postfixed_option_text(text: str) -> bool:
         return False
     if re.search(r"[,;$¬∧∨→↔≠=]", value):
         return True
-    return len(value.split()) <= 4 and not re.search(r"\b(choose|select|determine|identify|consider|suppose|which)\b", value, re.IGNORECASE)
+    return len(value.split()) <= 4 and not re.search(
+        r"\b(choose|select|determine|identify|consider|suppose|which)\b",
+        value,
+        re.IGNORECASE,
+    )
 
 
 def _resolve_marks(
@@ -585,20 +677,34 @@ def _resolve_marks(
 
     word = MARKS_WORD_RE.search(raw_text)
     if word:
-        return float(word.group("marks")), DEFAULT_NEGATIVE.get(question_type, 0.33), True
+        return (
+            float(word.group("marks")),
+            DEFAULT_NEGATIVE.get(question_type, 0.33),
+            True,
+        )
 
     for rule in mark_rules:
         if rule.start <= question_number <= rule.end:
             return rule.marks, DEFAULT_NEGATIVE.get(question_type, 0.33), True
 
-    return DEFAULT_MARKS.get(question_type, 1.0), DEFAULT_NEGATIVE.get(question_type, 0.33), False
+    return (
+        DEFAULT_MARKS.get(question_type, 1.0),
+        DEFAULT_NEGATIVE.get(question_type, 0.33),
+        False,
+    )
 
 
-def _lookup_answer(keys: AnswerKeys, block: QuestionBlock, question_number_counts: Dict[int, int]) -> str:
+def _lookup_answer(
+    keys: AnswerKeys, block: QuestionBlock, question_number_counts: Dict[int, int]
+) -> str:
     if block.section_title:
-        section_answers = keys.by_section.get((block.section_title, block.question_number))
+        section_answers = keys.by_section.get(
+            (block.section_title, block.question_number)
+        )
         if section_answers:
-            return section_answers[min(block.occurrence_index - 1, len(section_answers) - 1)]
+            return section_answers[
+                min(block.occurrence_index - 1, len(section_answers) - 1)
+            ]
 
     answers = keys.by_number.get(block.question_number, [])
     if not answers:
@@ -610,7 +716,9 @@ def _lookup_answer(keys: AnswerKeys, block: QuestionBlock, question_number_count
     return ""
 
 
-def _validate_and_score(question: Dict[str, Any], duplicate: bool = False) -> Dict[str, Any]:
+def _validate_and_score(
+    question: Dict[str, Any], duplicate: bool = False
+) -> Dict[str, Any]:
     warnings: List[str] = []
     q_type = question["question_type"]
     answer = question.get("correct_answer") or ""
@@ -658,7 +766,9 @@ def _validate_and_score(question: Dict[str, Any], duplicate: bool = False) -> Di
 
     question["warnings"] = warnings
     question["confidence"] = confidence
-    question["needs_review"] = any(warning in REVIEW_WARNINGS for warning in warnings) or confidence < 0.7
+    question["needs_review"] = (
+        any(warning in REVIEW_WARNINGS for warning in warnings) or confidence < 0.7
+    )
     question.pop("_type_found", None)
     question.pop("_marks_found", None)
     question.pop("_answer_source", None)
@@ -714,7 +824,9 @@ def _infer_question_type(question_text: str, options: List[str], answer: str) ->
         return text_type
     if options:
         return "msq" if len(_choice_tokens(answer)) > 1 else "mcq"
-    if is_valid_nat_answer(answer) or re.search(r"\b(value|number|calculate|find|____|___)\b", question_text, re.IGNORECASE):
+    if is_valid_nat_answer(answer) or re.search(
+        r"\b(value|number|calculate|find|____|___)\b", question_text, re.IGNORECASE
+    ):
         return "nat"
     return "mcq"
 
@@ -795,13 +907,23 @@ def _looks_section_title(text: str) -> bool:
     value = _clean_spaces(text)
     if not value or len(value) > 120:
         return False
-    if _parse_question_boundary(value) or OPTION_MARKER_RE.match(value) or ANSWER_LINE_RE.search(value):
+    if (
+        _parse_question_boundary(value)
+        or OPTION_MARKER_RE.match(value)
+        or ANSWER_LINE_RE.search(value)
+    ):
         return False
     lower = value.lower()
-    if re.search(r"\b(section|chapter|topic|subject|part|test|quiz|dpp|module)\b", lower):
+    if re.search(
+        r"\b(section|chapter|topic|subject|part|test|quiz|dpp|module)\b", lower
+    ):
         return True
     words = re.findall(r"[A-Za-z]+", value)
-    return 1 <= len(words) <= 10 and value.upper() == value and any(len(word) > 2 for word in words)
+    return (
+        1 <= len(words) <= 10
+        and value.upper() == value
+        and any(len(word) > 2 for word in words)
+    )
 
 
 def _clean_spaces(text: str) -> str:
@@ -819,15 +941,19 @@ def validate_json_questions(data: list) -> List[Dict[str, Any]]:
         if q_type in {"mcq", "msq"}:
             correct_answer = normalize_choice_answer(correct_answer)
 
-        normalized.append({
-            "question_type": q_type,
-            "question_text": str(q.get("question_text", "")).strip(),
-            "options": q.get("options", []),
-            "correct_answer": correct_answer,
-            "marks": float(q.get("marks", DEFAULT_MARKS[q_type])),
-            "negative_marks": float(q.get("negative_marks", DEFAULT_NEGATIVE[q_type])),
-            "subject": q.get("subject"),
-            "topic": q.get("topic"),
-        })
+        normalized.append(
+            {
+                "question_type": q_type,
+                "question_text": str(q.get("question_text", "")).strip(),
+                "options": q.get("options", []),
+                "correct_answer": correct_answer,
+                "marks": float(q.get("marks", DEFAULT_MARKS[q_type])),
+                "negative_marks": float(
+                    q.get("negative_marks", DEFAULT_NEGATIVE[q_type])
+                ),
+                "subject": q.get("subject"),
+                "topic": q.get("topic"),
+            }
+        )
 
     return [q for q in normalized if q["question_text"]]

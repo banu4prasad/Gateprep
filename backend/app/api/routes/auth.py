@@ -1,20 +1,17 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
 
+from typing import Optional, cast, Literal
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    decode_token,
-    generate_session_id,
-    hash_password_reset_token,
-)
+from app.core.security import (create_access_token, decode_token,
+                               generate_session_id, hash_password,
+                               hash_password_reset_token, verify_password)
 from app.models.models import PasswordResetToken, User, UserRole
-from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -24,13 +21,16 @@ class RegisterRequest(BaseModel):
     full_name: str
     password: str
 
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+
 class ResetPasswordRequest(BaseModel):
     token: str
     password: str
+
 
 class AuthUserResponse(BaseModel):
     id: int
@@ -60,7 +60,7 @@ def _set_auth_cookie(response: Response, token: str) -> None:
         max_age=_auth_cookie_max_age_seconds(),
         httponly=True,
         secure=settings.AUTH_COOKIE_SECURE,
-        samesite=settings.AUTH_COOKIE_SAMESITE,
+        samesite=cast(Literal["lax", "strict", "none"] | None, settings.AUTH_COOKIE_SAMESITE),
         path="/",
     )
 
@@ -71,7 +71,7 @@ def _clear_auth_cookie(response: Response) -> None:
         path="/",
         secure=settings.AUTH_COOKIE_SECURE,
         httponly=True,
-        samesite=settings.AUTH_COOKIE_SAMESITE,
+        samesite=cast(Literal["lax", "strict", "none"] | None, settings.AUTH_COOKIE_SAMESITE),
     )
 
 
@@ -84,30 +84,40 @@ def _auth_user_response(user: User) -> AuthUserResponse:
     )
 
 
-def create_token_for_user(user: User, db: Session, request: Request = None) -> str:
+def create_token_for_user(user: User, db: Session, request: Optional[Request] = None) -> str:
     session_id = generate_session_id()
     user.current_session_id = session_id
-    if request:
+    if request and request.client:
         user.current_ip = request.client.host
     db.commit()
-    return create_access_token({"sub": user.id, "role": user.role, "sid": session_id, "auth": "cookie"})
+    return create_access_token(
+        {"sub": user.id, "role": user.role, "sid": session_id, "auth": "cookie"}
+    )
 
 
 # ── Register ──────────────────────────────────────────────────────
 
+
 @router.post("/register", response_model=AuthUserResponse)
-def register(payload: RegisterRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+def register(
+    payload: RegisterRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     if len(payload.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        raise HTTPException(
+            status_code=400, detail="Password must be at least 6 characters"
+        )
 
     is_first = db.query(User).count() == 0
     user = User(
         email=payload.email,
         full_name=payload.full_name,
         hashed_password=hash_password(payload.password),
-        role=UserRole.admin if is_first else UserRole.user
+        role=UserRole.admin if is_first else UserRole.user,
     )
     db.add(user)
     db.commit()
@@ -119,10 +129,20 @@ def register(payload: RegisterRequest, request: Request, response: Response, db:
 
 # ── Login ─────────────────────────────────────────────────────────
 
+
 @router.post("/login", response_model=AuthUserResponse)
-def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+def login(
+    payload: LoginRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.email == payload.email).first()
-    if not user or not user.hashed_password or not verify_password(payload.password, user.hashed_password):
+    if (
+        not user
+        or not user.hashed_password
+        or not verify_password(payload.password, user.hashed_password)
+    ):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account disabled. Contact admin.")
@@ -140,7 +160,8 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
             user_id = payload.get("sub")
             session_id = payload.get("sid")
             try:
-                user_id = int(user_id)
+                if user_id is not None:
+                    user_id = int(user_id)
             except (ValueError, TypeError):
                 user_id = None
 
@@ -156,13 +177,16 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 
 # ── Reset Password ────────────────────────────────────────────────
 
+
 @router.post("/reset-password")
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     token = payload.token.strip()
     if not token:
         raise HTTPException(status_code=400, detail="Invalid or expired reset link")
     if len(payload.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        raise HTTPException(
+            status_code=400, detail="Password must be at least 6 characters"
+        )
 
     reset_token = (
         db.query(PasswordResetToken)
@@ -201,6 +225,7 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
 
 # ── Me ────────────────────────────────────────────────────────────
 
+
 @router.get("/me")
 def me(current_user: User = Depends(get_current_user)):
     return {
@@ -210,5 +235,5 @@ def me(current_user: User = Depends(get_current_user)):
         "role": current_user.role,
         "is_active": current_user.is_active,
         "profile_photo": current_user.profile_photo,
-        "created_at": current_user.created_at
+        "created_at": current_user.created_at,
     }

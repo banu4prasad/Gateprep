@@ -338,7 +338,7 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
   const typeColor = { mcq:'badge-blue', msq:'badge-amber', nat:'badge-green' }
 
   return (
-    <div className="gate-card overflow-hidden">
+    <div className="gate-card overflow-hidden" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 80px' }}>
       <div className="flex items-start gap-3 p-4 cursor-pointer" onClick={() => setOpen(o=>!o)}>
         <span className="font-mono text-slate-600 text-sm mt-0.5 w-6 flex-shrink-0">Q{idx+1}</span>
         <div className="flex-1 min-w-0">
