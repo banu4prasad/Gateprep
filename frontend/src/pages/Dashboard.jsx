@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { useAuth } from '../context/AuthContext'
@@ -19,10 +19,12 @@ export default function Dashboard() {
       .finally(() => setLoading(false))
   }, [])
 
-  const submitted = history.filter(h => h.status === 'submitted')
-  const completedCount = new Set(submitted.map(h => h.test_id)).size
-
-  const attemptMap = Object.fromEntries(history.map(h => [h.test_id, h]))
+  const { submitted, completedCount, attemptMap } = useMemo(() => {
+    const submitted = history.filter(h => h.status === 'submitted')
+    const completedCount = new Set(submitted.map(h => h.test_id)).size
+    const attemptMap = Object.fromEntries(history.map(h => [h.test_id, h]))
+    return { submitted, completedCount, attemptMap }
+  }, [history])
 
   if (loading) return <Layout><div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500"/></div></Layout>
 
@@ -31,7 +33,7 @@ export default function Dashboard() {
       <div className="space-y-8 animate-fade-in">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-            Hello, {user?.full_name?.split(' ')[0]} 👋
+            Hello, {user?.full_name?.split(' ')[0]}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">Ready to practice? Pick a test below.</p>
         </div>

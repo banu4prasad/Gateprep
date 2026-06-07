@@ -1,0 +1,41 @@
+import { test as setup, expect } from '@playwright/test';
+import { LoginPage } from './pages/login-page';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const authFile = 'e2e/.auth/user.json';
+
+setup('authenticate', async ({ page }) => {
+  // Ensure the .auth directory exists
+  const authDir = path.dirname(authFile);
+  if (!fs.existsSync(authDir)) {
+    fs.mkdirSync(authDir, { recursive: true });
+  }
+
+  const email = process.env.TEST_USER_EMAIL || 'test@example.com';
+  const password = process.env.TEST_USER_PASSWORD || 'testpassword';
+
+  // Seed user if it doesn't exist (ignores 400 if already exists)
+  await page.request.post('http://localhost:8000/auth/register', {
+    data: {
+      email,
+      password,
+      full_name: 'Test User'
+    }
+  });
+
+  const loginPage = new LoginPage(page);
+  await loginPage.goto();
+
+  await loginPage.login(email, password);
+
+  // Wait for redirect to dashboard to confirm login success
+  await page.waitForURL(/\/dashboard/);
+  await page.screenshot({ path: 'debug.png' });
+  
+  // Wait for the Dashboard title to be visible to ensure state is fully loaded
+  await expect(page.getByRole('heading', { name: 'Available Tests' })).toBeVisible();
+
+  // Save signed-in state
+  await page.context().storageState({ path: authFile });
+});

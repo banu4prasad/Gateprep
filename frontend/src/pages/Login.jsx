@@ -23,7 +23,7 @@ export default function LoginPage() {
       const user = saveUser(res.data)
       toast.success(`Welcome back, ${user.full_name.split(' ')[0]}!`)
       if (user.role === 'admin') navigate('/admin', { replace: true })
-      else if (user.role === 'aspirant') navigate('/dashboard', { replace: true })
+      else if (user.role === 'aspirant' || user.role === 'user') navigate('/dashboard', { replace: true })
       else navigate('/pending', { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Invalid email or password')

@@ -93,8 +93,10 @@ const TimerDisplay = ({
       const minsLeft = Math.ceil(left / 60000)
       if (announceWarnings && TIMER_WARNINGS.includes(minsLeft) && !warnedRef.current.has(minsLeft) && left > 1000) {
         warnedRef.current.add(minsLeft)
-        toast(minsLeft === 1 ? '🚨 1 minute remaining!' : `⏰ ${minsLeft} minutes remaining`,
-          { duration: 4000 })
+        if (minsLeft === 5 || minsLeft === 1) {
+          toast(minsLeft === 1 ? '1 minute remaining!' : `${minsLeft} minutes remaining`,
+            { duration: 4000 })
+        }
       }
 
       if (left <= 0 && !expiredRef.current) {
@@ -232,7 +234,7 @@ export default function TestEngine() {
         time_spent_seconds: currentTimings[q.id] || 0
       }))
       const res = await testAPI.submitTest(testIdRef.current, currentAttempt.id, ans)
-      if (auto) toast('⏰ Time up! Auto-submitted.', { duration: 5000 })
+      if (auto) toast('Time up! Auto-submitted.', { duration: 5000 })
       else toast.success('Test submitted successfully!')
 
       if (res.data?.persisted === false && res.data?.result) {
@@ -271,7 +273,7 @@ export default function TestEngine() {
     }
   }, [loading, questions.length])
 
-  // ── Fullscreen exit detection ──────────────────────────────────
+  // ── Fullscreen exit detection ────────────────────────────────
   useEffect(() => {
     const handleFsChange = () => {
       // Only detect AFTER initial fullscreen enter
@@ -295,7 +297,7 @@ export default function TestEngine() {
     return () => document.removeEventListener('fullscreenchange', handleFsChange)
   }, [])
 
-  // ── Tab/window visibility detection ───────────────────────────
+  // ── Tab/window visibility detection ──────────────────────────
   useEffect(() => {
     const handleVisibility = () => {
       if (document.hidden && loadedRef.current) {
@@ -307,7 +309,7 @@ export default function TestEngine() {
           toast.error('3 tab violations — auto submitting!')
           doSubmitRef.current(true)
         } else {
-          toast(`⚠️ Tab switch detected! Warning ${next}/3`, { duration: 3000 })
+          toast(`Tab switch detected! Warning ${next}/3`, { duration: 3000 })
           testAPI.updateViolations(testIdRef.current, attemptRef.current?.id, {
             tab_violations: next
           }).catch(() => {})
@@ -535,7 +537,7 @@ export default function TestEngine() {
           {/* Violations badge */}
           {totalViol > 0 && (
             <span className="text-xs font-medium text-red-400 hidden sm:block">
-              ⚠️ {totalViol}/3
+              {totalViol}/3 Violations
             </span>
           )}
 
@@ -637,7 +639,7 @@ export default function TestEngine() {
             {/* MSQ */}
             {q.question_type === 'msq' && (
               <div className="space-y-2">
-                <p className="text-xs text-amber-400 mb-2">⚠️ One or more correct answers. No negative marking.</p>
+                <p className="text-xs text-amber-400 mb-2">One or more correct answers. No negative marking.</p>
                 {q.options.map((opt, i) => {
                   const letter = 'ABCD'[i]
                   const sel = (answers[q.id] || '').split(',').includes(letter)
@@ -663,7 +665,7 @@ export default function TestEngine() {
             {/* NAT */}
             {q.question_type === 'nat' && (
               <div>
-                <p className="text-xs text-green-400 mb-3">📊 Enter numerical answer. No negative marking.</p>
+                <p className="text-xs text-green-400 mb-3">Enter numerical answer. No negative marking.</p>
                 <div className="flex gap-3 items-center max-w-xs">
                   <input type="number" step="any"
                     className="input font-mono text-lg flex-1"

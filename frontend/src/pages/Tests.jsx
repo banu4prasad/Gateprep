@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { testAPI } from '../api/api'
@@ -121,7 +121,7 @@ export default function TestsPage() {
   const goBack = (idx) => setNav(n => n.slice(0, idx))
 
   // Get current filtered tests based on nav
-  const getFilteredTests = () => {
+  const filteredTests = useMemo(() => {
     let filtered = tests
     nav.forEach(step => {
       if (step.type === 'category') filtered = filtered.filter(t => t.category === step.value)
@@ -130,23 +130,22 @@ export default function TestsPage() {
       if (step.type === 'subject')  filtered = filtered.filter(t => t.subject === step.value)
     })
     return filtered
-  }
+  }, [tests, nav])
 
   // Build breadcrumb labels
-  const breadcrumbs = ['Tests', ...nav.map(s => {
+  const breadcrumbs = useMemo(() => ['Tests', ...nav.map(s => {
     if (s.type === 'category') return s.value === 'weekly_quiz' ? 'Weekly Quiz' : 'Test Series'
     if (s.type === 'series')   return SERIES_LABELS[s.value] || s.value
     if (s.type === 'type')     return TYPE_LABELS[s.value] || s.value
     if (s.type === 'subject')  return s.value
     return s.value
-  })]
+  })], [nav])
 
   if (loading) return (
     <Layout><div className="flex justify-center py-20"><Spinner size={28} className="text-sky-500" /></div></Layout>
   )
 
   const currentNav = nav[nav.length - 1]
-  const filteredTests = getFilteredTests()
 
   // ── Root: pick category ───────────────────────────────────────
   if (nav.length === 0) {
@@ -157,8 +156,8 @@ export default function TestsPage() {
         <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Tests</h1>
           <div className="grid gap-4">
-            <NavCard label="📝 Weekly Quiz" count={wqCount} onClick={() => push('category', 'weekly_quiz')} />
-            <NavCard label="📚 Test Series" count={tsCount} onClick={() => push('category', 'test_series')} />
+            <NavCard label="Weekly Quiz" count={wqCount} onClick={() => push('category', 'weekly_quiz')} />
+            <NavCard label="Test Series" count={tsCount} onClick={() => push('category', 'test_series')} />
           </div>
         </div>
       </Layout>

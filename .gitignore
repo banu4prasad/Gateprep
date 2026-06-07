@@ -36,3 +36,13 @@ Thumbs.db
 # Coverage
 .coverage
 htmlcov/
+
+# Playwright Testing
+frontend/playwright-report/
+frontend/test-results/
+frontend/playwright/.cache/
+frontend/e2e/.auth/
+frontend/debug.png
+
+# Build artifacts
+frontend/stats.html

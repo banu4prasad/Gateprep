@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, memo, useCallback } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { testAPI, bookmarkAPI } from '../api/api'
@@ -117,9 +117,8 @@ function downloadResultReport(result) {
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
-function QuestionReview({ qa, idx, bookmarked, onToggleBookmark }) {
+const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onToggleBookmark }) {
   const [open, setOpen] = useState(false)
-  const isBookmarked = bookmarked.has(qa.question_id)
 
   return (
     <div className="gate-card overflow-hidden mb-2">
@@ -190,7 +189,7 @@ function QuestionReview({ qa, idx, bookmarked, onToggleBookmark }) {
       )}
     </div>
   )
-}
+})
 
 export default function ResultPage() {
   const { attemptId } = useParams()
@@ -252,15 +251,15 @@ export default function ResultPage() {
     }
   }, [attemptId, location.state])
 
-  const toggleBookmark = async (qId) => {
+  const toggleBookmark = useCallback(async (qId) => {
     const res = await bookmarkAPI.toggle(qId)
     setBookmarked(prev => {
       const next = new Set(prev)
       res.data.bookmarked ? next.add(qId) : next.delete(qId)
       return next
     })
-    toast(res.data.bookmarked ? '🔖 Bookmarked' : 'Bookmark removed', { duration: 1500 })
-  }
+    toast(res.data.bookmarked ? 'Bookmarked' : 'Bookmark removed', { duration: 1500 })
+  }, [])
 
   const reattempt = () => {
     if (result.attempts_remaining <= 0) {
@@ -288,12 +287,15 @@ export default function ResultPage() {
       : ` · First-attempt rank #${result.rank}/${result.total_participants}`
     : ''
 
-  const filtered = result.answers.filter(a =>
-    filter === 'all' ? true :
-    filter === 'correct' ? a.is_correct === true :
-    filter === 'incorrect' ? a.is_correct === false :
-    a.is_correct === null
-  )
+  const filtered = useMemo(() => {
+    if (!result?.answers) return []
+    return result.answers.filter(a =>
+      filter === 'all' ? true :
+      filter === 'correct' ? a.is_correct === true :
+      filter === 'incorrect' ? a.is_correct === false :
+      a.is_correct === null
+    )
+  }, [result?.answers, filter])
 
   return (
     <Layout>
@@ -416,7 +418,7 @@ export default function ResultPage() {
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold" style={{ color: 'var(--text)' }}>
               Question Review
-              <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>(click 🔖 to bookmark)</span>
+              <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>(click bookmark icon)</span>
             </h3>
             <div className="flex gap-1 p-1 rounded" style={{ background: 'var(--bg-card)' }}>
               {['all', 'correct', 'incorrect', 'skipped'].map(f => (
@@ -430,7 +432,7 @@ export default function ResultPage() {
           </div>
           {filtered.map((a, idx) => (
             <QuestionReview key={a.question_id} qa={a} idx={result.answers.indexOf(a)}
-              bookmarked={bookmarked} onToggleBookmark={toggleBookmark} />
+              isBookmarked={bookmarked.has(a.question_id)} onToggleBookmark={toggleBookmark} />
           ))}
           {filtered.length === 0 && <p className="text-center py-8 text-sm" style={{ color: 'var(--text-muted)' }}>No questions in this category</p>}
         </div>

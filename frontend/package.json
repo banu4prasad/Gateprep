@@ -10,20 +10,22 @@
     "audit:contrast": "node scripts/audit-contrast.mjs"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.0",
     "axios": "^1.6.7",
-    "react-hot-toast": "^2.4.1",
-    "lucide-react": "^0.344.0",
     "clsx": "^2.1.0",
     "katex": "^0.17.0",
-    "react-katex": "^3.1.0"
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.1",
+    "react-katex": "^3.1.0",
+    "react-router-dom": "^6.22.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.18",
     "postcss": "^8.4.35",
+    "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^3.4.1",
     "tailwindcss-colors": "^2.0.0",
     "vite": "^5.1.4"

@@ -31,12 +31,12 @@
     --bg-panel: #f1f5f9;
     --border: #e2e8f0;
     --text: #0f172a;
-    --text-muted: #64748b;
+    --text-muted: #475569;
     --brand: #0284c7;
     --brand-light: #0ea5e9;
     --header-bg: #ffffff;
     --header-text: #0f172a;
-    --header-muted: #64748b;
+    --header-muted: #475569;
     --header-accent: #0284c7;
     --sidebar-bg: #f8fafc;
     --success-text: #166534;
@@ -51,12 +51,12 @@
   body {
     background-color: var(--bg);
     color: var(--text);
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
     transition: background-color 0.2s, color 0.2s;
   }
-  h1,h2,h3,h4,h5,h6 { font-family: 'Syne', sans-serif; }
+  h1,h2,h3,h4,h5,h6 { font-family: 'Inter', sans-serif; font-weight: 600; tracking: -0.025em; }
 }
 
 @layer components {
@@ -106,16 +106,16 @@
   .q-dot-answered-marked { background: #7e22ce; border-color: #6b21a8; @apply text-white relative; }
 
   /* Buttons */
-  .btn-primary { @apply bg-sky-600 hover:bg-sky-700 text-white font-medium px-5 py-2.5 rounded-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow flex items-center justify-center gap-2 hover:-translate-y-0.5; }
+  .btn-primary { @apply bg-sky-600 hover:bg-sky-700 text-white font-medium px-5 py-2.5 rounded-md transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-[#1a1a2e]; }
   .btn-ghost {
-    @apply font-medium px-5 py-2.5 rounded-md transition-all active:scale-[0.98] hover:-translate-y-0.5 shadow-sm hover:shadow;
+    @apply font-medium px-5 py-2.5 rounded-md transition-all duration-200 active:scale-[0.98] shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 dark:focus:ring-offset-[#1a1a2e];
     background: var(--bg-panel);
     color: var(--text);
     border: 1px solid var(--border);
   }
   .btn-ghost:hover { opacity: 0.9; }
-  .btn-danger  { @apply bg-red-600 hover:bg-red-700 text-white font-medium px-5 py-2.5 rounded-md transition-all active:scale-[0.98] shadow-sm hover:-translate-y-0.5; }
-  .btn-success { @apply bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-md transition-all active:scale-[0.98] shadow-sm hover:-translate-y-0.5; }
+  .btn-danger  { @apply bg-red-600 hover:bg-red-700 text-white font-medium px-5 py-2.5 rounded-md transition-all duration-200 active:scale-[0.98] shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-[#1a1a2e]; }
+  .btn-success { @apply bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-md transition-all duration-200 active:scale-[0.98] shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-[#1a1a2e]; }
 
   /* Form inputs */
   .input {
