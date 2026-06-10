@@ -33,7 +33,7 @@ export default function Navbar() {
   return (
     <>
       {/* ── Desktop/Tablet Top Bar ────────────────────────────────── */}
-      <nav className="app-header fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-4 border-b"
+      <nav aria-label="Main Navigation" className="app-header fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-4 border-b"
            style={{ background: 'var(--header-bg)', borderColor: 'var(--border)', backdropFilter: 'blur(8px)' }}>
         <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 mr-2 sm:mr-4 flex-shrink-0">
           <div className="w-7 h-7 rounded bg-sky-600 flex items-center justify-center">
@@ -45,7 +45,7 @@ export default function Navbar() {
         {/* Desktop nav links — hidden on mobile (shown in bottom nav instead) */}
         <div className="hidden sm:flex items-center gap-0.5 flex-1 overflow-x-auto">
           {links.map(({ to, label, icon: Icon }) => (
-            <Link key={to} to={to} className={clsx(
+            <Link key={to} to={to} aria-current={isActive(to) ? 'page' : undefined} className={clsx(
               'flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors',
               isActive(to)
                 ? 'bg-sky-600/20 text-sky-600 dark:text-sky-400'
@@ -80,11 +80,12 @@ export default function Navbar() {
       </nav>
 
       {/* ── Mobile Bottom Navigation ──────────────────────────────── */}
-      <div className="mobile-bottom-nav sm:hidden flex items-center justify-around px-1">
+      <nav aria-label="Mobile Navigation" className="mobile-bottom-nav sm:hidden flex items-center justify-around px-1">
         {links.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
             to={to}
+            aria-current={isActive(to) ? 'page' : undefined}
             className={clsx(
               'flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 min-w-[52px] rounded-lg transition-colors',
               isActive(to)
@@ -96,7 +97,7 @@ export default function Navbar() {
             <span className="text-[10px] font-medium leading-none">{label}</span>
           </Link>
         ))}
-      </div>
+      </nav>
     </>
   )
 }

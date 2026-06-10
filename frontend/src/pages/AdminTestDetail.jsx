@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { adminAPI } from '../api/api'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, X, Upload, FileJson } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, X, Upload, FileJson, Eye } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
 
 const EMPTY_Q = { question_type: 'mcq', question_text: '', options: ['','','',''], correct_answer: 'A', marks: 1, negative_marks: 0.33, subject: '', topic: '' }
@@ -35,7 +35,7 @@ function QuestionForm({ onAdd, onClose }) {
     <div className="gate-card p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold text-slate-900 dark:text-white">Add Question Manually</h4>
-        <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300"><X size={16}/></button>
+        <button onClick={onClose} aria-label="Close" className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300"><X size={16}/></button>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
@@ -228,7 +228,7 @@ function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
     <div className="gate-card p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold text-slate-900 dark:text-white">Upload Questions via JSON</h4>
-        <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300"><X size={16}/></button>
+        <button onClick={onClose} aria-label="Close" className="text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300"><X size={16}/></button>
       </div>
 
       {/* Direct file upload */}
@@ -339,7 +339,7 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
 
   return (
     <div className="gate-card overflow-hidden" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 80px' }}>
-      <div className="flex items-start gap-3 p-4 cursor-pointer" onClick={() => setOpen(o=>!o)}>
+      <div className="flex items-start gap-3 p-4 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 rounded outline-none" role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o=>!o); } }} onClick={() => setOpen(o=>!o)}>
         <span className="font-mono text-slate-600 text-sm mt-0.5 w-6 flex-shrink-0">Q{idx+1}</span>
         <div className="flex-1 min-w-0">
           <p className="text-slate-700 dark:text-slate-200 text-sm line-clamp-2">{q.question_text}</p>
@@ -350,7 +350,7 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button onClick={e=>{e.stopPropagation();onDelete(q.id)}} className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+          <button onClick={e=>{e.stopPropagation();onDelete(q.id)}} aria-label="Delete question" className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors">
             <Trash2 size={13}/>
           </button>
           {open ? <ChevronUp size={15} className="text-slate-500 dark:text-slate-400"/> : <ChevronDown size={15} className="text-slate-500 dark:text-slate-400"/>}
@@ -384,7 +384,7 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Question Image (optional)</p>
             {q.question_image_url ? (
               <div className="flex items-start gap-3">
-                <img src={q.question_image_url} alt="question" className="max-h-32 rounded border border-slate-300 dark:border-slate-700 cursor-pointer" onClick={() => window.open(q.question_image_url, '_blank')} />
+                <img src={q.question_image_url} alt="Question image" role="button" tabIndex={0} aria-label="View full size image" onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open(q.question_image_url, '_blank'); } }} className="max-h-32 rounded border border-slate-300 dark:border-slate-700 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 outline-none" onClick={() => window.open(q.question_image_url, '_blank')} />
                 <button onClick={() => onDeleteImage(q.id, 'question')} className="text-xs text-red-400 hover:text-red-300 mt-1">Remove</button>
               </div>
             ) : (
@@ -404,6 +404,7 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
 
 export default function AdminTestDetail() {
   const { testId } = useParams()
+  const navigate = useNavigate()
   const [test, setTest] = useState(null)
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -449,7 +450,7 @@ export default function AdminTestDetail() {
 
   const uploadImage = async (qId, file) => {
     const fd = new FormData()
-    fd.append('file', file)
+    fd.append('image', file)
     try {
       await adminAPI.uploadQImage(qId, fd)
       toast.success('Image uploaded!')
@@ -476,7 +477,7 @@ export default function AdminTestDetail() {
           <Link to="/admin/tests" className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300 text-sm mb-4 w-fit">
             <ArrowLeft size={15}/> Back to Tests
           </Link>
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{test?.title}</h1>
               <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">{test?.description}</p>
@@ -487,7 +488,13 @@ export default function AdminTestDetail() {
               </div>
             </div>
             {/* Add buttons */}
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
+              <button
+                onClick={() => navigate(`/tests/${testId}?preview=true`)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all btn-ghost`}
+              >
+                <Eye size={15}/> Preview Test
+              </button>
               <button
                 onClick={() => setMode(mode === 'json' ? null : 'json')}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode==='json' ? 'bg-amber-500/15 border-amber-500/30 text-amber-300' : 'btn-ghost'}`}

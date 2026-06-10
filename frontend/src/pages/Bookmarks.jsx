@@ -40,7 +40,7 @@ function BookmarkCard({ bm, onRemove }) {
   return (
     <div className="gate-card overflow-hidden">
       <div className="flex items-start gap-3 p-4">
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setOpen(o => !o)}>
+        <div className="flex-1 min-w-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 rounded outline-none" role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} onClick={() => setOpen(o => !o)}>
           <div className="text-slate-700 dark:text-slate-200 text-sm leading-snug line-clamp-2"><MathText>{bm.question_text}</MathText></div>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className={`badge text-xs ${typeColor[bm.question_type] || 'badge-slate'}`}>
@@ -57,10 +57,10 @@ function BookmarkCard({ bm, onRemove }) {
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button onClick={() => setOpen(o => !o)} className="p-1.5 text-slate-600 hover:text-slate-600 dark:text-slate-300">
+          <button onClick={() => setOpen(o => !o)} aria-expanded={open} aria-label="Toggle details" className="p-1.5 text-slate-600 hover:text-slate-600 dark:text-slate-300">
             {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
-          <button onClick={remove} disabled={removing} className="p-1.5 text-slate-600 hover:text-red-400 transition-colors">
+          <button onClick={remove} disabled={removing} aria-label="Remove bookmark" className="p-1.5 text-slate-600 hover:text-red-400 transition-colors">
             {removing ? <Spinner size={13} /> : <BookmarkX size={14} />}
           </button>
         </div>

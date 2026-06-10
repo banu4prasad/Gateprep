@@ -105,11 +105,12 @@ export default function Calculator({ onClose }) {
 
   return (
     <div className="fixed z-50 shadow-2xl rounded-lg overflow-hidden select-none sm:w-[320px] left-4 right-4 sm:left-auto sm:right-4"
+         role="dialog" aria-modal="true" aria-labelledby="calculator-title"
          style={{ top: '70px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b"
            style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)' }}>
-        <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Scientific Calculator</span>
+        <span id="calculator-title" className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Scientific Calculator</span>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
             <button onClick={() => setIsDeg(true)}
@@ -117,7 +118,7 @@ export default function Calculator({ onClose }) {
             <button onClick={() => setIsDeg(false)}
               className={`px-2 py-0.5 rounded ${!isDeg ? 'bg-sky-600 text-white' : ''}`}>Rad</button>
           </div>
-          <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200"><X size={16} /></button>
+          <button onClick={onClose} aria-label="Close Calculator" className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200"><X size={16} /></button>
         </div>
       </div>
 

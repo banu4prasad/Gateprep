@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { testAPI } from '../api/api'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { testAPI, adminAPI } from '../api/api'
 import toast from 'react-hot-toast'
 import { Calculator as CalcIcon, Send, Flag, ChevronLeft, ChevronRight, AlertTriangle, Maximize } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
@@ -131,6 +131,8 @@ const TimerDisplay = ({
 export default function TestEngine() {
   const { testId }  = useParams()
   const navigate    = useNavigate()
+  const [searchParams] = useSearchParams()
+  const isPreview   = searchParams.get('preview') === 'true'
 
   // ── State ──────────────────────────────────────────────────────
   const [test, setTest]         = useState(null)
@@ -230,16 +232,33 @@ export default function TestEngine() {
         // Browsers may reject fullscreen in some environments; show recovery after load.
       }
 
-      const attemptRes = await testAPI.startTest(testId)
-      setAttempt(attemptRes.data)
-      attemptRef.current = attemptRes.data
-      setAttemptNumber(attemptRes.data.attempt_number || 1)
-      setMaxAttempts(attemptRes.data.max_attempts || 6)
+      let attemptData;
+      let qData;
 
-      const qRes = await testAPI.getQuestions(testId, attemptRes.data.id)
-      setQuestions(qRes.data)
-      questionsRef.current = qRes.data
-      setVisited(qRes.data[0] ? new Set([qRes.data[0].id]) : new Set())
+      if (isPreview) {
+        attemptData = {
+          id: 'preview',
+          attempt_number: 'Preview',
+          max_attempts: '∞',
+          started_at: new Date().toISOString()
+        }
+        const qRes = await adminAPI.getQuestions(testId)
+        qData = qRes.data
+      } else {
+        const attemptRes = await testAPI.startTest(testId)
+        attemptData = attemptRes.data
+        const qRes = await testAPI.getQuestions(testId, attemptData.id)
+        qData = qRes.data
+      }
+
+      setAttempt(attemptData)
+      attemptRef.current = attemptData
+      setAttemptNumber(attemptData.attempt_number || 1)
+      setMaxAttempts(attemptData.max_attempts || 6)
+
+      setQuestions(qData)
+      questionsRef.current = qData
+      setVisited(qData[0] ? new Set([qData[0].id]) : new Set())
       setAnswers({})
       setTimings({})
       setMarked(new Set())
@@ -261,12 +280,13 @@ export default function TestEngine() {
         }
       }, 2000)
     } catch (err) {
+      console.error("TestEngine beginTest error:", err)
       toast.error(err.response?.data?.detail || 'Failed to start test')
       navigate('/tests')
     } finally {
       setStarting(false)
     }
-  }, [accepted, navigate, starting, started, testId])
+  }, [accepted, navigate, starting, started, testId, isPreview])
 
   // ── Submit (stable ref — never recreated) ─────────────────────
   const doSubmitCore = useCallback(async (auto = false) => {
@@ -277,6 +297,15 @@ export default function TestEngine() {
 
     // Exit fullscreen cleanly
     try { if (document.fullscreenElement) await document.exitFullscreen() } catch {}
+
+    if (isPreview) {
+      if (auto) toast('Time up! Auto-submitted preview.', { duration: 5000 })
+      else toast.success('Preview submitted successfully! (No data saved)')
+      submitLockRef.current = false
+      setSubmitting(false)
+      navigate(`/admin/tests/${testIdRef.current}`)
+      return
+    }
 
     const currentAttempt   = attemptRef.current
     const currentAnswers   = answersRef.current
@@ -340,9 +369,11 @@ export default function TestEngine() {
           doSubmitRef.current(true)
         } else {
           setShowFsWarning(true)
-          testAPI.updateViolations(testIdRef.current, attemptRef.current?.id, {
-            fullscreen_violations: next
-          }).catch(() => {})
+          if (!isPreview) {
+            testAPI.updateViolations(testIdRef.current, attemptRef.current?.id, {
+              fullscreen_violations: next
+            }).catch(() => {})
+          }
         }
       }
     }
@@ -363,9 +394,11 @@ export default function TestEngine() {
           doSubmitRef.current(true)
         } else {
           toast(`Tab switch detected! Warning ${next}/3`, { duration: 3000 })
-          testAPI.updateViolations(testIdRef.current, attemptRef.current?.id, {
-            tab_violations: next
-          }).catch(() => {})
+          if (!isPreview) {
+            testAPI.updateViolations(testIdRef.current, attemptRef.current?.id, {
+              tab_violations: next
+            }).catch(() => {})
+          }
         }
       }
     }
@@ -418,7 +451,7 @@ export default function TestEngine() {
 
   // ── Auto-save every 30s ────────────────────────────────────────
   useEffect(() => {
-    if (!attempt) return
+    if (!attempt || isPreview) return
     autoSaveRef.current = setInterval(() => {
       const ans = Object.entries(answersRef.current).map(([qid, sel]) => ({
         question_id: +qid,
@@ -797,7 +830,9 @@ export default function TestEngine() {
                   const sel = answers[q.id] === letter
                   return (
                     <div key={i} onClick={() => setMCQ(letter)}
-                         className={clsx('q-option cursor-pointer', sel && 'selected')}>
+                         role="button" tabIndex={0}
+                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMCQ(letter); } }}
+                         className={clsx('q-option cursor-pointer', sel && 'selected', 'focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none')}>
                       <div className={clsx(
                         'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
                         sel ? 'border-sky-500 bg-sky-500' : 'border-slate-500'
@@ -831,7 +866,9 @@ export default function TestEngine() {
                   const sel = (answers[q.id] || '').split(',').includes(letter)
                   return (
                     <div key={i} onClick={() => toggleMSQ(letter)}
-                         className={clsx('q-option cursor-pointer', sel && 'selected-msq')}>
+                         role="button" tabIndex={0}
+                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMSQ(letter); } }}
+                         className={clsx('q-option cursor-pointer', sel && 'selected-msq', 'focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none')}>
                       <div className={clsx(
                         'w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
                         sel ? 'border-amber-500 bg-amber-500' : 'border-slate-500'
@@ -859,6 +896,7 @@ export default function TestEngine() {
                     onChange={e => setNatInput(e.target.value)}
                     onBlur={commitNAT}
                     placeholder="Enter answer..."
+                    aria-label="Numerical Answer"
                   />
                   <button onClick={commitNAT} className="btn-primary px-4">Save</button>
                 </div>
@@ -941,10 +979,11 @@ export default function TestEngine() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
              style={{ background: 'rgba(0,0,0,0.8)' }}>
           <div className="w-full max-w-sm p-6 rounded-xl animate-slide-up"
+               role="dialog" aria-modal="true" aria-labelledby="confirm-submit-title"
                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle size={22} className="text-amber-400" />
-              <h3 className="font-bold text-lg" style={{ color: 'var(--text)' }}>Submit Test?</h3>
+              <h3 id="confirm-submit-title" className="font-bold text-lg" style={{ color: 'var(--text)' }}>Submit Test?</h3>
             </div>
             <div className="space-y-1.5 mb-5 text-sm">
               {[

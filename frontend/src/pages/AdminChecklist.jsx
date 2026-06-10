@@ -109,7 +109,10 @@ export default function AdminChecklist() {
               {/* Subject header */}
               <div className="flex items-center justify-between p-4"
                    style={{ background: 'var(--bg-panel)' }}>
-                <div className="flex items-center gap-3 cursor-pointer flex-1"
+                <div className="flex items-center gap-3 cursor-pointer flex-1 focus-visible:ring-2 focus-visible:ring-sky-500 rounded outline-none"
+                     role="button" tabIndex={0}
+                     aria-expanded={!!expanded[subject.id]}
+                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(ex => ({ ...ex, [subject.id]: !ex[subject.id] })); } }}
                      onClick={() => setExpanded(e => ({ ...e, [subject.id]: !e[subject.id] }))}>
                   <h3 className="font-semibold" style={{ color: 'var(--text)' }}>{subject.name}</h3>
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -121,6 +124,7 @@ export default function AdminChecklist() {
                 </div>
                 <button onClick={() => deleteSubject(subject.id)}
                   disabled={deleting[`s-${subject.id}`]}
+                  aria-label="Delete subject"
                   className="p-1.5 rounded text-red-400 hover:bg-red-500/10 transition-colors ml-2">
                   {deleting[`s-${subject.id}`] ? <Spinner size={13} /> : <Trash2 size={13} />}
                 </button>
@@ -135,6 +139,7 @@ export default function AdminChecklist() {
                       <p className="text-sm" style={{ color: 'var(--text)' }}>{topic.name}</p>
                       <button onClick={() => deleteTopic(topic.id)}
                         disabled={deleting[`t-${topic.id}`]}
+                        aria-label="Delete topic"
                         className="p-1 rounded text-red-400 hover:bg-red-500/10 transition-colors">
                         {deleting[`t-${topic.id}`] ? <Spinner size={12} /> : <X size={13} />}
                       </button>

@@ -57,7 +57,7 @@ function CreateTestModal({ onClose, onCreated }) {
       <div className="gate-card w-full max-w-lg p-6 animate-slide-up my-4">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>Create New Test</h3>
-          <button onClick={onClose} style={{ color: 'var(--text-muted)' }}><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close" style={{ color: 'var(--text-muted)' }}><X size={18} /></button>
         </div>
 
         <form onSubmit={submit} className="space-y-4">
@@ -158,14 +158,15 @@ function CreateTestModal({ onClose, onCreated }) {
           {/* PDF */}
           <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
             <label className="label">Upload PDF (optional)</label>
-            <div onClick={() => fileRef.current?.click()}
-              className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors hover:border-sky-500/40"
+            <div role="button" tabIndex={0} onClick={() => fileRef.current?.click()}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileRef.current?.click(); } }}
+              className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors hover:border-sky-500/40 focus-visible:ring-2 focus-visible:ring-sky-500 outline-none"
               style={{ borderColor: 'var(--border)' }}>
               {pdf ? (
                 <div className="flex items-center justify-center gap-2 text-sky-400 text-sm">
                   <FileText size={15} />{pdf.name}
                   <button type="button" onClick={e => { e.stopPropagation(); setPdf(null) }}
-                    className="text-red-400"><X size={13} /></button>
+                    aria-label="Remove PDF" className="text-red-400"><X size={13} /></button>
                 </div>
               ) : (
                 <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
@@ -298,7 +299,7 @@ export default function AdminTests() {
                     <Eye size={12} /> Manage
                   </button>
                   <button onClick={() => deleteTest(t.id)} disabled={deleting[t.id]}
-                    className="p-1.5 rounded text-red-400 hover:bg-red-500/10 transition-colors">
+                    aria-label="Delete test" className="p-1.5 rounded text-red-400 hover:bg-red-500/10 transition-colors">
                     {deleting[t.id] ? <Spinner size={12} /> : <Trash2 size={12} />}
                   </button>
                 </div>

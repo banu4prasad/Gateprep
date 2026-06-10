@@ -122,7 +122,7 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
 
   return (
     <div className="gate-card overflow-hidden mb-2">
-      <div className="flex items-start gap-3 p-3 cursor-pointer" onClick={() => setOpen(o => !o)}>
+      <div className="flex items-start gap-3 p-3 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 rounded outline-none" role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} onClick={() => setOpen(o => !o)}>
         <span className="text-xs font-mono mt-0.5 w-5 flex-shrink-0" style={{ color: 'var(--text-muted)' }}>Q{idx + 1}</span>
         {qa.is_correct === true ? <CheckCircle size={14} className="text-green-400 flex-shrink-0 mt-0.5" /> :
          qa.is_correct === false ? <XCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" /> :
@@ -136,7 +136,7 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
           <span className="text-xs flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
             <Clock size={10} /> {qa.time_spent_seconds}s
           </span>
-          <button onClick={e => { e.stopPropagation(); onToggleBookmark(qa.question_id) }}
+          <button onClick={e => { e.stopPropagation(); onToggleBookmark(qa.question_id) }} aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
             className={clsx('p-2 rounded transition-colors', isBookmarked ? 'text-sky-400' : 'text-slate-600 hover:text-sky-400')}>
             {isBookmarked ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
           </button>
