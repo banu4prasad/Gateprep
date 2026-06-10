@@ -5,25 +5,31 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Syne"', 'sans-serif'],
-        body: ['"DM Sans"', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
+        display: ['var(--font-heading)'],
+        body: ['var(--font-body)'],
+        mono: ['var(--font-mono)'],
       },
       colors: {
+        primary: 'var(--color-primary)',
+        accent: 'var(--color-accent)',
+        bg: 'var(--color-bg)',
+        'bg-secondary': 'var(--color-bg-secondary)',
+        'text-base': 'var(--color-text)',
+        'text-muted': 'var(--color-text-muted)',
         slate: {
-          950: '#020818',
+          950: '#0d1117',
         },
         brand: {
-          50:  '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
+          50:  '#f8fafc',
+          100: '#e6f1fb',
+          200: '#cdd9e5',
+          300: '#8ba3c1',
           400: '#38bdf8',
-          500: '#0ea5e9',
+          500: '#38bdf8',
           600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          700: '#4f46e5',
+          800: '#161b27',
+          900: '#0d1117',
         },
         amber: {
           400: '#fbbf24',
