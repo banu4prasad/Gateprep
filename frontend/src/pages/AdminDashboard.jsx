@@ -1,21 +1,21 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
-import { adminAPI } from '../api/api'
-import { Users, FlaskConical, CheckCircle, Clock, ArrowRight } from 'lucide-react'
+import useSWR from 'swr'
+import { fetcher } from '../api/api'
+import Users from 'lucide-react/dist/esm/icons/users'
+import FlaskConical from 'lucide-react/dist/esm/icons/flask-conical'
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
+import Clock from 'lucide-react/dist/esm/icons/clock'
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
 import Spinner from '../components/shared/Spinner'
 
 export default function AdminDashboard() {
-  const [users, setUsers] = useState([])
-  const [tests, setTests] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    Promise.all([adminAPI.getUsers(), adminAPI.getTests()])
-      .then(([u, t]) => { setUsers(u.data); setTests(t.data) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  const { data: usersData, isLoading: usersLoading } = useSWR('/admin/users', fetcher)
+  const { data: testsData, isLoading: testsLoading } = useSWR('/admin/tests', fetcher)
+  
+  const loading = usersLoading || testsLoading
+  const users = usersData || []
+  const tests = testsData || []
 
   const aspirants = users.filter(u => u.role === 'aspirant').length
   const pending   = users.filter(u => u.role === 'user').length

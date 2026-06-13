@@ -2,7 +2,13 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { testAPI, adminAPI } from '../api/api'
 import toast from 'react-hot-toast'
-import { Calculator as CalcIcon, Send, Flag, ChevronLeft, ChevronRight, AlertTriangle, Maximize } from 'lucide-react'
+import CalcIcon from 'lucide-react/dist/esm/icons/calculator'
+import Send from 'lucide-react/dist/esm/icons/send'
+import Flag from 'lucide-react/dist/esm/icons/flag'
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left'
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right'
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle'
+import Maximize from 'lucide-react/dist/esm/icons/maximize'
 import Spinner from '../components/shared/Spinner'
 import Calculator from '../components/test/Calculator'
 import MathText from '../components/shared/MathText'
@@ -816,8 +822,9 @@ export default function TestEngine() {
                 <img src={q.question_image_url} alt="question"
                      loading="eager"
                      fetchpriority="high"
-                     className="mt-3 max-w-full max-h-64 rounded cursor-pointer border"
-                     style={{ borderColor: 'var(--border)' }}
+                     decoding="async"
+                     className="mt-3 w-full max-w-2xl max-h-64 object-contain rounded cursor-pointer border bg-slate-50 dark:bg-slate-800/50"
+                     style={{ borderColor: 'var(--border)', aspectRatio: '21/9' }}
                      onClick={() => window.open(q.question_image_url, '_blank')} />
               )}
             </div>
@@ -847,7 +854,9 @@ export default function TestEngine() {
                         {q.option_images?.[letter] && (
                           <img src={q.option_images[letter]} alt={`option ${letter}`}
                                loading="lazy"
-                               className="mt-2 max-h-32 rounded cursor-pointer"
+                               decoding="async"
+                               className="mt-2 w-full max-w-sm max-h-32 object-contain rounded cursor-pointer bg-slate-50 dark:bg-slate-800/50"
+                               style={{ aspectRatio: '21/9' }}
                                onClick={e => { e.stopPropagation(); window.open(q.option_images[letter], '_blank') }} />
                         )}
                       </div>

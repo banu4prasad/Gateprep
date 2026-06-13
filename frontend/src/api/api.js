@@ -1,5 +1,7 @@
 import api from './client'
 
+export const fetcher = url => api.get(url).then(res => res.data)
+
 // ── Auth ──────────────────────────────────────────────────────────
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),

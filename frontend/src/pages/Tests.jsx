@@ -1,9 +1,16 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
-import { testAPI } from '../api/api'
+import useSWR from 'swr'
+import { fetcher } from '../api/api'
 import { SUBJECTS, SERIES_LABELS, TYPE_LABELS } from '../utils/constants'
-import { Clock, BookOpen, Target, ArrowRight, ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react'
+import Clock from 'lucide-react/dist/esm/icons/clock'
+import BookOpen from 'lucide-react/dist/esm/icons/book-open'
+import Target from 'lucide-react/dist/esm/icons/target'
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right'
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left'
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
 import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
 
@@ -90,9 +97,18 @@ function NavCard({ label, count, onClick, icon }) {
 
 // ── Main Page ─────────────────────────────────────────────────────
 export default function TestsPage() {
-  const [tests, setTests] = useState([])
-  const [history, setHistory] = useState({})
-  const [loading, setLoading] = useState(true)
+  const { data: testsData, isLoading: testsLoading } = useSWR('/tests', fetcher)
+  const { data: historyData, isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
+  
+  const loading = testsLoading || historyLoading
+  const tests = testsData || []
+
+  const history = useMemo(() => {
+    if (!historyData) return {}
+    const map = {}
+    historyData.forEach(a => { if (!map[a.test_id] || a.status === 'submitted') map[a.test_id] = a })
+    return map
+  }, [historyData])
 
   // Navigation state: array of {type, value} steps
   // Examples:
@@ -105,17 +121,6 @@ export default function TestsPage() {
   // [{type:'category', value:'test_series'}, {type:'series', value:'made_easy'}, {type:'type', value:'topic_wise'}] = subjects
   // [{...topic_wise}, {type:'subject', value:'Algorithms'}] = tests
   const [nav, setNav] = useState([])
-
-  useEffect(() => {
-    Promise.all([testAPI.getTests(), testAPI.getHistory()])
-      .then(([t, h]) => {
-        setTests(t.data)
-        const map = {}
-        h.data.forEach(a => { if (!map[a.test_id] || a.status === 'submitted') map[a.test_id] = a })
-        setHistory(map)
-      })
-      .finally(() => setLoading(false))
-  }, [])
 
   const push = (type, value) => setNav(n => [...n, { type, value }])
   const goBack = (idx) => setNav(n => n.slice(0, idx))

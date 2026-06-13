@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Eye, EyeOff, KeyRound } from 'lucide-react'
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
+import Eye from 'lucide-react/dist/esm/icons/eye'
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off'
+import KeyRound from 'lucide-react/dist/esm/icons/key-round'
 import { authAPI } from '../api/api'
 import Spinner from '../components/shared/Spinner'
 

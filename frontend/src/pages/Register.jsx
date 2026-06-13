@@ -4,7 +4,9 @@ import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
 import toast from 'react-hot-toast'
 import Spinner from '../components/shared/Spinner'
-import { Eye, EyeOff, UserPlus } from 'lucide-react'
+import Eye from 'lucide-react/dist/esm/icons/eye'
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off'
+import UserPlus from 'lucide-react/dist/esm/icons/user-plus'
 
 export default function RegisterPage() {
   const { saveUser } = useAuth()

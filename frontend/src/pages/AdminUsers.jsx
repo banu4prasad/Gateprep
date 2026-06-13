@@ -1,31 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Layout from '../components/shared/Layout'
-import { adminAPI } from '../api/api'
+import { adminAPI, fetcher } from '../api/api'
+import useSWR from 'swr'
 import toast from 'react-hot-toast'
-import { Copy, KeyRound, Search, UserX, UserCheck, RefreshCw, X } from 'lucide-react'
+import Copy from 'lucide-react/dist/esm/icons/copy'
+import KeyRound from 'lucide-react/dist/esm/icons/key-round'
+import Search from 'lucide-react/dist/esm/icons/search'
+import UserX from 'lucide-react/dist/esm/icons/user-x'
+import UserCheck from 'lucide-react/dist/esm/icons/user-check'
+import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw'
+import X from 'lucide-react/dist/esm/icons/x'
 import Spinner from '../components/shared/Spinner'
 
 const ROLES = ['admin', 'aspirant', 'user']
 const roleStyle = { admin: 'badge-blue', aspirant: 'badge-green', user: 'badge-amber' }
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data: usersData, isLoading: loading, mutate } = useSWR('/admin/users', fetcher)
+  const users = usersData || []
+  
   const [search, setSearch] = useState('')
   const [updating, setUpdating] = useState({})
   const [resetLink, setResetLink] = useState(null)
 
-  const load = () => {
-    setLoading(true)
-    adminAPI.getUsers().then(r => setUsers(r.data)).finally(() => setLoading(false))
-  }
-  useEffect(load, [])
+  const load = () => mutate()
 
   const changeRole = async (userId, role) => {
     setUpdating(u => ({ ...u, [userId]: true }))
     try {
       await adminAPI.updateRole(userId, role)
-      setUsers(us => us.map(u => u.id === userId ? { ...u, role } : u))
+      mutate(users.map(u => u.id === userId ? { ...u, role } : u), false)
       toast.success(`Role updated to ${role}`)
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed')
@@ -38,7 +42,7 @@ export default function AdminUsers() {
     setUpdating(u => ({ ...u, [userId]: true }))
     try {
       await adminAPI.toggleStatus(userId)
-      setUsers(us => us.map(u => u.id === userId ? { ...u, is_active: !u.is_active } : u))
+      mutate(users.map(u => u.id === userId ? { ...u, is_active: !u.is_active } : u), false)
       toast.success('Status updated')
     } catch {
       toast.error('Failed')

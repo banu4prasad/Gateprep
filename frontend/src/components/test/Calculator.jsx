@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { X } from 'lucide-react'
+import X from 'lucide-react/dist/esm/icons/x'
 
 const DEG_TO_RAD = Math.PI / 180
 

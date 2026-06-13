@@ -3,7 +3,15 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { adminAPI } from '../api/api'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Plus, Trash2, ChevronDown, ChevronUp, X, Upload, FileJson, Eye } from 'lucide-react'
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
+import Plus from 'lucide-react/dist/esm/icons/plus'
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2'
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down'
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up'
+import X from 'lucide-react/dist/esm/icons/x'
+import Upload from 'lucide-react/dist/esm/icons/upload'
+import FileJson from 'lucide-react/dist/esm/icons/file-json'
+import Eye from 'lucide-react/dist/esm/icons/eye'
 import Spinner from '../components/shared/Spinner'
 
 const EMPTY_Q = { question_type: 'mcq', question_text: '', options: ['','','',''], correct_answer: 'A', marks: 1, negative_marks: 0.33, subject: '', topic: '' }
@@ -384,7 +392,7 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Question Image (optional)</p>
             {q.question_image_url ? (
               <div className="flex items-start gap-3">
-                <img src={q.question_image_url} alt="Question image" role="button" tabIndex={0} aria-label="View full size image" onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open(q.question_image_url, '_blank'); } }} className="max-h-32 rounded border border-slate-300 dark:border-slate-700 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 outline-none" onClick={() => window.open(q.question_image_url, '_blank')} />
+                <img src={q.question_image_url} alt="Question image" role="button" tabIndex={0} aria-label="View full size image" loading="lazy" decoding="async" onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open(q.question_image_url, '_blank'); } }} className="max-h-32 rounded border border-slate-300 dark:border-slate-700 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 outline-none" onClick={() => window.open(q.question_image_url, '_blank')} />
                 <button onClick={() => onDeleteImage(q.id, 'question')} className="text-xs text-red-400 hover:text-red-300 mt-1">Remove</button>
               </div>
             ) : (

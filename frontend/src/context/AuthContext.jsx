@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import api from '../api/client'
+import { mutate } from 'swr'
 
 const AuthContext = createContext(null)
 
@@ -31,6 +32,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     try { await api.post('/auth/logout') } catch {}
     setUser(null)
+    mutate(() => true, undefined, { revalidate: false })
     window.location.href = '/login'
   }, [])
 

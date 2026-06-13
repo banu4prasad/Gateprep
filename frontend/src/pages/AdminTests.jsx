@@ -1,10 +1,19 @@
-import { useEffect, useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
-import { adminAPI } from '../api/api'
+import { adminAPI, fetcher } from '../api/api'
+import useSWR from 'swr'
 import { SUBJECTS, SERIES_NAMES, TEST_TYPES, SERIES_LABELS, TYPE_LABELS } from '../utils/constants'
 import toast from 'react-hot-toast'
-import { Plus, Trash2, Eye, FileText, Clock, X, Upload, ChevronDown, ChevronUp } from 'lucide-react'
+import Plus from 'lucide-react/dist/esm/icons/plus'
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2'
+import Eye from 'lucide-react/dist/esm/icons/eye'
+import FileText from 'lucide-react/dist/esm/icons/file-text'
+import Clock from 'lucide-react/dist/esm/icons/clock'
+import X from 'lucide-react/dist/esm/icons/x'
+import Upload from 'lucide-react/dist/esm/icons/upload'
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down'
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up'
 import Spinner from '../components/shared/Spinner'
 
 function CreateTestModal({ onClose, onCreated }) {
@@ -214,25 +223,20 @@ function TestTag({ test }) {
 }
 
 export default function AdminTests() {
-  const [tests, setTests] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data: testsData, isLoading: loading, mutate } = useSWR('/admin/tests', fetcher)
+  const tests = testsData || []
+  
   const [showCreate, setShowCreate] = useState(false)
   const [deleting, setDeleting] = useState({})
   const [filter, setFilter] = useState('all') // all | weekly_quiz | test_series
   const navigate = useNavigate()
-
-  const load = () => {
-    setLoading(true)
-    adminAPI.getTests().then(r => setTests(r.data)).finally(() => setLoading(false))
-  }
-  useEffect(load, [])
 
   const deleteTest = async (id) => {
     if (!confirm('Delete this test and all its questions?')) return
     setDeleting(d => ({ ...d, [id]: true }))
     try {
       await adminAPI.deleteTest(id)
-      setTests(ts => ts.filter(t => t.id !== id))
+      mutate(tests.filter(t => t.id !== id), false)
       toast.success('Deleted')
     } catch { toast.error('Failed') }
     finally { setDeleting(d => ({ ...d, [id]: false })) }
@@ -312,7 +316,7 @@ export default function AdminTests() {
       {showCreate && (
         <CreateTestModal
           onClose={() => setShowCreate(false)}
-          onCreated={t => { setTests(ts => [t, ...ts]); setShowCreate(false) }}
+          onCreated={t => { mutate([t, ...tests], false); setShowCreate(false) }}
         />
       )}
     </Layout>

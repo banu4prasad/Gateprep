@@ -4,7 +4,12 @@ import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
 import toast from 'react-hot-toast'
 import Spinner from '../components/shared/Spinner'
-import { Eye, EyeOff, LogIn, CheckCircle2, ListChecks, Hash } from 'lucide-react'
+import Eye from 'lucide-react/dist/esm/icons/eye'
+import EyeOff from 'lucide-react/dist/esm/icons/eye-off'
+import LogIn from 'lucide-react/dist/esm/icons/log-in'
+import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2'
+import ListChecks from 'lucide-react/dist/esm/icons/list-checks'
+import Hash from 'lucide-react/dist/esm/icons/hash'
 
 export default function LoginPage() {
   const { saveUser } = useAuth()
@@ -36,17 +41,17 @@ export default function LoginPage() {
       <div className="hidden lg:flex flex-col justify-between w-5/12 p-12"
            style={{ background: 'var(--header-bg)', borderRight: '1px solid var(--border)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded bg-sky-600 flex items-center justify-center">
-            <span className="font-bold text-slate-900 dark:text-white text-lg">G</span>
+          <div className="w-9 h-9 rounded bg-primary flex items-center justify-center">
+            <span className="font-bold text-text-base text-lg">G</span>
           </div>
-          <span className="font-bold text-slate-900 dark:text-white text-xl">GATEPrep</span>
+          <span className="font-bold text-text-base text-xl">GATEPrep</span>
         </div>
         <div>
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white leading-tight mb-4">
+          <h1 className="text-4xl font-bold text-text-base leading-tight mb-4">
             Crack GATE with<br />
-            <span className="text-sky-400">precision practice.</span>
+            <span className="text-primary">precision practice.</span>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+          <p className="text-text-muted dark:text-text-muted leading-relaxed">
             MCQ · MSQ · NAT · GATE-accurate scoring<br />
             Timed tests · Leaderboards · Analytics
           </p>
@@ -57,10 +62,10 @@ export default function LoginPage() {
             ['MSQ', 'Multi-select', <ListChecks size={16} />],
             ['NAT', 'Numerical', <Hash size={16} />]
           ].map(([t, d, icon]) => (
-            <div key={t} className="p-4 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-800/40 flex flex-col items-start hover:bg-slate-100 dark:bg-slate-800/60 transition-colors shadow-sm hover:shadow">
-              <div className="text-sky-400 mb-2">{icon}</div>
-              <p className="font-bold text-sky-400">{t}</p>
-              <p className="text-slate-600 dark:text-slate-300 text-xs mt-0.5">{d}</p>
+            <div key={t} className="p-4 rounded-lg border border-[var(--border)] bg-bg hover:bg-bg-secondary dark:bg-bg-secondary flex flex-col items-start transition-colors shadow-sm hover:shadow">
+              <div className="text-primary mb-2">{icon}</div>
+              <p className="font-bold text-primary">{t}</p>
+              <p className="text-text-muted text-xs mt-0.5">{d}</p>
             </div>
           ))}
         </div>
@@ -71,13 +76,13 @@ export default function LoginPage() {
         <div className="w-full max-w-md animate-slide-up">
           <div className="lg:hidden mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded bg-sky-600 flex items-center justify-center">
-                <span className="font-bold text-slate-900 dark:text-white">G</span>
+              <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
+                <span className="font-bold text-text-base">G</span>
               </div>
               <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>GATEPrep</span>
             </div>
             <h1 className="text-2xl font-bold leading-tight" style={{ color: 'var(--text)' }}>
-              Crack GATE with <span className="text-sky-500">precision practice.</span>
+              Crack GATE with <span className="text-primary">precision practice.</span>
             </h1>
           </div>
 
@@ -94,7 +99,7 @@ export default function LoginPage() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label htmlFor="password" className="label !mb-0">Password</label>
-                  <Link to="/forgot-password" className="text-xs text-sky-500 hover:text-sky-400 font-medium">
+                  <Link to="/forgot-password" className="text-xs text-primary hover:text-primary font-medium">
                     Forgot password?
                   </Link>
                 </div>
@@ -103,7 +108,7 @@ export default function LoginPage() {
                     onChange={handle('password')} placeholder="••••••••" className="input pr-10" />
                   <button type="button" onClick={() => setShow(s => !s)}
                     aria-label="Toggle password visibility"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-sky-500 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-primary transition-colors"
                     style={{ color: 'var(--text-muted)' }}>
                     {show ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -119,7 +124,7 @@ export default function LoginPage() {
 
           <p className="text-center mt-4 text-sm" style={{ color: 'var(--text-muted)' }}>
             Don't have an account?{' '}
-            <Link to="/register" className="text-sky-400 hover:text-sky-300 font-medium">Create one</Link>
+            <Link to="/register" className="text-primary hover:text-primary font-medium">Create one</Link>
           </p>
         </div>
       </div>

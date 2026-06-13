@@ -1,8 +1,12 @@
-import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
-import { testAPI } from '../api/api'
-import { Trophy, ArrowLeft, Medal, Crown, RotateCcw } from 'lucide-react'
+import { fetcher } from '../api/api'
+import useSWR from 'swr'
+import Trophy from 'lucide-react/dist/esm/icons/trophy'
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
+import Medal from 'lucide-react/dist/esm/icons/medal'
+import Crown from 'lucide-react/dist/esm/icons/crown'
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw'
 import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
 
@@ -14,15 +18,7 @@ const MEDAL_COLORS = {
 
 export default function LeaderboardPage() {
   const { testId } = useParams()
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    testAPI.getLeaderboard(testId)
-      .then(r => setData(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [testId])
+  const { data, isLoading: loading } = useSWR(`/tests/${testId}/leaderboard`, fetcher)
 
   if (loading) return <Layout><div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500"/></div></Layout>
   if (!data) return <Layout><p className="text-slate-500 dark:text-slate-400 text-center py-16">Leaderboard not found.</p></Layout>

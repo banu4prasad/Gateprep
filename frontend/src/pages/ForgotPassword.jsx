@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ShieldCheck } from 'lucide-react'
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
+import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check'
 
 export default function ForgotPasswordPage() {
   return (

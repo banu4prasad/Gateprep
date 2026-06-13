@@ -1,9 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
-import { bookmarkAPI } from '../api/api'
+import { bookmarkAPI, fetcher } from '../api/api'
+import useSWR, { mutate as globalMutate } from 'swr'
 import toast from 'react-hot-toast'
-import { Bookmark, BookmarkX, ChevronDown, ChevronUp, Search, StickyNote, X, Check } from 'lucide-react'
+import Bookmark from 'lucide-react/dist/esm/icons/bookmark'
+import BookmarkX from 'lucide-react/dist/esm/icons/bookmark-x'
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down'
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up'
+import Search from 'lucide-react/dist/esm/icons/search'
+import StickyNote from 'lucide-react/dist/esm/icons/sticky-note'
+import X from 'lucide-react/dist/esm/icons/x'
+import Check from 'lucide-react/dist/esm/icons/check'
 import Spinner from '../components/shared/Spinner'
 import MathText from '../components/shared/MathText'
 import clsx from 'clsx'
@@ -21,6 +29,7 @@ function BookmarkCard({ bm, onRemove }) {
     setSavingNote(true)
     try {
       await bookmarkAPI.updateNote(bm.question_id, note)
+      globalMutate('/bookmarks', (prev) => prev ? prev.map(b => b.question_id === bm.question_id ? { ...b, note } : b) : prev, false)
       toast.success('Note saved')
       setEditingNote(false)
     } catch { toast.error('Failed to save note') }
@@ -129,18 +138,20 @@ function BookmarkCard({ bm, onRemove }) {
 }
 
 export default function BookmarksPage() {
-  const [bookmarks, setBookmarks] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { data: bookmarksData, isLoading: loading, mutate } = useSWR('/bookmarks', fetcher)
+  const bookmarks = bookmarksData || []
   const [search, setSearch] = useState('')
   const [filterSubject, setFilterSubject] = useState('all')
 
-  useEffect(() => {
-    bookmarkAPI.getAll()
-      .then(r => setBookmarks(r.data))
-      .finally(() => setLoading(false))
-  }, [])
-
-  const onRemove = (questionId) => setBookmarks(bs => bs.filter(b => b.question_id !== questionId))
+  const onRemove = (questionId) => {
+    mutate(bookmarks.filter(b => b.question_id !== questionId), false)
+    globalMutate('/bookmarks/ids', (prev) => {
+      if (!prev) return prev
+      const nextIds = new Set(prev.ids || [])
+      nextIds.delete(questionId)
+      return { ...prev, ids: Array.from(nextIds) }
+    }, false)
+  }
 
   const subjects = ['all', ...new Set(bookmarks.map(b => b.subject).filter(Boolean))]
 

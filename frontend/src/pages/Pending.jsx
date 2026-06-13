@@ -1,5 +1,6 @@
 import { useAuth } from '../context/AuthContext'
-import { Clock, LogOut } from 'lucide-react'
+import Clock from 'lucide-react/dist/esm/icons/clock'
+import LogOut from 'lucide-react/dist/esm/icons/log-out'
 
 export default function PendingPage() {
   const { user, logout } = useAuth()

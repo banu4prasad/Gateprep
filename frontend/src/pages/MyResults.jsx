@@ -1,23 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
-import { testAPI } from '../api/api'
-import { ClipboardList, ArrowRight } from 'lucide-react'
+import useSWR from 'swr'
+import { fetcher } from '../api/api'
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list'
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
 import Spinner from '../components/shared/Spinner'
 
 export default function MyResults() {
-  const [history, setHistory] = useState([])
-  const [tests, setTests]     = useState({})
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    Promise.all([testAPI.getHistory(), testAPI.getTests()])
-      .then(([h, t]) => {
-        setHistory(h.data)
-        setTests(Object.fromEntries(t.data.map(t => [t.id, t])))
-      })
-      .finally(() => setLoading(false))
-  }, [])
+  const { data: historyData, isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
+  const { data: testsData, isLoading: testsLoading } = useSWR('/tests', fetcher)
+  
+  const loading = historyLoading || testsLoading
+  const history = historyData || []
+  
+  const tests = useMemo(() => {
+    if (!testsData) return {}
+    return Object.fromEntries(testsData.map(t => [t.id, t]))
+  }, [testsData])
 
   if (loading) return (
     <Layout>

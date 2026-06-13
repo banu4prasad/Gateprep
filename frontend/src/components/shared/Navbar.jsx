@@ -1,7 +1,16 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { LogOut, Sun, Moon, LayoutDashboard, FlaskConical, Users, BookOpen, ClipboardList, Bookmark, CheckSquare } from 'lucide-react'
+import LogOut from 'lucide-react/dist/esm/icons/log-out'
+import Sun from 'lucide-react/dist/esm/icons/sun'
+import Moon from 'lucide-react/dist/esm/icons/moon'
+import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard'
+import FlaskConical from 'lucide-react/dist/esm/icons/flask-conical'
+import Users from 'lucide-react/dist/esm/icons/users'
+import BookOpen from 'lucide-react/dist/esm/icons/book-open'
+import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list'
+import Bookmark from 'lucide-react/dist/esm/icons/bookmark'
+import CheckSquare from 'lucide-react/dist/esm/icons/check-square'
 import clsx from 'clsx'
 
 export default function Navbar() {

@@ -1,23 +1,23 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { useAuth } from '../context/AuthContext'
-import { testAPI } from '../api/api'
-import { BookOpen, Clock, Target, ArrowRight, CheckCircle } from 'lucide-react'
+import useSWR from 'swr'
+import { fetcher } from '../api/api'
+import BookOpen from 'lucide-react/dist/esm/icons/book-open'
+import Clock from 'lucide-react/dist/esm/icons/clock'
+import Target from 'lucide-react/dist/esm/icons/target'
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
 import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const [tests, setTests] = useState([])
-  const [history, setHistory] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    Promise.all([testAPI.getTests(), testAPI.getHistory()])
-      .then(([t, h]) => { setTests(t.data); setHistory(h.data) })
-      .finally(() => setLoading(false))
-  }, [])
+  
+  const { data: tests = [], isLoading: testsLoading } = useSWR('/tests', fetcher)
+  const { data: history = [], isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
+  const loading = testsLoading || historyLoading
 
   const { submitted, completedCount, attemptMap } = useMemo(() => {
     const submitted = history.filter(h => h.status === 'submitted')

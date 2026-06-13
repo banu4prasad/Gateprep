@@ -1,8 +1,22 @@
-import { useEffect, useState, useMemo, memo, useCallback } from 'react'
+import { useState, useMemo, memo, useCallback } from 'react'
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
-import { testAPI, bookmarkAPI } from '../api/api'
-import { CheckCircle, XCircle, MinusCircle, ArrowLeft, ChevronDown, ChevronUp, Trophy, RotateCcw, Medal, Bookmark, BookmarkCheck, Clock, TrendingUp, Download } from 'lucide-react'
+import { testAPI, bookmarkAPI, fetcher } from '../api/api'
+import useSWR, { mutate as globalMutate } from 'swr'
+import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
+import XCircle from 'lucide-react/dist/esm/icons/x-circle'
+import MinusCircle from 'lucide-react/dist/esm/icons/minus-circle'
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down'
+import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up'
+import Trophy from 'lucide-react/dist/esm/icons/trophy'
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw'
+import Medal from 'lucide-react/dist/esm/icons/medal'
+import Bookmark from 'lucide-react/dist/esm/icons/bookmark'
+import BookmarkCheck from 'lucide-react/dist/esm/icons/bookmark-check'
+import Clock from 'lucide-react/dist/esm/icons/clock'
+import TrendingUp from 'lucide-react/dist/esm/icons/trending-up'
+import Download from 'lucide-react/dist/esm/icons/download'
 import Spinner from '../components/shared/Spinner'
 import MathText from '../components/shared/MathText'
 import toast from 'react-hot-toast'
@@ -195,71 +209,42 @@ export default function ResultPage() {
   const { attemptId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const [result, setResult] = useState(null)
-  const [attempts, setAttempts] = useState([])
-  const [bookmarked, setBookmarked] = useState(new Set())
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
 
-  useEffect(() => {
-    let cancelled = false
+  const isPractice = attemptId?.startsWith('practice-')
+  
+  const { data: serverResult, isLoading: resultLoading } = useSWR(
+    isPractice ? null : `/tests/attempt/${attemptId}/result`, 
+    fetcher
+  )
 
-    const load = async () => {
-      setLoading(true)
-      setResult(null)
-      setAttempts([])
-
-      try {
-        let cachedResult = location.state?.result
-
-        if (attemptId?.startsWith('practice-')) {
-          if (!cachedResult) {
-            try {
-              cachedResult = JSON.parse(sessionStorage.getItem(`practice-result:${attemptId}`))
-            } catch {
-              cachedResult = null
-            }
-          }
-
-          const b = await bookmarkAPI.getIds()
-          if (!cancelled) {
-            setResult(cachedResult)
-            setBookmarked(new Set(b.data.ids))
-          }
-          return
-        }
-
-        const [r, b] = await Promise.all([testAPI.getResult(attemptId), bookmarkAPI.getIds()])
-        if (cancelled) return
-
-        setResult(r.data)
-        setBookmarked(new Set(b.data.ids))
-
-        const attemptsRes = await testAPI.getMyAttempts(r.data.test_id)
-        if (!cancelled) setAttempts(attemptsRes.data)
-      } catch {
-        if (!cancelled) setResult(null)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
+  const result = useMemo(() => {
+    if (isPractice) {
+      if (location.state?.result) return location.state.result
+      try { return JSON.parse(sessionStorage.getItem(`practice-result:${attemptId}`)) } catch { return null }
     }
+    return serverResult
+  }, [isPractice, location.state, attemptId, serverResult])
 
-    load()
+  const { data: bData, isLoading: bLoading, mutate: mutateBookmarks } = useSWR('/bookmarks/ids', fetcher)
+  const bookmarked = useMemo(() => new Set(bData?.ids || []), [bData])
 
-    return () => {
-      cancelled = true
-    }
-  }, [attemptId, location.state])
+  const testId = result?.test_id
+  const { data: attemptsData } = useSWR(testId && !isPractice ? `/tests/${testId}/my-attempts` : null, fetcher)
+  const attempts = attemptsData || []
+
+  const loading = isPractice ? bLoading : (resultLoading || bLoading)
 
   const toggleBookmark = useCallback(async (qId) => {
     const res = await bookmarkAPI.toggle(qId)
-    setBookmarked(prev => {
-      const next = new Set(prev)
-      res.data.bookmarked ? next.add(qId) : next.delete(qId)
-      return next
-    })
+    mutateBookmarks((prev) => {
+      const nextIds = new Set(prev?.ids || [])
+      res.data.bookmarked ? nextIds.add(qId) : nextIds.delete(qId)
+      return { ...prev, ids: Array.from(nextIds) }
+    }, false)
+    globalMutate('/bookmarks')
     toast(res.data.bookmarked ? 'Bookmarked' : 'Bookmark removed', { duration: 1500 })
-  }, [])
+  }, [mutateBookmarks])
 
   const reattempt = () => {
     if (result.attempts_remaining <= 0) {
