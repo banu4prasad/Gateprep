@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import (JSON, Boolean, DateTime, Enum, Float,
                         ForeignKey, Integer, String, Text, UniqueConstraint, Index)
 from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.database import Base
 
@@ -28,17 +29,17 @@ class TestStatus(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.user, nullable=False)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.user, nullable=False, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     google_id: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     profile_photo: Mapped[str | None] = mapped_column(String(500), nullable=True)
     current_session_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     current_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
     attempts = relationship("TestAttempt", back_populates="user")
     practice_counters = relationship(
@@ -60,7 +61,7 @@ class User(Base):
 
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
@@ -79,7 +80,7 @@ class TestSeries(Base):
 
     __test__ = False
     __tablename__ = "test_series"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), index=True)
@@ -92,7 +93,7 @@ class TestSeries(Base):
 class Test(Base):
     __test__ = False
     __tablename__ = "tests"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     duration_minutes: Mapped[int] = mapped_column(Integer, default=180)
@@ -126,14 +127,14 @@ class Test(Base):
 
 class Question(Base):
     __tablename__ = "questions"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     test_id: Mapped[int] = mapped_column(Integer, ForeignKey("tests.id"), nullable=False, index=True)
     question_type: Mapped[QuestionType] = mapped_column(Enum(QuestionType), default=QuestionType.mcq, nullable=False)
     question_text: Mapped[str] = mapped_column(Text, nullable=False)
     question_image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     question_image_id: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    options: Mapped[list | dict] = mapped_column(JSON, nullable=False, default=list)
-    option_images: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    options: Mapped[list | dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False, default=list)
+    option_images: Mapped[dict | None] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=True)
     correct_answer: Mapped[str] = mapped_column(String(500), nullable=False)
     marks: Mapped[float] = mapped_column(Float, default=1.0)
     negative_marks: Mapped[float] = mapped_column(Float, default=0.33)
@@ -150,7 +151,7 @@ class Question(Base):
 class TestAttempt(Base):
     __test__ = False
     __tablename__ = "test_attempts"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     test_id: Mapped[int] = mapped_column(Integer, ForeignKey("tests.id"), nullable=False, index=True)
     status: Mapped[TestStatus] = mapped_column(Enum(TestStatus), default=TestStatus.in_progress)
@@ -174,7 +175,7 @@ class TestAttempt(Base):
 
 class PracticeAttemptCounter(Base):
     __tablename__ = "practice_attempt_counters"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     test_id: Mapped[int] = mapped_column(Integer, ForeignKey("tests.id"), nullable=False)
     count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -190,7 +191,7 @@ class PracticeAttemptCounter(Base):
 
 class UserAnswer(Base):
     __tablename__ = "user_answers"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     attempt_id: Mapped[int] = mapped_column(Integer, ForeignKey("test_attempts.id"), nullable=False, index=True)
     question_id: Mapped[int] = mapped_column(Integer, ForeignKey("questions.id"), nullable=False, index=True)
     selected_answer: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -205,7 +206,7 @@ class UserAnswer(Base):
 
 class Bookmark(Base):
     __tablename__ = "bookmarks"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     question_id: Mapped[int] = mapped_column(Integer, ForeignKey("questions.id"), nullable=False)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -224,7 +225,7 @@ class Bookmark(Base):
 
 class ChecklistSubject(Base):
     __tablename__ = "checklist_subjects"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, default=0)
     created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), index=True)
@@ -237,7 +238,7 @@ class ChecklistSubject(Base):
 
 class ChecklistTopic(Base):
     __tablename__ = "checklist_topics"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     subject_id: Mapped[int] = mapped_column(Integer, ForeignKey("checklist_subjects.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     order_index: Mapped[int] = mapped_column(Integer, default=0)
@@ -252,10 +253,10 @@ class ChecklistProgress(Base):
     """Tracks what each user has completed per topic."""
 
     __tablename__ = "checklist_progress"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     topic_id: Mapped[int] = mapped_column(Integer, ForeignKey("checklist_topics.id"), nullable=False)
-    completed_items: Mapped[dict] = mapped_column(JSON, default=dict)
+    completed_items: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=dict)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (

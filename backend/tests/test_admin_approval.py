@@ -55,7 +55,33 @@ def regular_user(db_session):
 def test_admin_can_list_users(client, db_session, admin_user, regular_user):
     response = client.get("/admin/users", cookies=_auth_cookie(admin_user, db_session))
     assert response.status_code == 200
-    assert len(response.json()) == 2
+    assert len(response.json()["items"]) == 2
+
+
+def test_admin_user_list_supports_pagination_search_and_role_filter(client, db_session, admin_user):
+    db_session.add_all([
+        User(email="alice@example.com", full_name="Alice Match", hashed_password=hash_password("pass"), role=UserRole.user, is_active=True),
+        User(email="bob@example.com", full_name="Bob Aspirant", hashed_password=hash_password("pass"), role=UserRole.aspirant, is_active=True),
+        User(email="charlie@example.com", full_name="Charlie Match", hashed_password=hash_password("pass"), role=UserRole.user, is_active=True),
+    ])
+    db_session.commit()
+
+    cookies = _auth_cookie(admin_user, db_session)
+
+    paged = client.get("/admin/users?skip=0&limit=2", cookies=cookies)
+    assert paged.status_code == 200
+    assert paged.json()["total"] == 4
+    assert len(paged.json()["items"]) == 2
+
+    searched = client.get("/admin/users?q=alice", cookies=cookies)
+    assert searched.status_code == 200
+    assert searched.json()["total"] == 1
+    assert searched.json()["items"][0]["email"] == "alice@example.com"
+
+    pending = client.get("/admin/users?role=user&limit=10", cookies=cookies)
+    assert pending.status_code == 200
+    assert pending.json()["total"] == 2
+    assert {user["role"] for user in pending.json()["items"]} == {"user"}
 
 def test_admin_activates_user(client, db_session, admin_user):
     user = User(email="inactive@test.com", full_name="Inactive", hashed_password=hash_password("pass"), role=UserRole.user, is_active=False)

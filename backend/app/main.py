@@ -15,7 +15,6 @@ from app.core.database import Base, engine
 
 logger = logging.getLogger(__name__)
 
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="GATE Prep Platform", version="2.0.0")
 

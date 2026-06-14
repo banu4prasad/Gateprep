@@ -5,11 +5,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Query
 from fastapi.concurrency import run_in_threadpool
 from pydantic import (BaseModel, ConfigDict, Field, ValidationError,
                       field_validator, model_validator)
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
@@ -114,9 +114,30 @@ def _pdf_review_detail(questions: list[dict]) -> str:
 
 
 @router.get("/users")
-def list_users(db: Session = Depends(get_db), _=Depends(require_admin)):
-    users = db.query(User).order_by(User.created_at.desc()).all()
-    return [
+def list_users(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=1000),
+    q: str = Query("", max_length=255),
+    role: Optional[UserRole] = Query(None),
+    db: Session = Depends(get_db),
+    _=Depends(require_admin)
+):
+    users_query = db.query(User)
+    search = q.strip()
+    if search:
+        pattern = f"%{search}%"
+        users_query = users_query.filter(
+            or_(User.full_name.ilike(pattern), User.email.ilike(pattern))
+        )
+    if role is not None:
+        users_query = users_query.filter(User.role == role)
+
+    total = users_query.count()
+    aspirants_count = db.query(User).filter(User.role == UserRole.aspirant).count()
+    pending_count = db.query(User).filter(User.role == UserRole.user).count()
+
+    users = users_query.order_by(User.created_at.desc()).offset(skip).limit(limit).all()
+    items = [
         {
             "id": u.id,
             "email": u.email,
@@ -128,6 +149,14 @@ def list_users(db: Session = Depends(get_db), _=Depends(require_admin)):
         }
         for u in users
     ]
+    return {
+        "items": items,
+        "total": total,
+        "aspirants_count": aspirants_count,
+        "pending_count": pending_count,
+        "limit": limit,
+        "offset": skip,
+    }
 
 
 class RoleUpdate(BaseModel):

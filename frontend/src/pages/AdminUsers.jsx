@@ -16,20 +16,41 @@ const ROLES = ['admin', 'aspirant', 'user']
 const roleStyle = { admin: 'badge-blue', aspirant: 'badge-green', user: 'badge-amber' }
 
 export default function AdminUsers() {
-  const { data: usersData, isLoading: loading, mutate } = useSWR('/admin/users', fetcher)
-  const users = usersData || []
-  
+  const [skip, setSkip] = useState(0)
   const [search, setSearch] = useState('')
+  const limit = 50
+  const searchQuery = search.trim()
+  const params = new URLSearchParams({ skip: String(skip), limit: String(limit) })
+  if (searchQuery) params.set('q', searchQuery)
+
+  const { data: usersData, isLoading: loading, mutate } = useSWR(`/admin/users?${params.toString()}`, fetcher)
+  const users = usersData?.items || []
+  const totalUsers = usersData?.total || 0
+  const pendingUsers = usersData?.pending_count || 0
+  const aspirantsCount = usersData?.aspirants_count || 0
+  
   const [updating, setUpdating] = useState({})
   const [resetLink, setResetLink] = useState(null)
 
   const load = () => mutate()
 
   const changeRole = async (userId, role) => {
+    const oldRole = users.find(u => u.id === userId)?.role
     setUpdating(u => ({ ...u, [userId]: true }))
     try {
       await adminAPI.updateRole(userId, role)
-      mutate(users.map(u => u.id === userId ? { ...u, role } : u), false)
+      
+      let newPending = pendingUsers
+      let newAspirants = aspirantsCount
+      if (oldRole === 'user' && role === 'aspirant') { newPending--; newAspirants++; }
+      if (oldRole === 'aspirant' && role === 'user') { newPending++; newAspirants--; }
+      
+      mutate({ 
+        ...usersData, 
+        items: users.map(u => u.id === userId ? { ...u, role } : u),
+        pending_count: newPending,
+        aspirants_count: newAspirants
+      }, false)
       toast.success(`Role updated to ${role}`)
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed')
@@ -42,7 +63,7 @@ export default function AdminUsers() {
     setUpdating(u => ({ ...u, [userId]: true }))
     try {
       await adminAPI.toggleStatus(userId)
-      mutate(users.map(u => u.id === userId ? { ...u, is_active: !u.is_active } : u), false)
+      mutate({ ...usersData, items: users.map(u => u.id === userId ? { ...u, is_active: !u.is_active } : u) }, false)
       toast.success('Status updated')
     } catch {
       toast.error('Failed')
@@ -75,9 +96,37 @@ export default function AdminUsers() {
     }
   }
 
-  const filtered = users.filter(u =>
-    u.full_name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value)
+    setSkip(0)
+  }
+
+  const goToPreviousPage = () => setSkip(Math.max(0, skip - limit))
+  const goToNextPage = () => setSkip(skip + limit)
+  const showingFrom = totalUsers === 0 ? 0 : skip + 1
+  const showingTo = Math.min(skip + users.length, totalUsers)
+  const hasPagination = totalUsers > limit
+
+  const renderPagination = (className) => hasPagination && (
+    <div className={className}>
+      <button
+        onClick={goToPreviousPage}
+        disabled={skip === 0}
+        className="btn-ghost disabled:opacity-50"
+      >
+        Previous
+      </button>
+      <span className="text-sm text-slate-500">
+        Showing {showingFrom} - {showingTo} of {totalUsers}
+      </span>
+      <button
+        onClick={goToNextPage}
+        disabled={skip + limit >= totalUsers}
+        className="btn-ghost disabled:opacity-50"
+      >
+        Next
+      </button>
+    </div>
   )
 
   return (
@@ -86,7 +135,7 @@ export default function AdminUsers() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Users</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">{users.length} registered · {users.filter(u=>u.role==='user').length} pending approval</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">{totalUsers} registered · {pendingUsers} pending approval</p>
           </div>
           <button onClick={load} className="btn-ghost flex items-center gap-2">
             <RefreshCw size={15} /> Refresh
@@ -97,8 +146,8 @@ export default function AdminUsers() {
         <div className="relative">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
           <input
-            value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search by name or email..."
+            value={search} onChange={handleSearchChange}
+            placeholder="Search all users by name or email..."
             className="input pl-10"
           />
         </div>
@@ -117,7 +166,7 @@ export default function AdminUsers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {filtered.map(u => (
+                {users.map(u => (
                   <tr key={u.id} className="hover:bg-slate-100 dark:bg-slate-800/30 transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
@@ -180,16 +229,19 @@ export default function AdminUsers() {
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && (
+                {users.length === 0 && (
                   <tr><td colSpan={6} className="text-center py-12 text-slate-500 dark:text-slate-400">No users found</td></tr>
                 )}
               </tbody>
             </table>
+            
+            {renderPagination('flex justify-between items-center px-5 py-4 border-t border-slate-200 dark:border-slate-800')}
+            
           </div>
 
           {/* Mobile card view */}
           <div className="space-y-3 md:hidden">
-            {filtered.map(u => (
+            {users.map(u => (
               <div key={u.id} className="gate-card p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
@@ -239,9 +291,10 @@ export default function AdminUsers() {
                 </div>
               </div>
             ))}
-            {filtered.length === 0 && (
+            {users.length === 0 && (
               <p className="text-center py-12" style={{ color: 'var(--text-muted)' }}>No users found</p>
             )}
+            {renderPagination('gate-card p-3 flex justify-between items-center gap-3')}
           </div>
           </>
         )}
