@@ -15,7 +15,7 @@ export default function PendingPage() {
           Hey <span style={{ color: 'var(--text)' }}>{user?.full_name}</span>, your account is pending admin approval.
         </p>
         <p className="text-sm mb-8" style={{ color: 'var(--text-muted)' }}>
-          Once approved as an aspirant, you'll be able to access all tests and study materials.
+          Once approved as an aspirant, you'll be able to access all tests.
         </p>
         <button onClick={logout} className="btn-ghost flex items-center gap-2 mx-auto">
           <LogOut size={16} /> Sign out

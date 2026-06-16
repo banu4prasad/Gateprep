@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Layout from '../components/shared/Layout'
 import { adminAPI, fetcher } from '../api/api'
 import useSWR from 'swr'
@@ -28,6 +28,7 @@ export default function AdminUsers() {
 
   const { data: usersData, isLoading: loading, mutate } = useSWR(`/admin/users?${params.toString()}`, fetcher)
   const users = usersData?.items || []
+  const usersById = useMemo(() => new Map(users.map(user => [user.id, user])), [users])
   const totalUsers = usersData?.total || 0
   const pendingUsers = usersData?.pending_count || 0
   const aspirantsCount = usersData?.aspirants_count || 0
@@ -38,7 +39,7 @@ export default function AdminUsers() {
   const load = () => mutate()
 
   const changeRole = async (userId, role) => {
-    const oldRole = users.find(u => u.id === userId)?.role
+    const oldRole = usersById.get(userId)?.role
     setUpdating(u => ({ ...u, [userId]: true }))
     try {
       await adminAPI.updateRole(userId, role)
