@@ -1,9 +1,97 @@
-import { useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import X from 'lucide-react/dist/esm/icons/x'
 
 const DEG_TO_RAD = Math.PI / 180
+const OPERATORS = new Set(['+', '-', '×', '÷', 'xʸ', '%'])
+const OPERATOR_PRECEDENCE = { '+': 1, '-': 1, '×': 2, '÷': 2, '%': 2, 'xʸ': 3 }
+
+const formatResult = (value) => {
+  if (!Number.isFinite(value)) return 'Error'
+  return String(parseFloat(value.toFixed(10)))
+}
+
+const isOperatorToken = (token) => OPERATORS.has(token)
+const isOperatorTail = (expression) => isOperatorToken(expression.trim().split(/\s+/).at(-1))
+
+const tokenizeExpression = (expression) => expression.trim().split(/\s+/).filter(Boolean)
+
+const applyOperator = (op, left, right) => {
+  switch (op) {
+    case '+': return left + right
+    case '-': return left - right
+    case '×': return left * right
+    case '÷': return right !== 0 ? left / right : NaN
+    case 'xʸ': return Math.pow(left, right)
+    case '%': return left % right
+    default: return NaN
+  }
+}
+
+const evaluateExpression = (expression) => {
+  const output = []
+  const operators = []
+
+  tokenizeExpression(expression).forEach((token) => {
+    if (!Number.isNaN(Number(token))) {
+      output.push(Number(token))
+      return
+    }
+
+    if (isOperatorToken(token)) {
+      while (
+        operators.length > 0 &&
+        isOperatorToken(operators.at(-1)) &&
+        OPERATOR_PRECEDENCE[operators.at(-1)] >= OPERATOR_PRECEDENCE[token]
+      ) {
+        output.push(operators.pop())
+      }
+      operators.push(token)
+      return
+    }
+
+    if (token === '(') {
+      operators.push(token)
+      return
+    }
+
+    if (token === ')') {
+      while (operators.length > 0 && operators.at(-1) !== '(') {
+        output.push(operators.pop())
+      }
+      if (operators.at(-1) !== '(') throw new Error('Mismatched parentheses')
+      operators.pop()
+      return
+    }
+
+    throw new Error('Invalid token')
+  })
+
+  while (operators.length > 0) {
+    const op = operators.pop()
+    if (op === '(' || op === ')') throw new Error('Mismatched parentheses')
+    output.push(op)
+  }
+
+  const stack = []
+  output.forEach((token) => {
+    if (typeof token === 'number') {
+      stack.push(token)
+      return
+    }
+
+    const right = stack.pop()
+    const left = stack.pop()
+    if (left === undefined || right === undefined) throw new Error('Invalid expression')
+    stack.push(applyOperator(token, left, right))
+  })
+
+  if (stack.length !== 1) throw new Error('Invalid expression')
+  return stack[0]
+}
 
 export default function Calculator({ onClose }) {
+  const dialogRef = useRef(null)
+  const expressionRef = useRef('')
   const [display, setDisplay] = useState('0')
   const [expression, setExpression] = useState('')
   const [memory, setMemory] = useState(0)
@@ -11,6 +99,17 @@ export default function Calculator({ onClose }) {
   const [waitingForOperand, setWaitingForOperand] = useState(false)
 
   const getAngle = (val) => isDeg ? val * DEG_TO_RAD : val
+
+  const setExpressionText = useCallback((next) => {
+    const value = typeof next === 'function' ? next(expressionRef.current) : next
+    expressionRef.current = value
+    setExpression(value)
+  }, [])
+
+  useEffect(() => {
+    const firstButton = dialogRef.current?.querySelector('button')
+    firstButton?.focus()
+  }, [])
 
   const inputDigit = (digit) => {
     if (waitingForOperand) {
@@ -27,30 +126,49 @@ export default function Calculator({ onClose }) {
   }
 
   const handleOperator = (op) => {
-    const val = parseFloat(display)
-    setExpression(`${display} ${op}`)
+    setExpressionText(prev => {
+      const trimmed = prev.trim()
+      if (!trimmed) return `${display} ${op}`
+      if (isOperatorTail(trimmed)) return `${trimmed.slice(0, trimmed.lastIndexOf(' ')).trim()} ${op}`
+      if (trimmed.endsWith(')')) return `${trimmed} ${op}`
+      return `${trimmed} ${display} ${op}`
+    })
     setWaitingForOperand(true)
   }
 
+  const inputOpenParen = () => {
+    setExpressionText(prev => {
+      const trimmed = prev.trim()
+      if (!trimmed) return '('
+      if (isOperatorTail(trimmed) || trimmed.endsWith('(')) return `${trimmed} (`
+      return `${trimmed} ${display} × (`
+    })
+    setDisplay('0')
+    setWaitingForOperand(true)
+  }
+
+  const inputCloseParen = () => {
+    const tokens = tokenizeExpression(expressionRef.current)
+    const openCount = tokens.filter(token => token === '(').length
+    const closeCount = tokens.filter(token => token === ')').length
+    if (openCount <= closeCount) return
+
+    setExpressionText(prev => {
+      const trimmed = prev.trim()
+      if (!trimmed || trimmed.endsWith('(')) return trimmed
+      if (trimmed.endsWith(')')) return `${trimmed} )`
+      return `${trimmed} ${display} )`
+    })
+    setWaitingForOperand(false)
+  }
+
   const calculate = () => {
-    if (!expression) return
+    if (!expressionRef.current) return
     try {
-      const parts = expression.trim().split(' ')
-      const left = parseFloat(parts[0])
-      const op = parts[1]
-      const right = parseFloat(display)
-      let result
-      switch (op) {
-        case '+': result = left + right; break
-        case '-': result = left - right; break
-        case '×': result = left * right; break
-        case '÷': result = right !== 0 ? left / right : 'Error'; break
-        case 'xʸ': result = Math.pow(left, right); break
-        case '%': result = left % right; break
-        default: result = right
-      }
-      setDisplay(String(parseFloat(result.toFixed(10))))
-      setExpression('')
+      const trimmed = expressionRef.current.trim()
+      const finalExpression = trimmed.endsWith(')') ? trimmed : `${trimmed} ${display}`
+      setDisplay(formatResult(evaluateExpression(finalExpression)))
+      setExpressionText('')
       setWaitingForOperand(true)
     } catch { setDisplay('Error') }
   }
@@ -81,7 +199,7 @@ export default function Calculator({ onClose }) {
         case 'e':     setDisplay(String(Math.E)); return
         default: return
       }
-      setDisplay(String(parseFloat(result.toFixed(10))))
+      setDisplay(formatResult(result))
       setWaitingForOperand(true)
     } catch { setDisplay('Error') }
   }
@@ -92,9 +210,34 @@ export default function Calculator({ onClose }) {
     let r = 1; for (let i = 2; i <= n; i++) r *= i; return r
   }
 
-  const clear = () => { setDisplay('0'); setExpression(''); setWaitingForOperand(false) }
+  const clear = () => { setDisplay('0'); setExpressionText(''); setWaitingForOperand(false) }
   const backspace = () => { setDisplay(display.length > 1 ? display.slice(0, -1) : '0') }
   const toggleSign = () => setDisplay(String(parseFloat(display) * -1))
+
+  const handleDialogKeyDown = useCallback((event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onClose()
+      return
+    }
+
+    if (event.key !== 'Tab') return
+
+    const focusable = Array.from(
+      dialogRef.current?.querySelectorAll('button:not([disabled])') || []
+    )
+    if (focusable.length === 0) return
+
+    const first = focusable[0]
+    const last = focusable.at(-1)
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }, [onClose])
 
   const Btn = ({ label, onClick, type = 'default', wide = false }) => (
     <button onClick={onClick}
@@ -104,8 +247,10 @@ export default function Calculator({ onClose }) {
   )
 
   return (
-    <div className="fixed z-50 shadow-2xl rounded-lg overflow-hidden select-none sm:w-[320px] left-4 right-4 sm:left-auto sm:right-4"
+    <div ref={dialogRef}
+         className="fixed z-50 shadow-2xl rounded-lg overflow-hidden select-none sm:w-[320px] left-4 right-4 sm:left-auto sm:right-4"
          role="dialog" aria-modal="true" aria-labelledby="calculator-title"
+         onKeyDown={handleDialogKeyDown}
          style={{ top: '70px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b"
@@ -165,13 +310,13 @@ export default function Calculator({ onClose }) {
         <Btn label="8" onClick={() => inputDigit('8')} />
         <Btn label="9" onClick={() => inputDigit('9')} />
         <Btn label="×" onClick={() => handleOperator('×')} type="op" />
-        <Btn label="(" onClick={() => {}} />
+        <Btn label="(" onClick={inputOpenParen} />
 
         <Btn label="4" onClick={() => inputDigit('4')} />
         <Btn label="5" onClick={() => inputDigit('5')} />
         <Btn label="6" onClick={() => inputDigit('6')} />
         <Btn label="-" onClick={() => handleOperator('-')} type="op" />
-        <Btn label=")" onClick={() => {}} />
+        <Btn label=")" onClick={inputCloseParen} />
 
         <Btn label="1" onClick={() => inputDigit('1')} />
         <Btn label="2" onClick={() => inputDigit('2')} />

@@ -71,4 +71,36 @@ describe('Calculator Component - digit inputs', () => {
 
     expect(display).toHaveTextContent('2.53');
   });
+
+  it('evaluates parenthesized expressions with operator precedence', async () => {
+    const user = userEvent.setup();
+    const { container, getByRole } = render(<Calculator onClose={vi.fn()} />);
+    const display = container.querySelector('.text-2xl');
+
+    await user.click(getByRole('button', { name: '(' }));
+    await user.click(getByRole('button', { name: '2' }));
+    await user.click(getByRole('button', { name: '+' }));
+    await user.click(getByRole('button', { name: '3' }));
+    await user.click(getByRole('button', { name: ')' }));
+    await user.click(getByRole('button', { name: '×' }));
+    await user.click(getByRole('button', { name: '4' }));
+    await user.click(getByRole('button', { name: '=' }));
+
+    expect(display).toHaveTextContent('20');
+  });
+
+  it('keeps keyboard focus trapped and closes on escape', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const { getByRole } = render(<Calculator onClose={onClose} />);
+    const dialog = getByRole('dialog', { name: 'Scientific Calculator' });
+    const buttons = dialog.querySelectorAll('button');
+
+    buttons[buttons.length - 1].focus();
+    await user.keyboard('{Tab}');
+    expect(buttons[0]).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

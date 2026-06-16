@@ -1,12 +1,16 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import api from '../api/client'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import api, { AUTH_UNAUTHORIZED_EVENT } from '../api/client'
 import { mutate } from 'swr'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [sessionExpired, setSessionExpired] = useState(false)
 
   useEffect(() => {
     api.get('/auth/me')
@@ -15,6 +19,15 @@ export function AuthProvider({ children }) {
         setUser(null)
       })
       .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setSessionExpired(true)
+    }
+
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized)
+    return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized)
   }, [])
 
   // Called after successful login or registration
@@ -26,19 +39,65 @@ export function AuthProvider({ children }) {
       full_name: userData.full_name,
     }
     setUser(u)
+    setSessionExpired(false)
     return u
   }, [])
 
   const logout = useCallback(async () => {
     try { await api.post('/auth/logout') } catch {}
     setUser(null)
+    setSessionExpired(false)
     mutate(() => true, undefined, { revalidate: false })
-    window.location.href = '/login'
-  }, [])
+    navigate('/login', { replace: true })
+  }, [navigate])
+
+  const confirmSessionExpired = useCallback(() => {
+    setUser(null)
+    setSessionExpired(false)
+    mutate(() => true, undefined, { revalidate: false })
+    navigate('/login', {
+      replace: true,
+      state: { from: `${location.pathname}${location.search}` },
+    })
+  }, [location.pathname, location.search, navigate])
+
+  const value = useMemo(() => ({
+    user,
+    loading,
+    saveUser,
+    logout,
+    sessionExpired,
+  }), [user, loading, saveUser, logout, sessionExpired])
 
   return (
-    <AuthContext.Provider value={{ user, loading, saveUser, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
+      {sessionExpired && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
+          role="presentation"
+        >
+          <div
+            className="gate-card w-full max-w-sm p-5"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="session-expired-title"
+            aria-describedby="session-expired-description"
+          >
+            <h2 id="session-expired-title" className="text-lg font-bold text-slate-900 dark:text-white">
+              Session expired
+            </h2>
+            <p id="session-expired-description" className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Sign in again to continue.
+            </p>
+            <div className="mt-5 flex justify-end">
+              <button onClick={confirmSessionExpired} className="btn-primary" autoFocus>
+                Sign in
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   )
 }

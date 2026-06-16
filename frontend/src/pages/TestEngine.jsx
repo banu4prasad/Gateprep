@@ -1,619 +1,36 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { testAPI, adminAPI } from '../api/api'
-import toast from 'react-hot-toast'
-import CalcIcon from 'lucide-react/dist/esm/icons/calculator'
-import Send from 'lucide-react/dist/esm/icons/send'
-import Flag from 'lucide-react/dist/esm/icons/flag'
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left'
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right'
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle'
 import Maximize from 'lucide-react/dist/esm/icons/maximize'
 import Spinner from '../components/shared/Spinner'
 import Calculator from '../components/test/Calculator'
-import MathText from '../components/shared/MathText'
-import clsx from 'clsx'
+import QuestionView from '../components/test/QuestionView'
+import TestHeader from '../components/test/TestHeader'
+import TestSidebar from '../components/test/TestSidebar'
+import TimerDisplay from '../components/test/TimerDisplay'
+import useTestEngine from '../hooks/useTestEngine'
 
-// ── Format time ───────────────────────────────────────────────────
-function formatTime(ms) {
-  if (ms === null || ms === undefined || isNaN(ms)) return '--:--:--'
-  const totalSecs = Math.max(0, Math.floor(ms / 1000))
-  const h = Math.floor(totalSecs / 3600)
-  const m = Math.floor((totalSecs % 3600) / 60)
-  const s = totalSecs % 60
-  return [h, m, s].map(n => String(n).padStart(2, '0')).join(':')
-}
-
-// ── Question palette status ───────────────────────────────────────
-function getQStatus(qId, currentQId, answers, marked) {
-  if (qId === currentQId) return 'current'
-  if (marked.has(qId) && answers[qId]) return 'answered-marked'
-  if (marked.has(qId)) return 'marked'
-  if (answers[qId]) return 'answered'
-  return 'not-answered'
-}
-
-const STATUS_CLASS = {
-  'current':         'q-dot q-dot-answered border-2 border-white',
-  'answered':        'q-dot q-dot-answered',
-  'not-answered':    'q-dot q-dot-not-answered',
-  'not-visited':     'q-dot q-dot-not-visited',
-  'marked':          'q-dot q-dot-marked',
-  'answered-marked': 'q-dot q-dot-answered-marked',
-}
-
-const TIMER_WARNINGS = [30, 15, 10, 5, 1]
-
-function getEndTimeMs(startedAt, durationMinutes) {
-  if (!startedAt || !durationMinutes) return null
-
-  // Parse server time — handle all formats FastAPI may return:
-  // "2024-01-01T12:00:00" / "2024-01-01T12:00:00Z" / "2024-01-01T12:00:00+00:00"
-  let startMs
-  try {
-    let str = String(startedAt).trim()
-    // If no timezone info at all, treat as UTC
-    if (!str.endsWith('Z') && !str.includes('+') && !/[0-9]-[0-9]{2}:[0-9]{2}$/.test(str)) {
-      str = str + 'Z'
-    }
-    startMs = new Date(str).getTime()
-    if (isNaN(startMs)) throw new Error('Invalid date')
-  } catch {
-    // Fallback: treat as current time (timer starts fresh)
-    startMs = Date.now()
-  }
-
-  return startMs + durationMinutes * 60 * 1000
-}
-
-const TimerDisplay = ({
-  endTime,
-  onExpire,
-  announceWarnings = true,
-  className = 'flex items-center gap-1.5 px-3 py-1 rounded font-mono font-bold text-sm border',
-  lowClassName = 'bg-red-500/20 border-red-500/50 text-red-400 timer-critical',
-  normalClassName = 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200'
-}) => {
-  const getRemaining = useCallback(
-    () => Number.isFinite(endTime) ? Math.max(0, endTime - Date.now()) : null,
-    [endTime]
-  )
-  const [remaining, setRemaining] = useState(getRemaining)
-  const expiredRef = useRef(false)
-  const warnedRef = useRef(new Set())
-
-  useEffect(() => {
-    if (!Number.isFinite(endTime)) {
-      setRemaining(null)
-      return
-    }
-
-    expiredRef.current = false
-    warnedRef.current = new Set()
-
-    const tick = () => {
-      const left = Math.max(0, endTime - Date.now())
-
-      setRemaining(left)
-
-      const minsLeft = Math.ceil(left / 60000)
-      if (announceWarnings && TIMER_WARNINGS.includes(minsLeft) && !warnedRef.current.has(minsLeft) && left > 1000) {
-        warnedRef.current.add(minsLeft)
-        if (minsLeft === 5 || minsLeft === 1) {
-          toast(minsLeft === 1 ? '1 minute remaining!' : `${minsLeft} minutes remaining`,
-            { duration: 4000 })
-        }
-      }
-
-      if (left <= 0 && !expiredRef.current) {
-        expiredRef.current = true
-        clearInterval(timer)
-        onExpire()
-      }
-    }
-
-    const timer = setInterval(tick, 1000)
-    tick()
-
-    return () => clearInterval(timer)
-  }, [endTime, onExpire, announceWarnings])
-
-  const isLow = remaining !== null && remaining < 5 * 60 * 1000
-
+function LoadingScreen() {
   return (
-    <div
-      className={clsx(
-        className,
-        isLow
-          ? lowClassName
-          : normalClassName
-      )}
-    >
-      {formatTime(remaining)}
-    </div>
-  )
-}
-
-export default function TestEngine() {
-  const { testId }  = useParams()
-  const navigate    = useNavigate()
-  const [searchParams] = useSearchParams()
-  const isPreview   = searchParams.get('preview') === 'true'
-
-  // ── State ──────────────────────────────────────────────────────
-  const [test, setTest]         = useState(null)
-  const [attempt, setAttempt]   = useState(null)
-  const [questions, setQuestions] = useState([])
-  const [answers, setAnswers]   = useState({})   // { [qId]: string }
-  const [timings, setTimings]   = useState({})   // { [qId]: seconds }
-  const [marked, setMarked]     = useState(new Set())
-  const [visited, setVisited]   = useState(new Set())
-  const [current, setCurrent]   = useState(0)
-  const [loading, setLoading]   = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [showCalc, setShowCalc] = useState(false)
-  const [natInput, setNatInput] = useState('')
-  const [tabViolations, setTabViolations]   = useState(0)
-  const [fsViolations, setFsViolations]     = useState(0)
-  const [showFsWarning, setShowFsWarning]   = useState(false)
-  const [attemptNumber, setAttemptNumber] = useState(null)
-  const [maxAttempts, setMaxAttempts]     = useState(6)
-  const [started, setStarted]             = useState(false)
-  const [starting, setStarting]           = useState(false)
-  const [accepted, setAccepted]           = useState(false)
-  const [showPalette, setShowPalette]     = useState(false)
-
-  // ── Refs (stable, never cause re-renders) ─────────────────────
-  const submitLockRef    = useRef(false)
-  const autoSaveRef      = useRef(null)
-  const tabViolRef       = useRef(0)
-  const fsViolRef        = useRef(0)
-  const attemptRef       = useRef(null)
-  const answersRef       = useRef({})
-  const questionsRef     = useRef([])
-  const timingsRef       = useRef({})
-  const testIdRef        = useRef(testId)
-  const questionStartRef = useRef(Date.now())
-  const loadedRef        = useRef(false) // prevent tab detection on initial load
-
-  // Keep refs in sync with state
-  useEffect(() => { testIdRef.current = testId }, [testId])
-  useEffect(() => { attemptRef.current  = attempt }, [attempt])
-  useEffect(() => { answersRef.current  = answers }, [answers])
-  useEffect(() => { questionsRef.current = questions }, [questions])
-  useEffect(() => { timingsRef.current  = timings }, [timings])
-
-  // ── Load test metadata ─────────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false
-
-    ;(async () => {
-      setLoading(true)
-      setStarted(false)
-      setAccepted(false)
-      setAttempt(null)
-      setQuestions([])
-      setAnswers({})
-      setTimings({})
-      setMarked(new Set())
-      setVisited(new Set())
-      setCurrent(0)
-      attemptRef.current = null
-      questionsRef.current = []
-      answersRef.current = {}
-      timingsRef.current = {}
-      loadedRef.current = false
-
-      try {
-        const testRes = await testAPI.getTest(testId)
-        if (cancelled) return
-        setTest(testRes.data)
-      } catch (err) {
-        toast.error(err.response?.data?.detail || 'Failed to load test')
-        navigate('/tests')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-      clearInterval(autoSaveRef.current)
-    }
-  }, [testId, navigate])
-
-  const beginTest = useCallback(async () => {
-    if (!accepted || starting || started) return
-
-    setStarting(true)
-    loadedRef.current = false
-
-    try {
-      try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen?.()
-        }
-      } catch {
-        // Browsers may reject fullscreen in some environments; show recovery after load.
-      }
-
-      let attemptData;
-      let qData;
-
-      if (isPreview) {
-        attemptData = {
-          id: 'preview',
-          attempt_number: 'Preview',
-          max_attempts: '∞',
-          started_at: new Date().toISOString()
-        }
-        const qRes = await adminAPI.getQuestions(testId)
-        qData = qRes.data
-      } else {
-        const attemptRes = await testAPI.startTest(testId)
-        attemptData = attemptRes.data
-        const qRes = await testAPI.getQuestions(testId, attemptData.id)
-        qData = qRes.data
-      }
-
-      setAttempt(attemptData)
-      attemptRef.current = attemptData
-      setAttemptNumber(attemptData.attempt_number || 1)
-      setMaxAttempts(attemptData.max_attempts || 6)
-
-      setQuestions(qData)
-      questionsRef.current = qData
-      setVisited(qData[0] ? new Set([qData[0].id]) : new Set())
-      setAnswers({})
-      setTimings({})
-      setMarked(new Set())
-      setCurrent(0)
-      setNatInput('')
-      setTabViolations(0)
-      setFsViolations(0)
-      setShowFsWarning(false)
-      tabViolRef.current = 0
-      fsViolRef.current = 0
-      answersRef.current = {}
-      timingsRef.current = {}
-      setStarted(true)
-
-      setTimeout(() => {
-        loadedRef.current = true
-        if (!document.fullscreenElement) {
-          setShowFsWarning(true)
-        }
-      }, 2000)
-    } catch (err) {
-      console.error("TestEngine beginTest error:", err)
-      toast.error(err.response?.data?.detail || 'Failed to start test')
-      navigate('/tests')
-    } finally {
-      setStarting(false)
-    }
-  }, [accepted, navigate, starting, started, testId, isPreview])
-
-  // ── Submit (stable ref — never recreated) ─────────────────────
-  const doSubmitCore = useCallback(async (auto = false) => {
-    if (submitLockRef.current) return
-    submitLockRef.current = true
-    setSubmitting(true)
-    clearInterval(autoSaveRef.current)
-
-    // Exit fullscreen cleanly
-    try { if (document.fullscreenElement) await document.exitFullscreen() } catch {}
-
-    if (isPreview) {
-      if (auto) toast('Time up! Auto-submitted preview.', { duration: 5000 })
-      else toast.success('Preview submitted successfully! (No data saved)')
-      submitLockRef.current = false
-      setSubmitting(false)
-      navigate(`/admin/tests/${testIdRef.current}`)
-      return
-    }
-
-    const currentAttempt   = attemptRef.current
-    const currentAnswers   = answersRef.current
-    const currentQuestions = questionsRef.current
-    const currentTimings   = timingsRef.current
-
-    if (!currentAttempt) {
-      submitLockRef.current = false
-      setSubmitting(false)
-      return
-    }
-
-    try {
-      const ans = currentQuestions.map(q => ({
-        question_id: q.id,
-        selected_answer: currentAnswers[q.id] || null,
-        time_spent_seconds: currentTimings[q.id] || 0
-      }))
-      const res = await testAPI.submitTest(testIdRef.current, currentAttempt.id, ans)
-      if (auto) toast('Time up! Auto-submitted.', { duration: 5000 })
-      else toast.success('Test submitted successfully!')
-
-      if (res.data?.persisted === false && res.data?.result) {
-        const result = res.data.result
-        const resultId = result.client_result_id || result.attempt_id || res.data.id
-        sessionStorage.setItem(`practice-result:${resultId}`, JSON.stringify(result))
-        navigate(`/results/${resultId}`, { state: { result } })
-        return
-      }
-
-      navigate(`/results/${res.data.id}`)
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Submit failed. Please try again.')
-      submitLockRef.current = false
-      setSubmitting(false)
-    }
-  }, [navigate])
-
-  // Keep a stable ref to doSubmit so timer/violations can always call latest version
-  const doSubmitRef = useRef(doSubmitCore)
-  useEffect(() => { doSubmitRef.current = doSubmitCore }, [doSubmitCore])
-
-  // Public doSubmit for UI buttons
-  const doSubmit = useCallback((auto = false) => doSubmitRef.current(auto), [])
-
-  const handleTimerExpire = useCallback(() => {
-    doSubmitRef.current(true)
-  }, [])
-
-  // ── Fullscreen exit detection ────────────────────────────────
-  useEffect(() => {
-    const handleFsChange = () => {
-      // Only detect AFTER initial fullscreen enter
-      if (!document.fullscreenElement && loadedRef.current) {
-        const next = fsViolRef.current + 1
-        fsViolRef.current = next
-        setFsViolations(next)
-
-        if (next >= 3) {
-          toast.error('3 fullscreen violations — auto submitting!')
-          doSubmitRef.current(true)
-        } else {
-          setShowFsWarning(true)
-          if (!isPreview) {
-            testAPI.updateViolations(testIdRef.current, attemptRef.current?.id, {
-              fullscreen_violations: next
-            }).catch(() => {})
-          }
-        }
-      }
-    }
-    document.addEventListener('fullscreenchange', handleFsChange)
-    return () => document.removeEventListener('fullscreenchange', handleFsChange)
-  }, [])
-
-  // ── Tab/window visibility detection ──────────────────────────
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden && loadedRef.current) {
-        const next = tabViolRef.current + 1
-        tabViolRef.current = next
-        setTabViolations(next)
-
-        if (next >= 3) {
-          toast.error('3 tab violations — auto submitting!')
-          doSubmitRef.current(true)
-        } else {
-          toast(`Tab switch detected! Warning ${next}/3`, { duration: 3000 })
-          if (!isPreview) {
-            testAPI.updateViolations(testIdRef.current, attemptRef.current?.id, {
-              tab_violations: next
-            }).catch(() => {})
-          }
-        }
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibility)
-    return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [])
-
-  // ── Disable right-click and copy/paste ────────────────────────
-  useEffect(() => {
-    const prevent = e => e.preventDefault()
-    const preventKeys = e => {
-      if (e.ctrlKey && ['c', 'v', 'a', 'u'].includes(e.key.toLowerCase())) e.preventDefault()
-    }
-    document.addEventListener('contextmenu', prevent)
-    document.addEventListener('keydown', preventKeys)
-    return () => {
-      document.removeEventListener('contextmenu', prevent)
-      document.removeEventListener('keydown', preventKeys)
-    }
-  }, [])
-
-  // ── Track time per question ────────────────────────────────────
-  useEffect(() => {
-    const q = questions[current]
-    if (!q) return
-    questionStartRef.current = Date.now()
-    return () => {
-      const elapsed = Math.floor((Date.now() - questionStartRef.current) / 1000)
-      if (elapsed > 0) {
-        setTimings(t => {
-          const updated = { ...t, [q.id]: (t[q.id] || 0) + elapsed }
-          timingsRef.current = updated
-          return updated
-        })
-      }
-    }
-  }, [current, questions])
-
-  // ── Visit tracking ─────────────────────────────────────────────
-  useEffect(() => {
-    const q = questions[current]
-    if (q) setVisited(v => new Set([...v, q.id]))
-  }, [current, questions])
-
-  // ── Sync NAT input ─────────────────────────────────────────────
-  useEffect(() => {
-    const q = questions[current]
-    if (q?.question_type === 'nat') setNatInput(answers[q.id] || '')
-  }, [current, questions])
-
-  // ── Auto-save every 30s ────────────────────────────────────────
-  useEffect(() => {
-    if (!attempt || isPreview) return
-    autoSaveRef.current = setInterval(() => {
-      const ans = Object.entries(answersRef.current).map(([qid, sel]) => ({
-        question_id: +qid,
-        selected_answer: sel,
-        time_spent_seconds: timingsRef.current[+qid] || 0
-      }))
-      if (ans.length > 0) {
-        testAPI.saveAnswers(testIdRef.current, attemptRef.current?.id, ans).catch(() => {})
-      }
-    }, 30000)
-    return () => clearInterval(autoSaveRef.current)
-  }, [attempt])
-
-  // ── Answer handlers ────────────────────────────────────────────
-  const q = questions[current]
-
-  const setMCQ = (letter) => {
-    if (!q) return
-    setAnswers(a => {
-      const updated = { ...a, [q.id]: a[q.id] === letter ? undefined : letter }
-      answersRef.current = updated
-      return updated
-    })
-  }
-
-  const toggleMSQ = (letter) => {
-    if (!q) return
-    setAnswers(a => {
-      const cur  = (a[q.id] || '').split(',').filter(Boolean)
-      const next = cur.includes(letter) ? cur.filter(l => l !== letter) : [...cur, letter].sort()
-      const updated = { ...a, [q.id]: next.join(',') || undefined }
-      answersRef.current = updated
-      return updated
-    })
-  }
-
-  const commitNAT = () => {
-    if (!q) return
-    setAnswers(a => {
-      const updated = { ...a, [q.id]: natInput.trim() || undefined }
-      answersRef.current = updated
-      return updated
-    })
-  }
-
-  const saveAndNext = () => {
-    if (q?.question_type === 'nat') commitNAT()
-    if (current < questions.length - 1) setCurrent(c => c + 1)
-  }
-
-  const markAndNext = () => {
-    setMarked(m => { const n = new Set(m); n.has(q.id) ? n.delete(q.id) : n.add(q.id); return n })
-    if (current < questions.length - 1) setCurrent(c => c + 1)
-  }
-
-  const clearResponse = () => {
-    setAnswers(a => {
-      const n = { ...a }
-      delete n[q.id]
-      answersRef.current = n
-      return n
-    })
-    setNatInput('')
-  }
-
-  // ── Derived values ─────────────────────────────────────────────
-  const subjects = useMemo(() => {
-    return [...new Set(questions.map((q) => q.subject || 'General'))]
-  }, [questions])
-
-  const answered = useMemo(() => {
-    return Object.values(answers).filter(Boolean).length
-  }, [answers])
-
-  const notAnswered = questions.length - answered
-  const totalViol   = tabViolations + fsViolations
-  const endTimeMs   = useMemo(
-    () => getEndTimeMs(attempt?.started_at, test?.duration_minutes),
-    [attempt?.started_at, test?.duration_minutes]
-  )
-
-  const sidebarContent = useMemo(() => {
-    return (
-      <>
-        <div className="p-3 border-b text-center" style={{ borderColor: 'var(--border)' }}>
-          <div className="w-9 h-9 rounded-full bg-sky-700 flex items-center justify-center mx-auto mb-1">
-            <span className="text-slate-900 dark:text-white font-bold text-sm">U</span>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div className="p-2 border-b space-y-1.5" style={{ borderColor: 'var(--border)' }}>
-          {[
-            ['q-dot-answered',     `Answered (${answered})`],
-            ['q-dot-not-answered', `Not Answered (${notAnswered})`],
-            ['q-dot-not-visited',  `Not Visited (${questions.length - visited.size})`],
-            ['q-dot-marked',       `Marked (${marked.size})`],
-          ].map(([cls, label]) => (
-            <div key={label} className="flex items-center gap-2">
-              <div className={`q-dot w-6 h-6 text-[9px] ${cls}`} />
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Subject sections */}
-        {subjects.map(subj => {
-          const subjQs = questions.filter(q2 => (q2.subject || 'General') === subj)
-          return (
-            <div key={subj} className="p-2 border-b" style={{ borderColor: 'var(--border)' }}>
-              <p className="text-xs font-semibold mb-2 truncate" style={{ color: 'var(--text)' }}>{subj}</p>
-              <div className="grid grid-cols-5 gap-1">
-                {subjQs.map(q2 => {
-                  const qIdx = questions.indexOf(q2)
-                  const isCur = q2.id === q?.id
-                  const status = isCur ? 'current'
-                    : !visited.has(q2.id) ? 'not-visited'
-                    : getQStatus(q2.id, q?.id, answers, marked)
-                  return (
-                    <button key={q2.id} onClick={() => { setCurrent(qIdx); setShowPalette(false) }}
-                      className={STATUS_CLASS[status] || STATUS_CLASS['not-visited']}>
-                      {qIdx + 1}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-
-        <div className="p-2 mt-auto">
-          <button onClick={() => setShowConfirm(true)} disabled={submitting}
-            className="btn-primary w-full flex items-center justify-center gap-1.5 text-xs py-2">
-            {submitting ? <Spinner size={12} /> : <Send size={12} />} Submit Test
-          </button>
-        </div>
-      </>
-    )
-  }, [answered, answers, marked, notAnswered, q?.id, questions, subjects, submitting, visited])
-
-  // ── Loading state ──────────────────────────────────────────────
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen flex items-center justify-center theme-surface">
       <Spinner size={36} className="text-sky-500" />
     </div>
   )
+}
 
-  if (!started) return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
+function InstructionScreen({
+  accepted,
+  beginTest,
+  navigate,
+  setAccepted,
+  starting,
+  test,
+}) {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 theme-surface">
       <div className="gate-card w-full max-w-2xl p-6 animate-fade-in">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text)' }}>
-              General Instructions
-            </h1>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{test?.title}</p>
+            <h1 className="text-2xl font-bold mb-1 theme-text">General Instructions</h1>
+            <p className="text-sm theme-muted">{test?.title}</p>
           </div>
           <button onClick={() => navigate('/tests')} className="btn-ghost text-sm px-3 py-2">
             Back
@@ -626,14 +43,14 @@ export default function TestEngine() {
             ['Questions', test?.question_count || 0],
             ['Marks', test?.total_marks || 0],
           ].map(([label, value]) => (
-            <div key={label} className="rounded border p-3 text-center" style={{ borderColor: 'var(--border)', background: 'var(--bg-panel)' }}>
-              <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
-              <p className="font-semibold" style={{ color: 'var(--text)' }}>{value}</p>
+            <div key={label} className="theme-panel-card rounded border p-3 text-center">
+              <p className="text-xs mb-1 theme-muted">{label}</p>
+              <p className="font-semibold theme-text">{value}</p>
             </div>
           ))}
         </div>
 
-        <div className="space-y-3 text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+        <div className="space-y-3 text-sm mb-6 theme-muted">
           <p>The test opens in fullscreen mode after you click Begin Test.</p>
           <p>Leaving fullscreen or switching tabs may be counted as a violation.</p>
           <p>The timer starts only after the attempt is created.</p>
@@ -643,10 +60,10 @@ export default function TestEngine() {
           <input
             type="checkbox"
             checked={accepted}
-            onChange={e => setAccepted(e.target.checked)}
+            onChange={event => setAccepted(event.target.checked)}
             className="mt-1"
           />
-          <span className="text-sm" style={{ color: 'var(--text)' }}>
+          <span className="text-sm theme-text">
             I have read and understood the instructions.
           </span>
         </label>
@@ -662,15 +79,15 @@ export default function TestEngine() {
       </div>
     </div>
   )
+}
 
-  if (!q) return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
+function EmptyQuestionsScreen({ navigate }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 theme-surface">
       <div className="gate-card w-full max-w-md p-6 text-center">
         <AlertTriangle size={36} className="text-amber-400 mx-auto mb-3" />
-        <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>
-          No Questions Available
-        </h1>
-        <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>
+        <h1 className="text-xl font-bold mb-2 theme-text">No Questions Available</h1>
+        <p className="text-sm mb-5 theme-muted">
           This test does not have any questions to display.
         </p>
         <button onClick={() => navigate('/tests')} className="btn-primary w-full">
@@ -679,281 +96,260 @@ export default function TestEngine() {
       </div>
     </div>
   )
+}
 
+function FullscreenWarning({
+  endTimeMs,
+  fsViolations,
+  handleTimerExpire,
+  setShowConfirm,
+  setShowFsWarning,
+}) {
   return (
-    <div className="theme-light-surface h-screen flex flex-col overflow-hidden select-none"
-         style={{ background: 'var(--bg)' }}
-         onCopy={e => e.preventDefault()}
-         onCut={e => e.preventDefault()}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center theme-danger-backdrop">
+      <div className="text-center max-w-sm p-8 rounded-xl border border-red-500/40 theme-card-bg">
+        <AlertTriangle size={44} className="text-red-400 mx-auto mb-4" />
+        <h2 className="text-xl font-bold mb-2 theme-text">You exited fullscreen!</h2>
+        <p className="text-sm mb-1 theme-muted">The timer is still running.</p>
+        <p className="text-red-400 font-semibold mb-1">Violation {fsViolations}/3</p>
+        <p className="text-xs mb-5 theme-muted">3 violations = test auto-submitted</p>
+        <TimerDisplay
+          endTime={endTimeMs}
+          onExpire={handleTimerExpire}
+          announceWarnings={false}
+          className="text-3xl font-mono font-bold mb-6"
+          lowClassName="text-red-400 timer-critical"
+          normalClassName="theme-text"
+        />
+        <div className="space-y-3">
+          <button
+            onClick={() => {
+              document.documentElement.requestFullscreen?.()
+                .then(() => setShowFsWarning(false))
+                .catch(() => setShowFsWarning(false))
+            }}
+            className="btn-primary w-full flex items-center justify-center gap-2"
+          >
+            <Maximize size={16} /> Return to Fullscreen
+          </button>
+          <button
+            onClick={() => {
+              setShowFsWarning(false)
+              setShowConfirm(true)
+            }}
+            className="btn-danger w-full"
+          >
+            Submit Test Now
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-      {/* ── Fullscreen warning overlay ─────────────────────────── */}
-      {showFsWarning && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center"
-             style={{ background: 'rgba(0,0,0,0.96)' }}>
-          <div className="text-center max-w-sm p-8 rounded-xl border border-red-500/40"
-               style={{ background: 'var(--bg-card)' }}>
-            <AlertTriangle size={44} className="text-red-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>You exited fullscreen!</h2>
-            <p className="text-sm mb-1" style={{ color: 'var(--text-muted)' }}>The timer is still running.</p>
-            <p className="text-red-400 font-semibold mb-1">Violation {fsViolations}/3</p>
-            <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>3 violations = test auto-submitted</p>
-            <TimerDisplay
-              endTime={endTimeMs}
-              onExpire={handleTimerExpire}
-              announceWarnings={false}
-              className="text-3xl font-mono font-bold mb-6"
-              lowClassName="text-red-400 timer-critical"
-              normalClassName="theme-text"
-            />
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  document.documentElement.requestFullscreen?.()
-                    .then(() => setShowFsWarning(false))
-                    .catch(() => setShowFsWarning(false))
-                }}
-                className="btn-primary w-full flex items-center justify-center gap-2">
-                <Maximize size={16} /> Return to Fullscreen
-              </button>
-              <button onClick={() => { setShowFsWarning(false); setShowConfirm(true) }}
-                className="btn-danger w-full">
-                Submit Test Now
-              </button>
+function MobilePaletteDrawer({ onClose, sidebar }) {
+  return (
+    <div className="md:hidden fixed inset-0 z-40 flex">
+      <div className="flex-1 theme-dim-backdrop" onClick={onClose} />
+      <div className="w-64 flex flex-col overflow-y-auto animate-slide-in-right theme-sidebar-surface">
+        <div className="flex items-center justify-between p-3 border-b theme-border">
+          <span className="text-sm font-semibold theme-text">Question Palette</span>
+          <button onClick={onClose} className="p-1 rounded theme-muted">✕</button>
+        </div>
+        {sidebar}
+      </div>
+    </div>
+  )
+}
+
+function ConfirmSubmitModal({
+  answered,
+  doSubmit,
+  marked,
+  notAnswered,
+  questions,
+  setShowConfirm,
+  submitting,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 theme-modal-backdrop">
+      <div
+        className="w-full max-w-sm p-6 rounded-xl animate-slide-up theme-card-surface"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-submit-title"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <AlertTriangle size={22} className="text-amber-400" />
+          <h3 id="confirm-submit-title" className="font-bold text-lg theme-text">Submit Test?</h3>
+        </div>
+        <div className="space-y-1.5 mb-5 text-sm">
+          {[
+            ['Total Questions', questions.length, 'theme-text'],
+            ['Answered', answered, 'text-[var(--success-text)]'],
+            ['Not Answered', notAnswered, 'text-[var(--danger-text)]'],
+            ['Marked', marked.size, 'text-[var(--marked-text)]'],
+          ].map(([label, val, colorClass]) => (
+            <div key={label} className="flex justify-between py-1.5 border-b theme-border">
+              <span className="theme-muted">{label}</span>
+              <span className={`font-semibold ${colorClass}`}>{val}</span>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Top bar ────────────────────────────────────────────── */}
-      <div className="app-header flex items-center px-2 sm:px-4 h-12 border-b flex-shrink-0"
-           style={{ background: 'var(--header-bg)', borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-2 mr-3 flex-shrink-0">
-          <div className="w-6 h-6 rounded bg-sky-600 flex items-center justify-center">
-            <span className="text-slate-900 dark:text-white font-bold text-xs">G</span>
-          </div>
-          <span className="text-slate-900 dark:text-white text-sm font-semibold hidden md:block truncate max-w-[160px]">
-            {test?.title}
-          </span>
-        </div>
-
-        {/* Subject tabs */}
-        <div className="flex items-center gap-0 flex-1 overflow-x-auto scrollbar-hide">
-          {subjects.map(subj => (
-            <button key={subj}
-              onClick={() => {
-                const idx = questions.findIndex(q2 => (q2.subject || 'General') === subj)
-                if (idx >= 0) setCurrent(idx)
-              }}
-              className={clsx('subject-tab text-xs', (q.subject || 'General') === subj && 'active')}>
-              {subj}
-            </button>
           ))}
         </div>
-
-        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-          {/* Attempt count */}
-          {attemptNumber && (
-            <span className="text-xs font-medium hidden sm:block"
-                  style={{ color: 'var(--header-muted)' }}>
-              Attempt {attemptNumber}/{maxAttempts}
-            </span>
-          )}
-
-          {/* Violations badge */}
-          {totalViol > 0 && (
-            <span className="text-xs font-medium text-red-400 hidden sm:block">
-              {totalViol}/3 Violations
-            </span>
-          )}
-
-          {/* Calculator toggle */}
-          <button onClick={() => setShowCalc(s => !s)}
-            className={clsx(
-              'flex items-center gap-1 px-2 py-1 rounded text-xs border transition-colors',
-              showCalc
-                ? 'bg-sky-600 border-sky-500 text-white'
-                : 'border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:border-slate-500'
-            )}>
-            <CalcIcon size={13} /> Calc
-          </button>
-
-          {/* Timer */}
-          <TimerDisplay endTime={endTimeMs} onExpire={handleTimerExpire} />
-
-          {/* Submit button */}
-          <button onClick={() => setShowConfirm(true)} disabled={submitting}
-            className="flex items-center gap-1 px-3 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50">
-            {submitting ? <Spinner size={12} /> : <Send size={12} />} Submit
+        <p className="text-xs mb-5 theme-muted">
+          This cannot be undone. Your answers will be evaluated.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={() => setShowConfirm(false)} className="btn-ghost flex-1">Go Back</button>
+          <button
+            onClick={() => {
+              setShowConfirm(false)
+              doSubmit(false)
+            }}
+            disabled={submitting}
+            className="btn-primary flex-1 flex items-center justify-center gap-2"
+          >
+            {submitting && <Spinner size={13} />} Submit
           </button>
         </div>
       </div>
+    </div>
+  )
+}
 
-      {/* ── Question type info bar ─────────────────────────────── */}
-      <div className="px-3 sm:px-4 py-1.5 text-xs border-b flex items-center flex-wrap gap-2 sm:gap-4 flex-shrink-0"
-           style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-        <span style={{ color: 'var(--text-muted)' }}>
-          Question Type:{' '}
-          <strong style={{ color: 'var(--text)' }}>
-            {q.question_type === 'mcq' ? 'MCQ Single' : q.question_type === 'msq' ? 'MSQ Multiple' : 'NAT Numerical'}
-          </strong>
-        </span>
-        <span style={{ color: 'var(--text-muted)' }}>
-          Marks: <strong className="text-green-400">+{q.marks}</strong>
-          {q.negative_marks > 0 && <span className="text-red-400 ml-1">/ -{q.negative_marks}</span>}
-        </span>
-      </div>
+export default function TestEngine() {
+  const engine = useTestEngine()
+  const {
+    accepted,
+    answered,
+    answers,
+    attemptNumber,
+    beginTest,
+    clearResponse,
+    commitNAT,
+    current,
+    currentQuestion,
+    doSubmit,
+    endTimeMs,
+    fsViolations,
+    handleTimerExpire,
+    loading,
+    markAndNext,
+    marked,
+    maxAttempts,
+    natInput,
+    navigate,
+    notAnswered,
+    questions,
+    saveAndNext,
+    setAccepted,
+    setCurrent,
+    setMCQ,
+    setNatInput,
+    setShowCalc,
+    setShowConfirm,
+    setShowFsWarning,
+    setShowPalette,
+    showCalc,
+    showConfirm,
+    showFsWarning,
+    showPalette,
+    started,
+    starting,
+    subjects,
+    submitting,
+    test,
+    toggleMSQ,
+    totalViolations,
+    visited,
+  } = engine
 
-      {/* ── Main content ───────────────────────────────────────── */}
+  if (loading) return <LoadingScreen />
+
+  if (!started) {
+    return (
+      <InstructionScreen
+        accepted={accepted}
+        beginTest={beginTest}
+        navigate={navigate}
+        setAccepted={setAccepted}
+        starting={starting}
+        test={test}
+      />
+    )
+  }
+
+  if (!currentQuestion) return <EmptyQuestionsScreen navigate={navigate} />
+
+  const sidebar = (
+    <TestSidebar
+      answered={answered}
+      answers={answers}
+      currentQuestion={currentQuestion}
+      marked={marked}
+      notAnswered={notAnswered}
+      onQuestionSelect={(index) => {
+        setCurrent(index)
+        setShowPalette(false)
+      }}
+      onSubmitClick={() => setShowConfirm(true)}
+      questions={questions}
+      submitting={submitting}
+      subjects={subjects}
+      visited={visited}
+    />
+  )
+
+  return (
+    <div className="theme-surface h-screen flex flex-col overflow-hidden select-none">
+      {showFsWarning && (
+        <FullscreenWarning
+          endTimeMs={endTimeMs}
+          fsViolations={fsViolations}
+          handleTimerExpire={handleTimerExpire}
+          setShowConfirm={setShowConfirm}
+          setShowFsWarning={setShowFsWarning}
+        />
+      )}
+
+      <TestHeader
+        attemptNumber={attemptNumber}
+        currentQuestion={currentQuestion}
+        endTimeMs={endTimeMs}
+        handleTimerExpire={handleTimerExpire}
+        maxAttempts={maxAttempts}
+        onSubmitClick={() => setShowConfirm(true)}
+        questions={questions}
+        setCurrent={setCurrent}
+        setShowCalc={setShowCalc}
+        showCalc={showCalc}
+        subjects={subjects}
+        submitting={submitting}
+        test={test}
+        totalViolations={totalViolations}
+      />
+
       <div className="flex flex-1 overflow-hidden">
+        <QuestionView
+          answers={answers}
+          clearResponse={clearResponse}
+          commitNAT={commitNAT}
+          current={current}
+          markAndNext={markAndNext}
+          natInput={natInput}
+          question={currentQuestion}
+          questions={questions}
+          saveAndNext={saveAndNext}
+          setCurrent={setCurrent}
+          setMCQ={setMCQ}
+          setNatInput={setNatInput}
+          toggleMSQ={toggleMSQ}
+        />
 
-        {/* Question panel */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-4">
-            <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>
-              Question No. {current + 1}
-            </p>
-
-            {/* Question text */}
-            <div className="mb-4">
-              <div className="leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text)' }}>
-                <MathText>{q.question_text}</MathText>
-              </div>
-              {q.question_image_url && (
-                <img src={q.question_image_url} alt="question"
-                     loading="eager"
-                     fetchpriority="high"
-                     decoding="async"
-                     className="mt-3 w-full max-w-2xl max-h-64 object-contain rounded cursor-pointer border bg-slate-50 dark:bg-slate-800/50"
-                     style={{ borderColor: 'var(--border)', aspectRatio: '21/9' }}
-                     onClick={() => window.open(q.question_image_url, '_blank')} />
-              )}
-            </div>
-
-            {/* MCQ */}
-            {q.question_type === 'mcq' && (
-              <div className="space-y-2">
-                {q.options.map((opt, i) => {
-                  const letter = 'ABCD'[i]
-                  const sel = answers[q.id] === letter
-                  return (
-                    <div key={i} onClick={() => setMCQ(letter)}
-                         role="button" tabIndex={0}
-                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMCQ(letter); } }}
-                         className={clsx('q-option cursor-pointer', sel && 'selected', 'focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none')}>
-                      <div className={clsx(
-                        'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
-                        sel ? 'border-sky-500 bg-sky-500' : 'border-slate-500'
-                      )}>
-                        {sel && <div className="w-2 h-2 rounded-full bg-white" />}
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-xs font-semibold mr-2" style={{ color: 'var(--text-muted)' }}>
-                          {letter}.
-                        </span>
-                        <div className="text-sm" style={{ color: 'var(--text)' }}><MathText>{opt}</MathText></div>
-                        {q.option_images?.[letter] && (
-                          <img src={q.option_images[letter]} alt={`option ${letter}`}
-                               loading="lazy"
-                               decoding="async"
-                               className="mt-2 w-full max-w-sm max-h-32 object-contain rounded cursor-pointer bg-slate-50 dark:bg-slate-800/50"
-                               style={{ aspectRatio: '21/9' }}
-                               onClick={e => { e.stopPropagation(); window.open(q.option_images[letter], '_blank') }} />
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* MSQ */}
-            {q.question_type === 'msq' && (
-              <div className="space-y-2">
-                <p className="text-xs text-amber-400 mb-2">One or more correct answers. No negative marking.</p>
-                {q.options.map((opt, i) => {
-                  const letter = 'ABCD'[i]
-                  const sel = (answers[q.id] || '').split(',').includes(letter)
-                  return (
-                    <div key={i} onClick={() => toggleMSQ(letter)}
-                         role="button" tabIndex={0}
-                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMSQ(letter); } }}
-                         className={clsx('q-option cursor-pointer', sel && 'selected-msq', 'focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:outline-none')}>
-                      <div className={clsx(
-                        'w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
-                        sel ? 'border-amber-500 bg-amber-500' : 'border-slate-500'
-                      )}>
-                        {sel && <span className="text-slate-900 dark:text-white text-xs font-bold">✓</span>}
-                      </div>
-                      <span className="text-xs font-semibold mr-2" style={{ color: 'var(--text-muted)' }}>
-                        {letter}.
-                      </span>
-                      <div className="text-sm" style={{ color: 'var(--text)' }}><MathText>{opt}</MathText></div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* NAT */}
-            {q.question_type === 'nat' && (
-              <div>
-                <p className="text-xs text-green-400 mb-3">Enter numerical answer. No negative marking.</p>
-                <div className="flex gap-3 items-center max-w-xs">
-                  <input type="number" step="any"
-                    className="input font-mono text-lg flex-1"
-                    value={natInput}
-                    onChange={e => setNatInput(e.target.value)}
-                    onBlur={commitNAT}
-                    placeholder="Enter answer..."
-                    aria-label="Numerical Answer"
-                  />
-                  <button onClick={commitNAT} className="btn-primary px-4">Save</button>
-                </div>
-                {answers[q.id] && (
-                  <p className="text-green-400 text-sm mt-2">
-                    ✓ Saved: <span className="font-mono font-semibold">{answers[q.id]}</span>
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Bottom action bar */}
-          <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 border-t flex-shrink-0 gap-1"
-               style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <button onClick={markAndNext}
-                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2.5 sm:py-2 rounded border text-xs font-medium"
-                style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)', color: 'var(--text)' }}>
-                <Flag size={14} className="text-purple-400" /> <span className="hidden sm:inline">Mark & Next</span>
-              </button>
-              <button onClick={clearResponse}
-                className="px-2 sm:px-3 py-2.5 sm:py-2 rounded border text-xs font-medium"
-                style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)', color: 'var(--text)' }}>
-                Clear
-              </button>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <button onClick={() => current > 0 && setCurrent(c => c - 1)} disabled={current === 0}
-                className="flex items-center gap-1 px-2 sm:px-3 py-2.5 sm:py-2 rounded border text-xs font-medium disabled:opacity-40"
-                style={{ background: 'var(--bg-panel)', borderColor: 'var(--border)', color: 'var(--text)' }}>
-                <ChevronLeft size={13} /> <span className="hidden sm:inline">Prev</span>
-              </button>
-              <button onClick={saveAndNext}
-                className="flex items-center gap-1 px-3 sm:px-4 py-2.5 sm:py-2 rounded text-xs font-semibold bg-sky-700 hover:bg-sky-600 text-white transition-colors">
-                Save & Next <ChevronRight size={13} />
-              </button>
-            </div>
-          </div>
+        <div className="hidden md:flex w-52 border-l flex-col flex-shrink-0 overflow-y-auto theme-sidebar-surface">
+          {sidebar}
         </div>
 
-        {/* Desktop sidebar */}
-        <div className="hidden md:flex w-52 border-l flex-col flex-shrink-0 overflow-y-auto"
-             style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--border)', contain: 'layout style paint' }}>
-          {sidebarContent}
-        </div>
-
-        {/* Mobile floating palette toggle */}
         <button
           onClick={() => setShowPalette(true)}
           className="md:hidden fixed bottom-16 right-4 z-30 flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-lg text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 transition-colors"
@@ -961,65 +357,23 @@ export default function TestEngine() {
           Q{current + 1}/{questions.length}
         </button>
 
-        {/* Mobile palette drawer */}
         {showPalette && (
-          <div className="md:hidden fixed inset-0 z-40 flex">
-            {/* Backdrop */}
-            <div className="flex-1" onClick={() => setShowPalette(false)}
-                 style={{ background: 'rgba(0,0,0,0.6)' }} />
-            {/* Drawer */}
-            <div className="w-64 flex flex-col overflow-y-auto animate-slide-in-right"
-                 style={{ background: 'var(--sidebar-bg)' }}>
-              <div className="flex items-center justify-between p-3 border-b" style={{ borderColor: 'var(--border)' }}>
-                <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Question Palette</span>
-                <button onClick={() => setShowPalette(false)} className="p-1 rounded" style={{ color: 'var(--text-muted)' }}>✕</button>
-              </div>
-              {sidebarContent}
-            </div>
-          </div>
+          <MobilePaletteDrawer onClose={() => setShowPalette(false)} sidebar={sidebar} />
         )}
       </div>
 
-      {/* Calculator popup */}
       {showCalc && <Calculator onClose={() => setShowCalc(false)} />}
 
-      {/* Confirm submit modal */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-             style={{ background: 'rgba(0,0,0,0.8)' }}>
-          <div className="w-full max-w-sm p-6 rounded-xl animate-slide-up"
-               role="dialog" aria-modal="true" aria-labelledby="confirm-submit-title"
-               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle size={22} className="text-amber-400" />
-              <h3 id="confirm-submit-title" className="font-bold text-lg" style={{ color: 'var(--text)' }}>Submit Test?</h3>
-            </div>
-            <div className="space-y-1.5 mb-5 text-sm">
-              {[
-                ['Total Questions', questions.length, 'var(--text)'],
-                ['Answered',        answered,         'var(--success-text)'],
-                ['Not Answered',    notAnswered,      'var(--danger-text)'],
-                ['Marked',          marked.size,      'var(--marked-text)'],
-              ].map(([label, val, color]) => (
-                <div key={label} className="flex justify-between py-1.5 border-b"
-                     style={{ borderColor: 'var(--border)' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>{label}</span>
-                  <span className="font-semibold" style={{ color }}>{val}</span>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>
-              This cannot be undone. Your answers will be evaluated.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowConfirm(false)} className="btn-ghost flex-1">Go Back</button>
-              <button onClick={() => { setShowConfirm(false); doSubmit(false) }} disabled={submitting}
-                className="btn-primary flex-1 flex items-center justify-center gap-2">
-                {submitting && <Spinner size={13} />} Submit
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmSubmitModal
+          answered={answered}
+          doSubmit={doSubmit}
+          marked={marked}
+          notAnswered={notAnswered}
+          questions={questions}
+          setShowConfirm={setShowConfirm}
+          submitting={submitting}
+        />
       )}
     </div>
   )

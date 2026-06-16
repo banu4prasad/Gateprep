@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+export const AUTH_UNAUTHORIZED_EVENT = 'gateprep:auth-unauthorized'
+
 const rawApiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const BASE_URL = import.meta.env.PROD
   ? '/api'
@@ -18,7 +20,7 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       const isAuthRoute = err.config?.url?.includes('/auth/')
       if (!isAuthRoute) {
-        window.location.href = '/login'
+        window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT))
       }
     }
     return Promise.reject(err)

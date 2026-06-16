@@ -68,10 +68,21 @@ def test_admin_user_list_supports_pagination_search_and_role_filter(client, db_s
 
     cookies = _auth_cookie(admin_user, db_session)
 
-    paged = client.get("/admin/users?skip=0&limit=2", cookies=cookies)
+    paged = client.get("/admin/users?limit=2", cookies=cookies)
     assert paged.status_code == 200
     assert paged.json()["total"] == 4
     assert len(paged.json()["items"]) == 2
+    assert paged.json()["has_more"] is True
+    assert paged.json()["next_cursor"]
+
+    next_page = client.get(
+        "/admin/users",
+        params={"cursor": paged.json()["next_cursor"], "limit": 2},
+        cookies=cookies,
+    )
+    assert next_page.status_code == 200
+    assert len(next_page.json()["items"]) == 2
+    assert next_page.json()["has_more"] is False
 
     searched = client.get("/admin/users?q=alice", cookies=cookies)
     assert searched.status_code == 200
@@ -82,6 +93,14 @@ def test_admin_user_list_supports_pagination_search_and_role_filter(client, db_s
     assert pending.status_code == 200
     assert pending.json()["total"] == 2
     assert {user["role"] for user in pending.json()["items"]} == {"user"}
+
+
+def test_admin_user_list_rejects_invalid_cursor(client, db_session, admin_user):
+    response = client.get(
+        "/admin/users?cursor=not-a-cursor",
+        cookies=_auth_cookie(admin_user, db_session),
+    )
+    assert response.status_code == 400
 
 def test_admin_activates_user(client, db_session, admin_user):
     user = User(email="inactive@test.com", full_name="Inactive", hashed_password=hash_password("pass"), role=UserRole.user, is_active=False)

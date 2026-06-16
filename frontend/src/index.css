@@ -234,9 +234,62 @@
 
 .theme-text { color: var(--text); }
 .theme-muted { color: var(--text-muted); }
+.theme-surface { background: var(--bg); color: var(--text); }
+.theme-card-bg { background: var(--bg-card); }
+.theme-card-surface {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text);
+}
+.theme-panel-card,
+.theme-panel-button {
+  background: var(--bg-panel);
+  border-color: var(--border);
+  color: var(--text);
+}
+.theme-header-surface {
+  background: var(--header-bg);
+  border-color: var(--border);
+}
+.theme-header-muted { color: var(--header-muted); }
+.theme-sidebar-surface {
+  background: var(--sidebar-bg);
+  border-color: var(--border);
+  contain: layout style paint;
+}
+.theme-modal-backdrop { background: rgba(0, 0, 0, 0.8); }
+.theme-danger-backdrop { background: rgba(0, 0, 0, 0.96); }
+.theme-dim-backdrop { background: rgba(0, 0, 0, 0.6); }
 .theme-bg-panel { background: var(--bg-panel); }
 .theme-border { border-color: var(--border); }
 .theme-hover-bg:hover { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+.result-attempt-leaderboard {
+  background: rgba(14, 165, 233, 0.08);
+  border-color: rgba(14, 165, 233, 0.2);
+  color: #7dd3fc;
+}
+.result-attempt-practice {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+.result-stat-correct {
+  background: rgba(81, 207, 102, 0.1);
+  border: 1px solid rgba(81, 207, 102, 0.2);
+}
+.result-stat-wrong {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+}
+.result-stat-skipped {
+  background: rgba(100, 116, 139, 0.1);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+.result-current-attempt {
+  background: rgba(14, 165, 233, 0.06);
+  border-color: rgba(14, 165, 233, 0.3);
+}
+.result-progress-track { background: var(--border); }
 .app-header { color: var(--header-text); }
 .app-header .text-white,
 .app-header .hover\:text-white:hover {

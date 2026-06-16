@@ -16,11 +16,14 @@ const ROLES = ['admin', 'aspirant', 'user']
 const roleStyle = { admin: 'badge-blue', aspirant: 'badge-green', user: 'badge-amber' }
 
 export default function AdminUsers() {
-  const [skip, setSkip] = useState(0)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageCursors, setPageCursors] = useState([null])
   const [search, setSearch] = useState('')
   const limit = 50
   const searchQuery = search.trim()
-  const params = new URLSearchParams({ skip: String(skip), limit: String(limit) })
+  const currentCursor = pageCursors[pageIndex]
+  const params = new URLSearchParams({ limit: String(limit) })
+  if (currentCursor) params.set('cursor', currentCursor)
   if (searchQuery) params.set('q', searchQuery)
 
   const { data: usersData, isLoading: loading, mutate } = useSWR(`/admin/users?${params.toString()}`, fetcher)
@@ -98,20 +101,28 @@ export default function AdminUsers() {
 
   const handleSearchChange = (e) => {
     setSearch(e.target.value)
-    setSkip(0)
+    setPageIndex(0)
+    setPageCursors([null])
   }
 
-  const goToPreviousPage = () => setSkip(Math.max(0, skip - limit))
-  const goToNextPage = () => setSkip(skip + limit)
-  const showingFrom = totalUsers === 0 ? 0 : skip + 1
-  const showingTo = Math.min(skip + users.length, totalUsers)
+  const goToPreviousPage = () => setPageIndex(i => Math.max(0, i - 1))
+  const goToNextPage = () => {
+    if (!usersData?.next_cursor) return
+    setPageCursors(cursors => [
+      ...cursors.slice(0, pageIndex + 1),
+      usersData.next_cursor,
+    ])
+    setPageIndex(i => i + 1)
+  }
+  const showingFrom = totalUsers === 0 ? 0 : pageIndex * limit + 1
+  const showingTo = Math.min(pageIndex * limit + users.length, totalUsers)
   const hasPagination = totalUsers > limit
 
   const renderPagination = (className) => hasPagination && (
     <div className={className}>
       <button
         onClick={goToPreviousPage}
-        disabled={skip === 0}
+        disabled={pageIndex === 0}
         className="btn-ghost disabled:opacity-50"
       >
         Previous
@@ -121,7 +132,7 @@ export default function AdminUsers() {
       </span>
       <button
         onClick={goToNextPage}
-        disabled={skip + limit >= totalUsers}
+        disabled={!usersData?.has_more}
         className="btn-ghost disabled:opacity-50"
       >
         Next

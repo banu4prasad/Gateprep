@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Q
 from fastapi.concurrency import run_in_threadpool
 from pydantic import (BaseModel, ConfigDict, Field, ValidationError,
                       field_validator, model_validator)
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
@@ -49,6 +49,25 @@ def _utcnow() -> datetime:
 
 def _password_reset_url(token: str) -> str:
     return f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?{urlencode({'token': token})}"
+
+
+def _normalize_cursor_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+def _encode_user_cursor(user: User) -> str:
+    return f"{_normalize_cursor_datetime(user.created_at).isoformat()}|{user.id}"
+
+
+def _parse_user_cursor(cursor: str) -> tuple[datetime, int]:
+    try:
+        created_at_raw, user_id_raw = cursor.rsplit("|", 1)
+        created_at = _normalize_cursor_datetime(datetime.fromisoformat(created_at_raw))
+        return created_at, int(user_id_raw)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid cursor") from exc
 
 
 async def _save_pdf_upload(pdf_file: UploadFile, path: str) -> None:
@@ -115,8 +134,8 @@ def _pdf_review_detail(questions: list[dict]) -> str:
 
 @router.get("/users")
 def list_users(
-    skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=1000),
+    cursor: str | None = Query(None, max_length=128),
     q: str = Query("", max_length=255),
     role: Optional[UserRole] = Query(None),
     db: Session = Depends(get_db),
@@ -136,7 +155,24 @@ def list_users(
     aspirants_count = db.query(User).filter(User.role == UserRole.aspirant).count()
     pending_count = db.query(User).filter(User.role == UserRole.user).count()
 
-    users = users_query.order_by(User.created_at.desc()).offset(skip).limit(limit).all()
+    page_query = users_query
+    if cursor:
+        cursor_created_at, cursor_id = _parse_user_cursor(cursor)
+        page_query = page_query.filter(
+            or_(
+                User.created_at < cursor_created_at,
+                and_(User.created_at == cursor_created_at, User.id < cursor_id),
+            )
+        )
+
+    page = (
+        page_query.order_by(User.created_at.desc(), User.id.desc())
+        .limit(limit + 1)
+        .all()
+    )
+    has_more = len(page) > limit
+    users = page[:limit]
+    next_cursor = _encode_user_cursor(users[-1]) if has_more and users else None
     items = [
         {
             "id": u.id,
@@ -155,7 +191,8 @@ def list_users(
         "aspirants_count": aspirants_count,
         "pending_count": pending_count,
         "limit": limit,
-        "offset": skip,
+        "next_cursor": next_cursor,
+        "has_more": has_more,
     }
 
 

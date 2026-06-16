@@ -41,6 +41,11 @@ class User(Base):
     current_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
+    __table_args__ = (
+        Index("ix_users_created_at_id", "created_at", "id"),
+        Index("ix_users_role_created_at_id", "role", "created_at", "id"),
+    )
+
     attempts = relationship("TestAttempt", back_populates="user")
     practice_counters = relationship(
         "PracticeAttemptCounter", back_populates="user", cascade="all, delete-orphan"
@@ -63,7 +68,7 @@ class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -142,6 +147,11 @@ class Question(Base):
     subject: Mapped[str | None] = mapped_column(String(100), nullable=True)
     topic: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
+    __table_args__ = (
+        Index("ix_questions_options_gin", "options", postgresql_using="gin"),
+        Index("ix_questions_option_images_gin", "option_images", postgresql_using="gin"),
+    )
+
     test = relationship("Test", back_populates="questions")
     bookmarks = relationship(
         "Bookmark", back_populates="question", cascade="all, delete-orphan"
@@ -176,8 +186,8 @@ class TestAttempt(Base):
 class PracticeAttemptCounter(Base):
     __tablename__ = "practice_attempt_counters"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
-    test_id: Mapped[int] = mapped_column(Integer, ForeignKey("tests.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    test_id: Mapped[int] = mapped_column(Integer, ForeignKey("tests.id"), nullable=False, index=True)
     count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
@@ -207,8 +217,8 @@ class UserAnswer(Base):
 class Bookmark(Base):
     __tablename__ = "bookmarks"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
-    question_id: Mapped[int] = mapped_column(Integer, ForeignKey("questions.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    question_id: Mapped[int] = mapped_column(Integer, ForeignKey("questions.id"), nullable=False, index=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
@@ -254,13 +264,18 @@ class ChecklistProgress(Base):
 
     __tablename__ = "checklist_progress"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
-    topic_id: Mapped[int] = mapped_column(Integer, ForeignKey("checklist_topics.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    topic_id: Mapped[int] = mapped_column(Integer, ForeignKey("checklist_topics.id"), nullable=False, index=True)
     completed_items: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=dict)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
         UniqueConstraint("user_id", "topic_id", name="uq_user_topic_progress"),
+        Index(
+            "ix_checklist_progress_completed_items_gin",
+            "completed_items",
+            postgresql_using="gin",
+        ),
     )
 
     user = relationship("User", back_populates="checklist_items")
