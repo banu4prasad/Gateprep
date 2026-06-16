@@ -24,7 +24,6 @@ export default function LeaderboardPage() {
   if (!data) return <Layout><p className="text-slate-500 dark:text-slate-400 text-center py-16">Leaderboard not found.</p></Layout>
 
   const top3 = data.leaderboard.slice(0, 3)
-  const rest = data.leaderboard.slice(3)
 
   return (
     <Layout>
@@ -66,12 +65,12 @@ export default function LeaderboardPage() {
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {/* Reorder: 2nd, 1st, 3rd for podium effect */}
                 {[top3[1], top3[0], top3[2]].map((entry, podiumIdx) => {
-                  if (!entry) return <div key={podiumIdx}/>
+                  if (!entry) return <div key={`podium-empty-${podiumIdx}`}/>
                   const actualRank = entry.rank
                   const m = MEDAL_COLORS[actualRank] || {}
                   const heights = ['h-24 sm:h-28', 'h-28 sm:h-36', 'h-20 sm:h-24']
                   return (
-                    <div key={entry.user_id} className={clsx(
+                    <div key={`podium-${podiumIdx}-user-${entry.user_id}`} className={clsx(
                       'gate-card border p-2.5 sm:p-4 flex flex-col items-center justify-end text-center',
                       m.bg, heights[podiumIdx],
                       entry.is_current_user && 'ring-2 ring-brand-500/50'
@@ -105,7 +104,7 @@ export default function LeaderboardPage() {
                   {data.leaderboard.map(entry => {
                     const m = MEDAL_COLORS[entry.rank]
                     return (
-                      <tr key={entry.user_id} className={clsx(
+                      <tr key={`leaderboard-rank-${entry.rank}-user-${entry.user_id}`} className={clsx(
                         'transition-colors',
                         entry.is_current_user ? 'bg-sky-500/5' : 'hover:bg-slate-100 dark:bg-slate-800/30'
                       )} style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 53px' }}>

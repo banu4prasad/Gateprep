@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import uuid
@@ -5,8 +6,19 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Query
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    Query,
+)
 from fastapi.concurrency import run_in_threadpool
+from fastapi_cache import FastAPICache
+from fastapi_cache.decorator import cache
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -35,9 +47,17 @@ from app.services.answer_utils import (
     normalize_question_type,
     split_answer_tokens,
 )
-from app.services.cloudinary_service import delete_image, upload_image
+from app.services.cloudinary_service import (
+    delete_image,
+    optimize_delivery_image_url,
+    optimize_delivery_image_urls,
+    upload_image,
+)
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
+
+ADMIN_USERS_CACHE_NAMESPACE = "admin-users"
+ADMIN_USERS_CACHE_SECONDS = 30
 
 
 def _utcnow() -> datetime:
@@ -67,11 +87,60 @@ def _parse_user_cursor(cursor: str) -> tuple[datetime, int]:
         raise HTTPException(status_code=400, detail="Invalid cursor") from exc
 
 
+def _admin_users_cache_key_builder(
+    func, namespace="", *, request=None, response=None, args=None, kwargs=None
+) -> str:
+    if request is not None:
+        query_items = tuple(sorted(request.query_params.multi_items()))
+    else:
+        kwargs = kwargs or {}
+        query_items = tuple(
+            sorted(
+                (
+                    key,
+                    str(value.value if hasattr(value, "value") else value),
+                )
+                for key, value in kwargs.items()
+                if key in {"limit", "cursor", "q", "role"} and value is not None
+            )
+        )
+
+    query_hash = hashlib.sha256(repr(query_items).encode()).hexdigest()
+    return f"{namespace}:{func.__module__}:{func.__name__}:{query_hash}"
+
+
+def _clear_admin_users_cache(background_tasks: BackgroundTasks) -> None:
+    background_tasks.add_task(
+        FastAPICache.clear, namespace=ADMIN_USERS_CACHE_NAMESPACE
+    )
+
+
+def _question_out(q: Question) -> dict:
+    return {
+        "id": q.id,
+        "question_type": q.question_type,
+        "question_text": q.question_text,
+        "question_image_url": optimize_delivery_image_url(q.question_image_url),
+        "options": q.options,
+        "option_images": optimize_delivery_image_urls(q.option_images),
+        "correct_answer": q.correct_answer,
+        "marks": q.marks,
+        "negative_marks": q.negative_marks,
+        "order_index": q.order_index,
+        "subject": q.subject,
+        "topic": q.topic,
+    }
+
 
 # ── Users ─────────────────────────────────────────────────────────
 
 
 @router.get("/users")
+@cache(
+    expire=ADMIN_USERS_CACHE_SECONDS,
+    namespace=ADMIN_USERS_CACHE_NAMESPACE,
+    key_builder=_admin_users_cache_key_builder,
+)
 def list_users(
     limit: int = Query(50, ge=1, le=1000),
     cursor: str | None = Query(None, max_length=128),
@@ -143,6 +212,7 @@ class RoleUpdate(BaseModel):
 def update_role(
     user_id: int,
     payload: RoleUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current=Depends(require_admin),
 ):
@@ -154,6 +224,7 @@ def update_role(
     user.role = UserRole(payload.role)
     db.commit()
     db.refresh(user)
+    _clear_admin_users_cache(background_tasks)
     return {
         "id": user.id,
         "role": user.role,
@@ -164,13 +235,17 @@ def update_role(
 
 @router.patch("/users/{user_id}/status")
 def toggle_status(
-    user_id: int, db: Session = Depends(get_db), _=Depends(require_admin)
+    user_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    _=Depends(require_admin),
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user.is_active = not user.is_active
     db.commit()
+    _clear_admin_users_cache(background_tasks)
     return {
         "message": f"User {'activated' if user.is_active else 'deactivated'}",
         "is_active": user.is_active,
@@ -337,20 +412,7 @@ def get_questions(
     if not test:
         raise HTTPException(status_code=404, detail="Not found")
     return [
-        {
-            "id": q.id,
-            "question_type": q.question_type,
-            "question_text": q.question_text,
-            "question_image_url": q.question_image_url,
-            "options": q.options,
-            "option_images": q.option_images,
-            "correct_answer": q.correct_answer,
-            "marks": q.marks,
-            "negative_marks": q.negative_marks,
-            "order_index": q.order_index,
-            "subject": q.subject,
-            "topic": q.topic,
-        }
+        _question_out(q)
         for q in sorted(test.questions, key=lambda q: q.order_index)
     ]
 
@@ -563,6 +625,44 @@ def add_questions(
         "message": f"Added {len(payload.questions)} questions",
         "total_in_test": existing + len(payload.questions),
     }
+
+
+@router.patch("/tests/{test_id}/questions/{question_id}")
+def update_question(
+    test_id: int,
+    question_id: int,
+    payload: QuestionIn,
+    db: Session = Depends(get_db),
+    _=Depends(require_admin),
+):
+    q = (
+        db.query(Question)
+        .filter(Question.id == question_id, Question.test_id == test_id)
+        .first()
+    )
+    if not q:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    test = db.query(Test).filter(Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    old_marks = q.marks or 0.0
+    q.question_type = QuestionType(payload.question_type)
+    q.question_text = payload.question_text
+    q.options = payload.options
+    q.correct_answer = payload.correct_answer
+    q.marks = payload.marks
+    q.negative_marks = payload.negative_marks
+    q.subject = payload.subject
+    q.topic = payload.topic
+    if q.question_type == QuestionType.nat:
+        q.option_images = None
+
+    test.total_marks = (test.total_marks or 0.0) - old_marks + payload.marks
+    db.commit()
+    db.refresh(q)
+    return _question_out(q)
 
 
 @router.post("/tests/{test_id}/questions/upload-file", status_code=201)

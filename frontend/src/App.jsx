@@ -15,7 +15,6 @@ const AdminDashboard   = lazy(() => import('./pages/AdminDashboard'))
 const AdminUsers       = lazy(() => import('./pages/AdminUsers'))
 const AdminTests       = lazy(() => import('./pages/AdminTests'))
 const AdminTestDetail  = lazy(() => import('./pages/AdminTestDetail'))
-const AdminChecklist   = lazy(() => import('./pages/AdminChecklist'))
 
 const Dashboard        = lazy(() => import('./pages/Dashboard'))
 const TestsPage        = lazy(() => import('./pages/Tests'))
@@ -24,7 +23,6 @@ const Result           = lazy(() => import('./pages/Result'))
 const MyResults        = lazy(() => import('./pages/MyResults'))
 const Leaderboard      = lazy(() => import('./pages/Leaderboard'))
 const Bookmarks        = lazy(() => import('./pages/Bookmarks'))
-const Checklist        = lazy(() => import('./pages/Checklist'))
 
 export default function App() {
   return (
@@ -44,7 +42,6 @@ export default function App() {
             <Route path="/admin/users"             element={<ProtectedRoute role="admin"><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/tests"             element={<ProtectedRoute role="admin"><AdminTests /></ProtectedRoute>} />
             <Route path="/admin/tests/:testId"     element={<ProtectedRoute role="admin"><AdminTestDetail /></ProtectedRoute>} />
-            <Route path="/admin/checklist"         element={<ProtectedRoute role="admin"><AdminChecklist /></ProtectedRoute>} />
 
             {/* Aspirant */}
             <Route path="/dashboard"               element={<ProtectedRoute role="aspirant"><Dashboard /></ProtectedRoute>} />
@@ -54,7 +51,6 @@ export default function App() {
             <Route path="/results"                 element={<ProtectedRoute role="aspirant"><MyResults /></ProtectedRoute>} />
             <Route path="/results/:attemptId"      element={<ProtectedRoute><Result /></ProtectedRoute>} />
             <Route path="/bookmarks"               element={<ProtectedRoute role="aspirant"><Bookmarks /></ProtectedRoute>} />
-            <Route path="/checklist"               element={<ProtectedRoute role="aspirant"><Checklist /></ProtectedRoute>} />
 
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>

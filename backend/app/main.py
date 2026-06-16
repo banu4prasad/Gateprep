@@ -10,7 +10,7 @@ from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 
-from app.api.routes import admin, auth, bookmarks, checklist, tests, series
+from app.api.routes import admin, auth, bookmarks, tests, series
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -67,7 +67,6 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(tests.router)
 app.include_router(bookmarks.router)
-app.include_router(checklist.router)
 app.include_router(series.router)
 
 if os.path.exists(settings.UPLOAD_DIR):

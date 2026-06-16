@@ -24,10 +24,11 @@ export const adminAPI = {
   updateTest:       (id, data)       => api.patch(`/admin/tests/${id}`, data),
   getQuestions:     (testId)        => api.get(`/admin/tests/${testId}/questions`),
   addQuestions:     (testId, qs)    => api.post(`/admin/tests/${testId}/questions`, { questions: qs }),
+  updateQuestion:   (testId, qId, data) => api.patch(`/admin/tests/${testId}/questions/${qId}`, data),
   uploadQuestionsFile: (testId, form) => api.post(`/admin/tests/${testId}/questions/upload-file`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteQuestion:   (testId, qId)   => api.delete(`/admin/tests/${testId}/questions/${qId}`),
-  uploadQImage:     (qId, form)     => api.post(`/admin/questions/${qId}/image`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  deleteQImage:     (qId, target)   => api.delete(`/admin/questions/${qId}/image?target=${target}`),
+  uploadQImage:     (qId, form, target = 'question') => api.post(`/admin/questions/${qId}/image?target=${encodeURIComponent(target)}`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteQImage:     (qId, target)   => api.delete(`/admin/questions/${qId}/image?target=${encodeURIComponent(target)}`),
 }
 
 // ── Tests ─────────────────────────────────────────────────────────
@@ -59,14 +60,4 @@ export const seriesAPI = {
   getTests: (id)   => api.get(`/series/${id}/tests`),
   create:   (data) => api.post('/series', data),
   delete:   (id)   => api.delete(`/series/${id}`),
-}
-
-// ── Checklist ─────────────────────────────────────────────────────
-export const checklistAPI = {
-  get:            ()                          => api.get('/checklist'),
-  updateProgress: (topicId, item, completed)  => api.post(`/checklist/${topicId}/progress`, { item, completed }),
-  createSubject:  (data)                      => api.post('/checklist/subjects', data),
-  deleteSubject:  (id)                        => api.delete(`/checklist/subjects/${id}`),
-  createTopic:    (subjectId, data)           => api.post(`/checklist/subjects/${subjectId}/topics`, data),
-  deleteTopic:    (id)                        => api.delete(`/checklist/topics/${id}`),
 }

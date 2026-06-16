@@ -10,7 +10,6 @@ import Users from 'lucide-react/dist/esm/icons/users'
 import BookOpen from 'lucide-react/dist/esm/icons/book-open'
 import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list'
 import Bookmark from 'lucide-react/dist/esm/icons/bookmark'
-import CheckSquare from 'lucide-react/dist/esm/icons/check-square'
 import clsx from 'clsx'
 
 export default function Navbar() {
@@ -23,7 +22,6 @@ export default function Navbar() {
     { to: '/admin',           label: 'Dashboard', icon: LayoutDashboard },
     { to: '/admin/tests',     label: 'Tests',     icon: FlaskConical },
     { to: '/admin/users',     label: 'Users',     icon: Users },
-    { to: '/admin/checklist', label: 'Checklist', icon: CheckSquare },
   ]
 
   const aspirantLinks = [
@@ -31,7 +29,6 @@ export default function Navbar() {
     { to: '/tests',      label: 'Tests',     icon: BookOpen },
     { to: '/results',    label: 'Results',   icon: ClipboardList },
     { to: '/bookmarks',  label: 'Bookmarks', icon: Bookmark },
-    { to: '/checklist',  label: 'Syllabus',  icon: CheckSquare },
   ]
 
   const links = isAdmin ? adminLinks : aspirantLinks

@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 
 from typing import Optional, cast, Literal
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
+from fastapi_cache import FastAPICache
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
@@ -14,6 +15,8 @@ from app.core.security import (create_access_token, decode_token,
 from app.models.models import PasswordResetToken, User, UserRole
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+ADMIN_USERS_CACHE_NAMESPACE = "admin-users"
 
 
 class RegisterRequest(BaseModel):
@@ -103,6 +106,7 @@ def register(
     payload: RegisterRequest,
     request: Request,
     response: Response,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     if db.query(User).filter(User.email == payload.email).first():
@@ -123,6 +127,9 @@ def register(
     db.commit()
     db.refresh(user)
 
+    background_tasks.add_task(
+        FastAPICache.clear, namespace=ADMIN_USERS_CACHE_NAMESPACE
+    )
     _set_auth_cookie(response, create_token_for_user(user, db, request))
     return _auth_user_response(user)
 

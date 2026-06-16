@@ -11,6 +11,10 @@ from app.api.deps import get_current_user, require_aspirant
 from app.core.database import get_db
 from app.models.models import (PracticeAttemptCounter, Question, Test,
                                TestAttempt, TestStatus, UserAnswer)
+from app.services.cloudinary_service import (
+    optimize_delivery_image_url,
+    optimize_delivery_image_urls,
+)
 from app.services.scoring import evaluate_answer
 
 router = APIRouter(prefix="/tests", tags=["Tests"])
@@ -272,9 +276,9 @@ def get_questions(
             "id": q.id,
             "question_type": q.question_type,
             "question_text": q.question_text,
-            "question_image_url": q.question_image_url,
+            "question_image_url": optimize_delivery_image_url(q.question_image_url),
             "options": q.options,
-            "option_images": q.option_images,
+            "option_images": optimize_delivery_image_urls(q.option_images),
             "order_index": q.order_index,
             "marks": q.marks,
             "negative_marks": q.negative_marks,
@@ -367,9 +371,9 @@ def _base_answer_detail(
         "question_id": q.id,
         "question_text": q.question_text,
         "question_type": q.question_type,
-        "question_image_url": q.question_image_url,
+        "question_image_url": optimize_delivery_image_url(q.question_image_url),
         "options": q.options,
-        "option_images": q.option_images,
+        "option_images": optimize_delivery_image_urls(q.option_images),
         "correct_answer": q.correct_answer,
         "selected_answer": selected_answer,
         "is_correct": is_correct,

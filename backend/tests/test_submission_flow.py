@@ -65,6 +65,39 @@ def test_start_test(client, db_session, test_data):
     assert response.status_code == 200
     assert response.json()["status"] == "in_progress"
 
+def test_get_questions_returns_optimized_cloudinary_images(client, db_session, test_data):
+    question = test_data["questions"][0]
+    question.question_image_url = (
+        "https://res.cloudinary.com/test_cloud/image/upload/v1/question.jpg"
+    )
+    question.option_images = {
+        "A": "https://res.cloudinary.com/test_cloud/image/upload/v1/option_a.jpg",
+        "B": "/uploads/option_b.jpg",
+    }
+    db_session.commit()
+
+    start_resp = client.post(
+        f"/tests/{test_data['test'].id}/start",
+        cookies=_auth_cookie(test_data["user"], db_session),
+    )
+    attempt_id = start_resp.json()["id"]
+
+    response = client.get(
+        f"/tests/{test_data['test'].id}/attempt/{attempt_id}/questions",
+        cookies=_auth_cookie(test_data["user"], db_session),
+    )
+
+    assert response.status_code == 200
+    first_question = response.json()[0]
+    assert (
+        first_question["question_image_url"]
+        == "https://res.cloudinary.com/test_cloud/image/upload/f_auto,q_auto/v1/question.jpg"
+    )
+    assert first_question["option_images"] == {
+        "A": "https://res.cloudinary.com/test_cloud/image/upload/f_auto,q_auto/v1/option_a.jpg",
+        "B": "/uploads/option_b.jpg",
+    }
+
 def test_save_answers(client, db_session, test_data):
     start_resp = client.post(f"/tests/{test_data['test'].id}/start", cookies=_auth_cookie(test_data['user'], db_session))
     attempt_id = start_resp.json()["id"]

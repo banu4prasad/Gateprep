@@ -42,11 +42,11 @@ def test_app_title():
     assert app.title == "GATE Prep Platform"
 
 
-EXPECTED_ROUTER_PREFIXES = {"/auth", "/admin", "/tests", "/bookmarks", "/checklist"}
+EXPECTED_ROUTER_PREFIXES = {"/auth", "/admin", "/tests", "/bookmarks", "/series"}
 
 
 def test_all_routers_mounted():
-    """All five core routers (auth, admin, tests, bookmarks, checklist) must be mounted."""
+    """All five core routers (auth, admin, tests, bookmarks, series) must be mounted."""
     mounted_prefixes = set()
     for route in app.routes:
         path = getattr(route, "path", "")

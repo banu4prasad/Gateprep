@@ -12,9 +12,15 @@ import X from 'lucide-react/dist/esm/icons/x'
 import Upload from 'lucide-react/dist/esm/icons/upload'
 import FileJson from 'lucide-react/dist/esm/icons/file-json'
 import Eye from 'lucide-react/dist/esm/icons/eye'
+import Pencil from 'lucide-react/dist/esm/icons/pencil'
+import Save from 'lucide-react/dist/esm/icons/save'
 import Spinner from '../components/shared/Spinner'
 
 const EMPTY_Q = { question_type: 'mcq', question_text: '', options: ['','','',''], correct_answer: 'A', marks: 1, negative_marks: 0.33, subject: '', topic: '' }
+const OPTION_LETTERS = ['A', 'B', 'C', 'D']
+
+const optionsFromQuestion = (options) =>
+  OPTION_LETTERS.map((_, idx) => Array.isArray(options) ? options[idx] || '' : '')
 
 function QuestionForm({ onAdd, onClose }) {
   const [q, setQ] = useState({ ...EMPTY_Q, options: ['','','',''] })
@@ -94,6 +100,133 @@ function QuestionForm({ onAdd, onClose }) {
         </button>
       </div>
     </div>
+  )
+}
+
+function QuestionEditForm({ question, onSave, onCancel }) {
+  const [form, setForm] = useState(() => ({
+    question_type: question.question_type || 'mcq',
+    question_text: question.question_text || '',
+    options: optionsFromQuestion(question.options),
+    correct_answer: question.correct_answer || '',
+    marks: question.marks ?? 1,
+    negative_marks: question.negative_marks ?? 0.33,
+    subject: question.subject || '',
+    topic: question.topic || '',
+  }))
+  const [saving, setSaving] = useState(false)
+  const isNAT = form.question_type === 'nat'
+  const isMSQ = form.question_type === 'msq'
+
+  const setOption = (idx, value) => {
+    setForm(prev => ({
+      ...prev,
+      options: prev.options.map((option, optionIdx) => optionIdx === idx ? value : option),
+    }))
+  }
+
+  const setType = (questionType) => {
+    setForm(prev => ({
+      ...prev,
+      question_type: questionType,
+      correct_answer: '',
+      negative_marks: questionType === 'mcq' ? 0.33 : 0,
+    }))
+  }
+
+  const submit = async (event) => {
+    event.preventDefault()
+    const marks = Number(form.marks)
+    const negativeMarks = Number(form.negative_marks)
+
+    if (!form.question_text.trim()) { toast.error('Question text required'); return }
+    if (!isNAT && form.options.some(option => !option.trim())) { toast.error('Fill all 4 options'); return }
+    if (!form.correct_answer.trim()) { toast.error('Correct answer required'); return }
+    if (!Number.isFinite(marks) || marks <= 0) { toast.error('Marks must be greater than 0'); return }
+    if (!Number.isFinite(negativeMarks) || negativeMarks < 0) { toast.error('Negative marks cannot be below 0'); return }
+
+    const payload = {
+      ...form,
+      question_text: form.question_text.trim(),
+      options: isNAT ? [] : form.options.map(option => option.trim()),
+      correct_answer: form.correct_answer.trim().toUpperCase(),
+      marks,
+      negative_marks: (isMSQ || isNAT) ? 0 : negativeMarks,
+      subject: form.subject.trim() || null,
+      topic: form.topic.trim() || null,
+    }
+
+    setSaving(true)
+    try {
+      await onSave(payload)
+      toast.success('Question updated')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update question')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="label">Type</label>
+          <select className="input" value={form.question_type} onChange={e => setType(e.target.value)}>
+            <option value="mcq">MCQ (Single)</option>
+            <option value="msq">MSQ (Multi)</option>
+            <option value="nat">NAT (Numerical)</option>
+          </select>
+        </div>
+        <div>
+          <label className="label">Marks</label>
+          <input type="number" className="input" value={form.marks} step={0.5} min={0.5} onChange={e => setForm(prev => ({ ...prev, marks: e.target.value }))} />
+        </div>
+        <div>
+          <label className="label">Neg. Marks</label>
+          <input type="number" className="input" value={form.negative_marks} step={0.01} min={0} disabled={isMSQ || isNAT} onChange={e => setForm(prev => ({ ...prev, negative_marks: e.target.value }))} />
+        </div>
+      </div>
+
+      <div>
+        <label className="label">Question Text *</label>
+        <textarea className="input resize-none" rows={4} value={form.question_text} onChange={e => setForm(prev => ({ ...prev, question_text: e.target.value }))} />
+      </div>
+
+      {!isNAT && (
+        <div className="grid grid-cols-2 gap-2">
+          {OPTION_LETTERS.map((letter, idx) => (
+            <div key={letter}>
+              <label className="label">Option {letter}</label>
+              <input className="input" value={form.options[idx]} onChange={e => setOption(idx, e.target.value)} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="label">{isNAT ? 'Answer' : isMSQ ? 'Correct (e.g. A,C)' : 'Correct (A/B/C/D)'}</label>
+          <input className="input font-mono" value={form.correct_answer} onChange={e => setForm(prev => ({ ...prev, correct_answer: e.target.value.toUpperCase() }))} />
+        </div>
+        <div>
+          <label className="label">Subject</label>
+          <input className="input" value={form.subject} onChange={e => setForm(prev => ({ ...prev, subject: e.target.value }))} />
+        </div>
+        <div>
+          <label className="label">Topic</label>
+          <input className="input" value={form.topic} onChange={e => setForm(prev => ({ ...prev, topic: e.target.value }))} />
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <button type="button" onClick={onCancel} className="btn-ghost flex items-center justify-center gap-2 text-sm">
+          <X size={14}/> Cancel
+        </button>
+        <button type="submit" disabled={saving} className="btn-primary flex items-center justify-center gap-2 text-sm">
+          {saving ? <Spinner size={14}/> : <Save size={14}/>}
+          {saving ? 'Saving...' : 'Save Question'}
+        </button>
+      </div>
+    </form>
   )
 }
 
@@ -341,9 +474,11 @@ function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
   )
 }
 
-function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
+function QuestionCard({ q, idx, onDelete, onUpdate, onUploadImage, onDeleteImage }) {
   const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState(false)
   const typeColor = { mcq:'badge-blue', msq:'badge-amber', nat:'badge-green' }
+  const optionImages = q.option_images || {}
 
   return (
     <div className="gate-card overflow-hidden" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 80px' }}>
@@ -358,6 +493,9 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button onClick={e=>{e.stopPropagation(); setOpen(true); setEditing(true)}} aria-label="Edit question" className="p-1.5 rounded-lg text-slate-600 hover:text-sky-400 hover:bg-sky-500/10 transition-colors">
+            <Pencil size={13}/>
+          </button>
           <button onClick={e=>{e.stopPropagation();onDelete(q.id)}} aria-label="Delete question" className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-colors">
             <Trash2 size={13}/>
           </button>
@@ -366,44 +504,88 @@ function QuestionCard({ q, idx, onDelete, onUploadImage, onDeleteImage }) {
       </div>
       {open && (
         <div className="px-4 pb-4 border-t border-slate-200 dark:border-slate-800 pt-3 space-y-3">
-          {q.options?.length > 0 && (
-            <div className="grid grid-cols-2 gap-1.5">
-              {q.options.map((o,i) => {
-                const letter = 'ABCD'[i]
-                const isCorrect = q.correct_answer?.includes(letter)
-                return (
-                  <div key={i} className={`px-3 py-2 rounded-lg text-xs ${isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400'}`}>
-                    <span className="font-mono font-semibold mr-1.5">{letter}.</span>{o}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-500 dark:text-slate-400">Answer:</span>
-            <span className="font-mono text-green-400 font-semibold">{q.correct_answer}</span>
-            <span className="text-slate-600 ml-2">·</span>
-            <span className="text-slate-500 dark:text-slate-400">+{q.marks}M</span>
-            {q.negative_marks > 0 && <span className="text-slate-500 dark:text-slate-400">/ -{q.negative_marks}M</span>}
-          </div>
-
-          {/* Image upload section */}
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Question Image (optional)</p>
-            {q.question_image_url ? (
-              <div className="flex items-start gap-3">
-                <img src={q.question_image_url} alt="Question image" role="button" tabIndex={0} aria-label="View full size image" loading="lazy" decoding="async" onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open(q.question_image_url, '_blank'); } }} className="max-h-32 rounded border border-slate-300 dark:border-slate-700 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 outline-none" onClick={() => window.open(q.question_image_url, '_blank')} />
-                <button onClick={() => onDeleteImage(q.id, 'question')} className="text-xs text-red-400 hover:text-red-300 mt-1">Remove</button>
-              </div>
-            ) : (
-              <label className="flex items-center gap-2 cursor-pointer w-fit">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-dashed border-slate-300 dark:border-slate-600 text-xs text-slate-500 dark:text-slate-400 hover:border-sky-500 hover:text-sky-400 transition-colors">
-                  <Upload size={13}/> Upload Image
+          {editing ? (
+            <QuestionEditForm
+              question={q}
+              onSave={async (payload) => {
+                await onUpdate(q.id, payload)
+                setEditing(false)
+              }}
+              onCancel={() => setEditing(false)}
+            />
+          ) : (
+            <>
+              {q.options?.length > 0 && (
+                <div className="grid grid-cols-2 gap-1.5">
+                  {q.options.map((o,i) => {
+                    const letter = OPTION_LETTERS[i]
+                    const isCorrect = q.correct_answer?.includes(letter)
+                    return (
+                      <div key={letter} className={`px-3 py-2 rounded-lg text-xs space-y-2 ${isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400'}`}>
+                        <p>
+                          <span className="font-mono font-semibold mr-1.5">{letter}.</span>{o}
+                        </p>
+                        {optionImages[letter] ? (
+                          <div className="flex items-start gap-2">
+                            <img
+                              src={optionImages[letter]}
+                              alt={`Option ${letter}`}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`View option ${letter} image`}
+                              loading="lazy"
+                              decoding="async"
+                              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open(optionImages[letter], '_blank') } }}
+                              className="max-h-24 rounded border border-slate-300 dark:border-slate-700 cursor-pointer bg-white dark:bg-slate-900 focus-visible:ring-2 focus-visible:ring-sky-500 outline-none"
+                              onClick={() => window.open(optionImages[letter], '_blank')}
+                            />
+                            <button onClick={() => onDeleteImage(q.id, letter)} className="text-xs text-red-400 hover:text-red-300 mt-1">Remove</button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-2 cursor-pointer w-fit">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-dashed border-slate-300 dark:border-slate-600 text-xs text-slate-500 dark:text-slate-400 hover:border-sky-500 hover:text-sky-400 transition-colors">
+                              <Upload size={12}/> Add answer image
+                            </div>
+                            <input type="file" accept="image/*" className="hidden" onChange={e => { if(e.target.files[0]) onUploadImage(q.id, e.target.files[0], letter) }} />
+                          </label>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-                <input type="file" accept="image/*" className="hidden" onChange={e => { if(e.target.files[0]) onUploadImage(q.id, e.target.files[0]) }} />
-              </label>
-            )}
-          </div>
+              )}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-500 dark:text-slate-400">Answer:</span>
+                <span className="font-mono text-green-400 font-semibold">{q.correct_answer}</span>
+                <span className="text-slate-600 ml-2">·</span>
+                <span className="text-slate-500 dark:text-slate-400">+{q.marks}M</span>
+                {q.negative_marks > 0 && <span className="text-slate-500 dark:text-slate-400">/ -{q.negative_marks}M</span>}
+              </div>
+
+              {/* Image upload section */}
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Question Image (optional)</p>
+                {q.question_image_url ? (
+                  <div className="flex items-start gap-3">
+                    <img src={q.question_image_url} alt="Question image" role="button" tabIndex={0} aria-label="View full size image" loading="lazy" decoding="async" onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); window.open(q.question_image_url, '_blank'); } }} className="max-h-32 rounded border border-slate-300 dark:border-slate-700 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 outline-none" onClick={() => window.open(q.question_image_url, '_blank')} />
+                    <button onClick={() => onDeleteImage(q.id, 'question')} className="text-xs text-red-400 hover:text-red-300 mt-1">Remove</button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 cursor-pointer w-fit">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-dashed border-slate-300 dark:border-slate-600 text-xs text-slate-500 dark:text-slate-400 hover:border-sky-500 hover:text-sky-400 transition-colors">
+                      <Upload size={13}/> Upload Image
+                    </div>
+                    <input type="file" accept="image/*" className="hidden" onChange={e => { if(e.target.files[0]) onUploadImage(q.id, e.target.files[0], 'question') }} />
+                  </label>
+                )}
+                <div className="mt-3">
+                  <button onClick={() => setEditing(true)} className="btn-ghost inline-flex items-center gap-2 text-sm">
+                    <Pencil size={13}/> Edit Question
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -417,13 +599,62 @@ export default function AdminTestDetail() {
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState(null) // 'manual' | 'json' | null
+  const [isEditingTest, setIsEditingTest] = useState(false)
+  const [testForm, setTestForm] = useState({ title: '', description: '', duration_minutes: 180 })
+  const [savingTest, setSavingTest] = useState(false)
 
   const load = () => {
     Promise.all([adminAPI.getTest(testId), adminAPI.getQuestions(testId)])
-      .then(([t, q]) => { setTest(t.data); setQuestions(q.data) })
+      .then(([t, q]) => {
+        setTest(t.data)
+        setTestForm({
+          title: t.data.title || '',
+          description: t.data.description || '',
+          duration_minutes: t.data.duration_minutes || 180,
+        })
+        setQuestions(q.data)
+      })
       .finally(() => setLoading(false))
   }
   useEffect(load, [testId])
+
+  const startEditingTest = () => {
+    setTestForm({
+      title: test?.title || '',
+      description: test?.description || '',
+      duration_minutes: test?.duration_minutes || 180,
+    })
+    setIsEditingTest(true)
+  }
+
+  const saveTest = async (e) => {
+    e.preventDefault()
+    if (!testForm.title.trim()) { toast.error('Title required'); return }
+    const durationMinutes = Number(testForm.duration_minutes)
+    if (!Number.isFinite(durationMinutes) || durationMinutes < 5 || durationMinutes > 360) {
+      toast.error('Duration must be between 5 and 360 minutes')
+      return
+    }
+
+    setSavingTest(true)
+    try {
+      await adminAPI.updateTest(testId, {
+        title: testForm.title.trim(),
+        description: testForm.description.trim(),
+        duration_minutes: durationMinutes,
+      })
+      setTest(t => ({
+        ...t,
+        title: testForm.title.trim(),
+        description: testForm.description.trim(),
+        duration_minutes: durationMinutes,
+      }))
+      setIsEditingTest(false)
+      toast.success('Test updated')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update test')
+    } finally { setSavingTest(false) }
+  }
 
   const addQuestion = async (q) => {
     await adminAPI.addQuestions(testId, [q])
@@ -456,12 +687,17 @@ export default function AdminTestDetail() {
     } catch { toast.error('Failed') }
   }
 
-  const uploadImage = async (qId, file) => {
+  const updateQuestion = async (qId, payload) => {
+    await adminAPI.updateQuestion(testId, qId, payload)
+    load()
+  }
+
+  const uploadImage = async (qId, file, target = 'question') => {
     const fd = new FormData()
     fd.append('image', file)
     try {
-      await adminAPI.uploadQImage(qId, fd)
-      toast.success('Image uploaded!')
+      await adminAPI.uploadQImage(qId, fd, target)
+      toast.success(target === 'question' ? 'Question image uploaded!' : `Option ${target} image uploaded!`)
       load()
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Upload failed. Check Cloudinary config.')
@@ -486,15 +722,67 @@ export default function AdminTestDetail() {
             <ArrowLeft size={15}/> Back to Tests
           </Link>
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{test?.title}</h1>
-              <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">{test?.description}</p>
-              <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 dark:text-slate-400">
-                <span>{test?.duration_minutes} min</span>
-                <span>{questions.length} questions</span>
-                <span>{test?.total_marks} marks</span>
+            {isEditingTest ? (
+              <form onSubmit={saveTest} className="gate-card p-4 space-y-3 flex-1">
+                <div>
+                  <label className="label">Test Title *</label>
+                  <input
+                    className="input"
+                    value={testForm.title}
+                    onChange={e => setTestForm(f => ({ ...f, title: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="label">Description</label>
+                  <textarea
+                    className="input resize-none"
+                    rows={2}
+                    value={testForm.description}
+                    onChange={e => setTestForm(f => ({ ...f, description: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="label">Duration (minutes)</label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={360}
+                    className="input"
+                    value={testForm.duration_minutes}
+                    onChange={e => setTestForm(f => ({ ...f, duration_minutes: e.target.value }))}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setIsEditingTest(false)} className="btn-ghost flex items-center justify-center gap-2 text-sm">
+                    <X size={14}/> Cancel
+                  </button>
+                  <button type="submit" disabled={savingTest} className="btn-primary flex items-center justify-center gap-2 text-sm">
+                    {savingTest ? <Spinner size={14}/> : <Save size={14}/>}
+                    {savingTest ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div>
+                <div className="flex items-start gap-2">
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{test?.title}</h1>
+                  <button
+                    onClick={startEditingTest}
+                    aria-label="Edit test details"
+                    className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition-colors"
+                  >
+                    <Pencil size={15}/>
+                  </button>
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">{test?.description || 'No description'}</p>
+                <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 dark:text-slate-400">
+                  <span>{test?.duration_minutes} min</span>
+                  <span>{questions.length} questions</span>
+                  <span>{test?.total_marks} marks</span>
+                </div>
               </div>
-            </div>
+            )}
             {/* Add buttons */}
             <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
               <button
@@ -537,7 +825,15 @@ export default function AdminTestDetail() {
             </div>
           ) : (
             questions.map((q, idx) => (
-              <QuestionCard key={q.id} q={q} idx={idx} onDelete={deleteQuestion} onUploadImage={uploadImage} onDeleteImage={deleteImage} />
+              <QuestionCard
+                key={q.id}
+                q={q}
+                idx={idx}
+                onDelete={deleteQuestion}
+                onUpdate={updateQuestion}
+                onUploadImage={uploadImage}
+                onDeleteImage={deleteImage}
+              />
             ))
           )}
         </div>

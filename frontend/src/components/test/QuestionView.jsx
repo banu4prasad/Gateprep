@@ -135,7 +135,22 @@ export default function QuestionView({
                     {selected && <span className="text-slate-900 dark:text-white text-xs font-bold">✓</span>}
                   </div>
                   <span className="text-xs font-semibold mr-2 theme-muted">{letter}.</span>
-                  <div className="text-sm theme-text"><MathText>{option}</MathText></div>
+                  <div className="flex-1">
+                    <div className="text-sm theme-text"><MathText>{option}</MathText></div>
+                    {question.option_images?.[letter] && (
+                      <img
+                        src={question.option_images[letter]}
+                        alt={`option ${letter}`}
+                        loading="lazy"
+                        decoding="async"
+                        className="mt-2 w-full max-w-sm max-h-32 object-contain rounded cursor-pointer bg-slate-50 dark:bg-slate-800/50 aspect-[21/9]"
+                        onClick={event => {
+                          event.stopPropagation()
+                          window.open(question.option_images[letter], '_blank')
+                        }}
+                      />
+                    )}
+                  </div>
                 </div>
               )
             })}
