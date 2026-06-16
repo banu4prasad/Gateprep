@@ -103,7 +103,6 @@ class Test(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     duration_minutes: Mapped[int] = mapped_column(Integer, default=180)
     total_marks: Mapped[float] = mapped_column(Float, default=0.0)
-    pdf_filename: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_published: Mapped[bool] = mapped_column(Boolean, default=True)
     series_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("test_series.id"), nullable=True, index=True)
     series_order: Mapped[int] = mapped_column(Integer, default=0)

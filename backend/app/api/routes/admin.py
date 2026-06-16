@@ -36,24 +36,8 @@ from app.services.answer_utils import (
     split_answer_tokens,
 )
 from app.services.cloudinary_service import delete_image, upload_image
-from app.services.pdf_service import extract_questions_from_pdf
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
-
-MAX_PDF_UPLOAD_SIZE_BYTES = 1 * 1024 * 1024 * 1024
-PDF_UPLOAD_CHUNK_SIZE_BYTES = 8192
-
-PDF_IMPORT_BLOCKING_WARNINGS = {
-    "missing_question_text",
-    "missing_answer",
-    "missing_options",
-    "too_few_options",
-    "too_many_options",
-    "nat_has_non_numeric_answer",
-    "mcq_has_multiple_answers",
-    "invalid_choice_answer",
-    "ambiguous_answer_key",
-}
 
 
 def _utcnow() -> datetime:
@@ -82,64 +66,6 @@ def _parse_user_cursor(cursor: str) -> tuple[datetime, int]:
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail="Invalid cursor") from exc
 
-
-async def _save_pdf_upload(pdf_file: UploadFile, path: str) -> None:
-    file_size = 0
-
-    try:
-        with open(path, "wb") as f:
-            while chunk := await pdf_file.read(PDF_UPLOAD_CHUNK_SIZE_BYTES):
-                file_size += len(chunk)
-                if file_size > MAX_PDF_UPLOAD_SIZE_BYTES:
-                    raise HTTPException(status_code=413, detail="File too large")
-                f.write(chunk)
-    except HTTPException:
-        try:
-            os.remove(path)
-        except OSError:
-            pass
-        raise
-
-
-def _pdf_blocking_warnings(question: dict) -> list[str]:
-    warnings = question.get("warnings") or []
-    return [warning for warning in warnings if warning in PDF_IMPORT_BLOCKING_WARNINGS]
-
-
-def _pdf_review_detail(questions: list[dict]) -> str:
-    blocked = []
-    review_only = []
-    for idx, question in enumerate(questions, start=1):
-        label = (
-            question.get("question_number")
-            or question.get("global_question_number")
-            or idx
-        )
-        warnings = question.get("warnings") or []
-        blocking = _pdf_blocking_warnings(question)
-        if blocking:
-            blocked.append(f"Q{label}: {', '.join(blocking)}")
-        elif question.get("needs_review"):
-            review_only.append(
-                f"Q{label}: {', '.join(warnings) if warnings else 'needs_review'}"
-            )
-
-    if not blocked:
-        return ""
-
-    preview = "; ".join(blocked[:8])
-    remaining = len(blocked) - 8
-    if remaining > 0:
-        preview += f"; and {remaining} more"
-
-    suffix = ""
-    if review_only:
-        suffix = f" Non-blocking review warnings: {len(review_only)} question(s)."
-
-    return (
-        f"PDF extraction found {len(questions)} question(s), but {len(blocked)} have blocking issues. "
-        f"{preview}. Fix these or upload JSON with corrected fields.{suffix}"
-    )
 
 
 # ── Users ─────────────────────────────────────────────────────────
@@ -347,92 +273,46 @@ def get_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_admi
     }
 
 
+class TestCreate(BaseModel):
+    title: str = Field(...)
+    description: Optional[str] = None
+    duration_minutes: int = 180
+    series_id: Optional[int] = None
+    series_order: int = 0
+    category: Optional[str] = None
+    series_name: Optional[str] = None
+    test_type: Optional[str] = None
+    subject: Optional[str] = None
+
+
 @router.post("/tests", status_code=201)
-async def create_test(
-    title: str = Form(...),
-    description: str = Form(None),
-    duration_minutes: int = Form(180),
-    series_id: int = Form(None),
-    series_order: int = Form(0),
-    category: str = Form(None),
-    series_name: str = Form(None),
-    test_type: str = Form(None),
-    subject: str = Form(None),
-    pdf_file: UploadFile = File(None),
+def create_test(
+    payload: TestCreate,
     db: Session = Depends(get_db),
     current=Depends(require_admin),
 ):
-    pdf_filename = None
-    extracted = []
-
-    if pdf_file and pdf_file.filename:
-        if not pdf_file.filename.lower().endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="Only PDF files accepted")
-        safe_filename = f"{uuid.uuid4().hex}.pdf"
-        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-        path = os.path.join(settings.UPLOAD_DIR, safe_filename)
-        await _save_pdf_upload(pdf_file, path)
-        pdf_filename = safe_filename
-        extracted = await run_in_threadpool(extract_questions_from_pdf, path)
-        if not extracted:
-            try:
-                os.remove(path)
-            except OSError:
-                pass
-            raise HTTPException(
-                status_code=400, detail="No questions could be extracted from PDF."
-            )
-
-        review_detail = _pdf_review_detail(extracted)
-        if review_detail:
-            try:
-                os.remove(path)
-            except OSError:
-                pass
-            raise HTTPException(status_code=400, detail=review_detail)
-
-    total_marks = sum(q["marks"] for q in extracted) if extracted else 0.0
     test = Test(
-        title=title,
-        description=description,
-        duration_minutes=duration_minutes,
-        pdf_filename=pdf_filename,
-        total_marks=total_marks,
-        series_id=series_id,
-        series_order=series_order,
-        category=category,
-        series_name=series_name,
-        test_type=test_type,
-        subject=subject,
+        title=payload.title,
+        description=payload.description,
+        duration_minutes=payload.duration_minutes,
+        total_marks=0.0,
+        series_id=payload.series_id,
+        series_order=payload.series_order,
+        category=payload.category,
+        series_name=payload.series_name,
+        test_type=payload.test_type,
+        subject=payload.subject,
         created_by=current.id,
     )
     db.add(test)
     db.commit()
     db.refresh(test)
 
-    for idx, q in enumerate(extracted):
-        db.add(
-            Question(
-                test_id=test.id,
-                question_type=QuestionType(q["question_type"]),
-                question_text=q["question_text"],
-                options=q["options"],
-                correct_answer=q["correct_answer"],
-                marks=q["marks"],
-                negative_marks=q["negative_marks"],
-                subject=q.get("subject"),
-                topic=q.get("topic"),
-                order_index=idx,
-            )
-        )
-    if extracted:
-        db.commit()
-
     return {
         "id": test.id,
         "title": test.title,
-        "question_count": len(extracted),
-        "total_marks": total_marks,
+        "question_count": 0,
+        "total_marks": 0.0,
     }
 
 

@@ -21,9 +21,7 @@ function CreateTestModal({ onClose, onCreated }) {
     title: '', description: '', duration_minutes: 180,
     category: '', series_name: '', test_type: '', subject: ''
   })
-  const [pdf, setPdf] = useState(null)
   const [loading, setLoading] = useState(false)
-  const fileRef = useRef()
 
   const isWeeklyQuiz  = form.category === 'weekly_quiz'
   const isTestSeries  = form.category === 'test_series'
@@ -42,18 +40,8 @@ function CreateTestModal({ onClose, onCreated }) {
 
     setLoading(true)
     try {
-      const fd = new FormData()
-      fd.append('title', form.title)
-      if (form.description) fd.append('description', form.description)
-      fd.append('duration_minutes', form.duration_minutes)
-      fd.append('category', form.category)
-      if (form.series_name) fd.append('series_name', form.series_name)
-      if (form.test_type)   fd.append('test_type', form.test_type)
-      if (form.subject)     fd.append('subject', form.subject)
-      if (pdf) fd.append('pdf_file', pdf)
-
-      const res = await adminAPI.createTest(fd)
-      toast.success(`Test created!${res.data.question_count > 0 ? ` Extracted ${res.data.question_count} questions.` : ''}`)
+      const res = await adminAPI.createTest(form)
+      toast.success('Test created!')
       onCreated(res.data)
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to create test')
@@ -164,29 +152,7 @@ function CreateTestModal({ onClose, onCreated }) {
             </>
           )}
 
-          {/* PDF */}
-          <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
-            <label className="label">Upload PDF (optional)</label>
-            <div role="button" tabIndex={0} onClick={() => fileRef.current?.click()}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileRef.current?.click(); } }}
-              className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors hover:border-sky-500/40 focus-visible:ring-2 focus-visible:ring-sky-500 outline-none"
-              style={{ borderColor: 'var(--border)' }}>
-              {pdf ? (
-                <div className="flex items-center justify-center gap-2 text-sky-400 text-sm">
-                  <FileText size={15} />{pdf.name}
-                  <button type="button" onClick={e => { e.stopPropagation(); setPdf(null) }}
-                    aria-label="Remove PDF" className="text-red-400"><X size={13} /></button>
-                </div>
-              ) : (
-                <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  <Upload size={16} className="mx-auto mb-1" />
-                  Click to select PDF
-                </div>
-              )}
-            </div>
-            <input type="file" accept=".pdf" ref={fileRef} className="hidden"
-              onChange={e => setPdf(e.target.files[0] || null)} />
-          </div>
+
 
           <div className="flex gap-3">
             <button type="button" onClick={onClose} className="btn-ghost flex-1">Cancel</button>

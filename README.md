@@ -13,7 +13,6 @@ A complete GATE exam preparation platform.
 - Admin panel (users, tests, series, checklist)
 - GATE-style test interface (fullscreen, tab detection, scientific calculator)
 - MCQ, MSQ, NAT question types
-- PDF auto-extraction
 - Question images via Cloudinary
 - Timed tests with auto-submit
 - Leaderboard (first attempt only)
@@ -72,7 +71,6 @@ UPLOAD_DIR=uploads
 AUTH_COOKIE_SECURE=false
 AUTH_COOKIE_SAMESITE=lax
 
-# Cloudinary (cloudinary.com - free 25GB)
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
@@ -105,13 +103,6 @@ for remote Postgres hosts.
 3. Use the pooler URL on port `6543`.
 4. URL-encode the database password before adding it to `DATABASE_URL`.
 
-Example:
-
-```
-DATABASE_URL=postgresql+psycopg2://postgres.<project-ref>:<URL_ENCODED_PASSWORD>@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?sslmode=require
-```
-
-Do not commit real passwords or secrets.
 
 ### Backend: Hugging Face Spaces
 Create a Docker Space using the repository root. The root `Dockerfile` runs the
