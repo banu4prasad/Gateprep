@@ -5,9 +5,9 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_admin, require_aspirant, get_optional_current_user
+from app.api.deps import get_optional_current_user, require_admin, require_aspirant
 from app.core.database import get_db
-from app.models.models import Test, TestAttempt, TestSeries, TestStatus, Question
+from app.models.models import Question, Test, TestAttempt, TestSeries, TestStatus
 
 router = APIRouter(prefix="/series", tags=["Test Series"])
 
@@ -27,18 +27,20 @@ class SeriesOut(BaseModel):
 
 
 @router.get("")
-def list_series(db: Session = Depends(get_db), current_user=Depends(get_optional_current_user)):
+def list_series(
+    db: Session = Depends(get_db), current_user=Depends(get_optional_current_user)
+):
     if current_user:
         completed_subquery = (
             db.query(
                 Test.series_id.label("series_id"),
-                func.count(func.distinct(TestAttempt.test_id)).label("completed_count")
+                func.count(func.distinct(TestAttempt.test_id)).label("completed_count"),
             )
             .join(
                 TestAttempt,
                 (TestAttempt.test_id == Test.id)
                 & (TestAttempt.status == TestStatus.submitted)
-                & (TestAttempt.user_id == current_user.id)
+                & (TestAttempt.user_id == current_user.id),
             )
             .filter(Test.is_published.is_(True))
             .group_by(Test.series_id)
@@ -49,10 +51,16 @@ def list_series(db: Session = Depends(get_db), current_user=Depends(get_optional
             db.query(
                 TestSeries,
                 func.count(Test.id).label("test_count"),
-                func.coalesce(completed_subquery.c.completed_count, 0).label("completed_count")
+                func.coalesce(completed_subquery.c.completed_count, 0).label(
+                    "completed_count"
+                ),
             )
-            .outerjoin(Test, (Test.series_id == TestSeries.id) & (Test.is_published.is_(True)))
-            .outerjoin(completed_subquery, completed_subquery.c.series_id == TestSeries.id)
+            .outerjoin(
+                Test, (Test.series_id == TestSeries.id) & (Test.is_published.is_(True))
+            )
+            .outerjoin(
+                completed_subquery, completed_subquery.c.series_id == TestSeries.id
+            )
             .group_by(TestSeries.id, completed_subquery.c.completed_count)
             .order_by(TestSeries.created_at.desc())
             .all()
@@ -71,11 +79,10 @@ def list_series(db: Session = Depends(get_db), current_user=Depends(get_optional
         ]
     else:
         results_unauth = (
-            db.query(
-                TestSeries,
-                func.count(Test.id).label("test_count")
+            db.query(TestSeries, func.count(Test.id).label("test_count"))
+            .outerjoin(
+                Test, (Test.series_id == TestSeries.id) & (Test.is_published.is_(True))
             )
-            .outerjoin(Test, (Test.series_id == TestSeries.id) & (Test.is_published.is_(True)))
             .group_by(TestSeries.id)
             .order_by(TestSeries.created_at.desc())
             .all()
@@ -106,8 +113,7 @@ def get_series_tests(
 
     question_counts = (
         db.query(
-            Question.test_id.label("test_id"),
-            func.count(Question.id).label("q_count")
+            Question.test_id.label("test_id"), func.count(Question.id).label("q_count")
         )
         .group_by(Question.test_id)
         .subquery()
@@ -118,14 +124,14 @@ def get_series_tests(
             Test,
             func.coalesce(question_counts.c.q_count, 0).label("question_count"),
             TestAttempt.id.label("attempt_id"),
-            TestAttempt.score.label("score")
+            TestAttempt.score.label("score"),
         )
         .outerjoin(question_counts, question_counts.c.test_id == Test.id)
         .outerjoin(
             TestAttempt,
             (TestAttempt.test_id == Test.id)
             & (TestAttempt.user_id == current_user.id)
-            & (TestAttempt.status == TestStatus.submitted)
+            & (TestAttempt.status == TestStatus.submitted),
         )
         .filter(Test.series_id == series_id, Test.is_published.is_(True))
         .order_by(Test.series_order)

@@ -7,21 +7,34 @@ from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Query
 from fastapi.concurrency import run_in_threadpool
-from pydantic import (BaseModel, ConfigDict, Field, ValidationError,
-                      field_validator, model_validator)
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import (generate_password_reset_token,
-                               hash_password_reset_token)
-from app.models.models import (PasswordResetToken, Question, QuestionType,
-                               Test, User, UserRole)
-from app.services.answer_utils import (is_valid_nat_answer,
-                                       normalize_question_type,
-                                       split_answer_tokens)
+from app.core.security import generate_password_reset_token, hash_password_reset_token
+from app.models.models import (
+    PasswordResetToken,
+    Question,
+    QuestionType,
+    Test,
+    User,
+    UserRole,
+)
+from app.services.answer_utils import (
+    is_valid_nat_answer,
+    normalize_question_type,
+    split_answer_tokens,
+)
 from app.services.cloudinary_service import delete_image, upload_image
 from app.services.pdf_service import extract_questions_from_pdf
 
@@ -139,7 +152,7 @@ def list_users(
     q: str = Query("", max_length=255),
     role: Optional[UserRole] = Query(None),
     db: Session = Depends(get_db),
-    _=Depends(require_admin)
+    _=Depends(require_admin),
 ):
     users_query = db.query(User)
     search = q.strip()
@@ -313,13 +326,17 @@ def get_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_admi
     test = db.query(Test).filter(Test.id == test_id).first()
     if not test:
         raise HTTPException(status_code=404, detail="Not found")
+    question_count = (
+        db.query(func.count(Question.id)).filter(Question.test_id == test_id).scalar()
+        or 0
+    )
     return {
         "id": test.id,
         "title": test.title,
         "description": test.description,
         "duration_minutes": test.duration_minutes,
         "total_marks": test.total_marks,
-        "question_count": len(test.questions),
+        "question_count": question_count,
         "series_id": test.series_id,
         "is_published": test.is_published,
         "created_at": test.created_at,
@@ -639,9 +656,11 @@ def add_questions(
     test = db.query(Test).filter(Test.id == test_id).first()
     if not test:
         raise HTTPException(status_code=404, detail="Not found")
-    existing = len(test.questions)
+    existing = (
+        db.query(func.count(Question.id)).filter(Question.test_id == test_id).scalar()
+        or 0
+    )
     total_added = 0.0
-    BATCH_SIZE = 20
     for idx, q in enumerate(payload.questions):
         db.add(
             Question(
@@ -658,9 +677,7 @@ def add_questions(
             )
         )
         total_added += q.marks
-        if (idx + 1) % BATCH_SIZE == 0:
-            db.commit()
-    test.total_marks += total_added
+    test.total_marks = (test.total_marks or 0.0) + total_added
     db.commit()
     return {
         "message": f"Added {len(payload.questions)} questions",

@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,12 +12,48 @@ from redis import asyncio as aioredis
 
 from app.api.routes import admin, auth, bookmarks, checklist, tests, series
 from app.core.config import settings
-from app.core.database import Base, engine
 
 logger = logging.getLogger(__name__)
 
 
-app = FastAPI(title="GATE Prep Platform", version="2.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    redis = None
+    try:
+        redis = aioredis.from_url(
+            settings.REDIS_URL, encoding="utf8", decode_responses=True
+        )
+        await redis.ping()
+        FastAPICache.init(RedisBackend(redis), prefix="gateprep-cache")
+    except Exception as exc:
+        if redis is not None:
+            await redis.close()
+            redis = None
+
+        if (
+            "localhost" not in settings.REDIS_URL
+            and "127.0.0.1" not in settings.REDIS_URL
+        ):
+            raise RuntimeError(
+                f"Redis cache unavailable at REDIS_URL={settings.REDIS_URL}"
+            ) from exc
+
+        logger.warning(
+            "Redis cache unavailable at %s; using in-memory cache. "
+            "Set REDIS_URL to a reachable Redis instance for shared production caching.",
+            settings.REDIS_URL,
+        )
+        FastAPICache.init(InMemoryBackend(), prefix="gateprep-cache")
+        redis = None
+
+    try:
+        yield
+    finally:
+        if redis is not None:
+            await redis.close()
+
+
+app = FastAPI(title="GATE Prep Platform", version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,31 +77,6 @@ if os.path.exists(settings.UPLOAD_DIR):
 @app.get("/")
 def root():
     return {"status": "ok", "service": "GATE Prep API", "health": "/health"}
-
-
-@app.on_event("startup")
-async def init_cache():
-    try:
-        redis = aioredis.from_url(
-            settings.REDIS_URL, encoding="utf8", decode_responses=True
-        )
-        await redis.ping()
-        FastAPICache.init(RedisBackend(redis), prefix="gateprep-cache")
-    except Exception as exc:
-        if (
-            "localhost" not in settings.REDIS_URL
-            and "127.0.0.1" not in settings.REDIS_URL
-        ):
-            raise RuntimeError(
-                f"Redis cache unavailable at REDIS_URL={settings.REDIS_URL}"
-            ) from exc
-
-        logger.warning(
-            "Redis cache unavailable at %s; using in-memory cache. "
-            "Set REDIS_URL to a reachable Redis instance for shared production caching.",
-            settings.REDIS_URL,
-        )
-        FastAPICache.init(InMemoryBackend(), prefix="gateprep-cache")
 
 
 @app.get("/health")

@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -9,6 +10,7 @@ from passlib.context import CryptContext
 from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+logger = logging.getLogger(__name__)
 
 
 def hash_password(password: str) -> str:
@@ -43,10 +45,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 def decode_token(token: str) -> Optional[dict]:
     try:
         payload = jwt.decode(
@@ -54,5 +52,5 @@ def decode_token(token: str) -> Optional[dict]:
         )
         return payload
     except JWTError as e:
-        logger.warning(f"JWT decode error: {e}")
+        logger.warning("JWT decode error: %s", e)
         return None
