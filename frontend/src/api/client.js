@@ -9,7 +9,10 @@ const BASE_URL = import.meta.env.PROD
 
 const api = axios.create({
   baseURL: BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  },
   timeout: 30000,
   withCredentials: true,
 })
@@ -26,5 +29,31 @@ api.interceptors.response.use(
     return Promise.reject(err)
   }
 )
+
+// ── Silent token refresh ─────────────────────────────────────────
+// Refreshes the httpOnly auth cookie before it expires.
+// Token lifetime is 3 hours; refresh fires every 2.5 hours.
+const REFRESH_INTERVAL_MS = 2.5 * 60 * 60 * 1000 // 2.5 hours
+let refreshTimer = null
+
+export function startTokenRefresh() {
+  stopTokenRefresh()
+  // Immediately refresh to reset the clock on any near-expiry token
+  api.post('/auth/refresh').catch(() => {})
+  refreshTimer = setInterval(async () => {
+    try {
+      await api.post('/auth/refresh')
+    } catch {
+      // 401 will be caught by the existing interceptor
+    }
+  }, REFRESH_INTERVAL_MS)
+}
+
+export function stopTokenRefresh() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
 
 export default api

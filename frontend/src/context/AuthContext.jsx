@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import api, { AUTH_UNAUTHORIZED_EVENT } from '../api/client'
+import api, { AUTH_UNAUTHORIZED_EVENT, startTokenRefresh, stopTokenRefresh } from '../api/client'
 import { mutate } from 'swr'
 
 const AuthContext = createContext(null)
@@ -14,7 +14,10 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     api.get('/auth/me')
-      .then(r => setUser(r.data))
+      .then(r => {
+        setUser(r.data)
+        startTokenRefresh()
+      })
       .catch(() => {
         setUser(null)
       })
@@ -30,6 +33,10 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized)
   }, [])
 
+  useEffect(() => {
+    return () => stopTokenRefresh()
+  }, [])
+
   // Called after successful login or registration
   const saveUser = useCallback((userData) => {
     const u = {
@@ -40,11 +47,13 @@ export function AuthProvider({ children }) {
     }
     setUser(u)
     setSessionExpired(false)
+    startTokenRefresh()
     return u
   }, [])
 
   const logout = useCallback(async () => {
     try { await api.post('/auth/logout') } catch {}
+    stopTokenRefresh()
     setUser(null)
     setSessionExpired(false)
     mutate(() => true, undefined, { revalidate: false })
@@ -52,6 +61,7 @@ export function AuthProvider({ children }) {
   }, [navigate])
 
   const confirmSessionExpired = useCallback(() => {
+    stopTokenRefresh()
     setUser(null)
     setSessionExpired(false)
     mutate(() => true, undefined, { revalidate: false })

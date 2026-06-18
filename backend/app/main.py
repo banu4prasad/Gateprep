@@ -12,6 +12,11 @@ from redis import asyncio as aioredis
 
 from app.api.routes import admin, auth, bookmarks, tests, series
 from app.core.config import settings
+from app.core.csrf import CSRFHeaderMiddleware
+from app.core.limiter import limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi import _rate_limit_exceeded_handler
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +60,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="GATE Prep Platform", version="2.0.0", lifespan=lifespan)
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+app.add_middleware(CSRFHeaderMiddleware)
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept", "X-Requested-With"],
 )
 
 app.include_router(auth.router)

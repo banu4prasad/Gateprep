@@ -1,8 +1,10 @@
 import ipaddress
+import logging
 import re
 from pathlib import Path
 from typing import List
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
@@ -71,14 +73,14 @@ def normalize_database_url(database_url: str) -> str:
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/gate_prep"
-    REDIS_URL: str = "redis://localhost:6379/0"
-    SECRET_KEY: str = "change-me-in-production-32-chars-minimum"
+    DATABASE_URL: str
+    REDIS_URL: str
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
-    CORS_ORIGINS: str = "http://localhost:5173,https://gateprep6901.vercel.app"
-    FRONTEND_URL: str = "http://localhost:5173"
-    PASSWORD_RESET_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    CORS_ORIGINS: str = ""
+    FRONTEND_URL: str
+    PASSWORD_RESET_EXPIRE_MINUTES: int
     UPLOAD_DIR: str = "uploads"
     AUTH_COOKIE_NAME: str = "access_token"
     AUTH_COOKIE_SECURE: bool = True
@@ -89,11 +91,30 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
 
+    @model_validator(mode="after")
+    def _reject_placeholder_secrets(self) -> "Settings":
+        if self.SECRET_KEY == "change-me-in-production-32-chars-minimum":
+            raise ValueError(
+                "SECRET_KEY is still set to the placeholder value. "
+                'Generate a real secret: python -c "import secrets; print(secrets.token_hex(32))"'
+            )
+        if len(self.SECRET_KEY) < 32:
+            raise ValueError("SECRET_KEY must be at least 32 characters.")
+        return self
+
     @property
     def cors_origins_list(self) -> List[str]:
-        return [
+        origins = [
             origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()
         ]
+        has_local = any("localhost" in o or "127.0.0.1" in o for o in origins)
+        has_remote = any("localhost" not in o and "127.0.0.1" not in o for o in origins)
+        if has_local and has_remote:
+            logging.getLogger(__name__).warning(
+                "CORS_ORIGINS contains both localhost and remote origins. "
+                "Remove localhost origins before deploying to production."
+            )
+        return origins
 
     @property
     def sqlalchemy_database_url(self) -> str:

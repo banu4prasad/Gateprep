@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.limiter import limiter
 from app.core.security import (create_access_token, decode_token,
                                generate_session_id, hash_password,
                                hash_password_reset_token, verify_password)
@@ -102,9 +103,10 @@ def create_token_for_user(user: User, db: Session, request: Optional[Request] = 
 
 
 @router.post("/register", response_model=AuthUserResponse)
+@limiter.limit("3/minute")
 def register(
-    payload: RegisterRequest,
     request: Request,
+    payload: RegisterRequest,
     response: Response,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -138,9 +140,10 @@ def register(
 
 
 @router.post("/login", response_model=AuthUserResponse)
+@limiter.limit("5/minute")
 def login(
-    payload: LoginRequest,
     request: Request,
+    payload: LoginRequest,
     response: Response,
     db: Session = Depends(get_db),
 ):
@@ -182,11 +185,46 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
     return {"message": "Logged out"}
 
 
+# ── Refresh Token ─────────────────────────────────────────────────
+
+
+@router.post("/refresh", response_model=AuthUserResponse)
+@limiter.limit("10/minute")
+def refresh_token(request: Request, response: Response, db: Session = Depends(get_db)):
+    """Silently rotate the access token if the current one is still valid."""
+    token = request.cookies.get(settings.AUTH_COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    payload = decode_token(token)
+    if not payload or payload.get("auth") != "cookie":
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user_id = payload.get("sub")
+    session_id = payload.get("sid")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
+    if not user or not session_id or user.current_session_id != session_id:
+        raise HTTPException(status_code=401, detail="Session expired")
+
+    # Issue new token with rotated session ID
+    _set_auth_cookie(response, create_token_for_user(user, db, request))
+    return _auth_user_response(user)
+
+
 # ── Reset Password ────────────────────────────────────────────────
 
 
 @router.post("/reset-password")
-def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def reset_password(request: Request, payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     token = payload.token.strip()
     if not token:
         raise HTTPException(status_code=400, detail="Invalid or expired reset link")
