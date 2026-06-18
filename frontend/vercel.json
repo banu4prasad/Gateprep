@@ -4,6 +4,6 @@
   "framework": "vite",
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/proxy?path=:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/:path((?!_vercel/).*)", "destination": "/index.html" }
   ]
 }
