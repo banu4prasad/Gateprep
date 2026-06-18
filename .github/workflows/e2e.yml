@@ -67,7 +67,12 @@ jobs:
 
       - name: Show backend logs
         if: ${{ failure() }}
-        run: tail -200 /tmp/gateprep-api.log
+        run: |
+          if [ -f /tmp/gateprep-api.log ]; then
+            tail -200 /tmp/gateprep-api.log
+          else
+            echo "Backend log not found; backend may not have started."
+          fi
 
       - name: Upload test report
         uses: actions/upload-artifact@v7

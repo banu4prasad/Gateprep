@@ -74,13 +74,13 @@ def normalize_database_url(database_url: str) -> str:
 
 class Settings(BaseSettings):
     DATABASE_URL: str
-    REDIS_URL: str
+    REDIS_URL: str = "redis://localhost:6379/0"
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 180
     CORS_ORIGINS: str = ""
-    FRONTEND_URL: str
-    PASSWORD_RESET_EXPIRE_MINUTES: int
+    FRONTEND_URL: str = "http://localhost:5173"
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 30
     UPLOAD_DIR: str = "uploads"
     AUTH_COOKIE_NAME: str = "access_token"
     AUTH_COOKIE_SECURE: bool = True
