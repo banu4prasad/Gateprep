@@ -36,10 +36,12 @@ api.interceptors.response.use(
 const REFRESH_INTERVAL_MS = 2.5 * 60 * 60 * 1000 // 2.5 hours
 let refreshTimer = null
 
-export function startTokenRefresh() {
+export function startTokenRefresh({ refreshNow = false } = {}) {
   stopTokenRefresh()
-  // Immediately refresh to reset the clock on any near-expiry token
-  api.post('/auth/refresh').catch(() => {})
+  if (refreshNow) {
+    // Reset the clock for existing sessions restored from /auth/me.
+    api.post('/auth/refresh').catch(() => {})
+  }
   refreshTimer = setInterval(async () => {
     try {
       await api.post('/auth/refresh')

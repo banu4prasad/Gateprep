@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 from app.api.routes.auth import router
 from app.core.config import settings
 from app.core.database import Base, get_db
-from app.core.security import create_access_token, hash_password
+from app.core.security import create_access_token, decode_token, hash_password
 from app.models.models import User, UserRole
 
 
@@ -102,6 +102,32 @@ class AuthCookieTests(unittest.TestCase):
             self.assertIsNone(user.current_session_id)
         finally:
             db.close()
+
+    def test_refresh_keeps_current_session_valid_for_inflight_requests(self):
+        login = self.client.post(
+            "/auth/login",
+            json={"email": "user@example.com", "password": "secret123"},
+        )
+        old_token = login.cookies.get(settings.AUTH_COOKIE_NAME)
+        self.assertIsNotNone(old_token)
+        old_session_id = decode_token(old_token)["sid"]
+
+        refresh = self.client.post("/auth/refresh")
+
+        self.assertEqual(refresh.status_code, 200)
+        db = self.SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == self.user_id).one()
+            self.assertEqual(user.current_session_id, old_session_id)
+        finally:
+            db.close()
+
+        self.client.cookies.clear()
+        old_cookie_response = self.client.get(
+            "/auth/me",
+            headers={"Cookie": f"{settings.AUTH_COOKIE_NAME}={old_token}"},
+        )
+        self.assertEqual(old_cookie_response.status_code, 200)
 
     def test_cookie_auth_rejects_legacy_token_without_cookie_marker(self):
         session_id = "legacy-session"

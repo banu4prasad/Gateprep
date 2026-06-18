@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
     api.get('/auth/me')
       .then(r => {
         setUser(r.data)
-        startTokenRefresh()
+        startTokenRefresh({ refreshNow: true })
       })
       .catch(() => {
         setUser(null)

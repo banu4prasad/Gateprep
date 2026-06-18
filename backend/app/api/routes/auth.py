@@ -88,15 +88,19 @@ def _auth_user_response(user: User) -> AuthUserResponse:
     )
 
 
+def create_token_for_session(user: User, session_id: str) -> str:
+    return create_access_token(
+        {"sub": user.id, "role": user.role, "sid": session_id, "auth": "cookie"}
+    )
+
+
 def create_token_for_user(user: User, db: Session, request: Optional[Request] = None) -> str:
     session_id = generate_session_id()
     user.current_session_id = session_id
     if request and request.client:
         user.current_ip = request.client.host
     db.commit()
-    return create_access_token(
-        {"sub": user.id, "role": user.role, "sid": session_id, "auth": "cookie"}
-    )
+    return create_token_for_session(user, session_id)
 
 
 # ── Register ──────────────────────────────────────────────────────
@@ -191,7 +195,7 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 @router.post("/refresh", response_model=AuthUserResponse)
 @limiter.limit("10/minute")
 def refresh_token(request: Request, response: Response, db: Session = Depends(get_db)):
-    """Silently rotate the access token if the current one is still valid."""
+    """Refresh the access token without invalidating in-flight requests."""
     token = request.cookies.get(settings.AUTH_COOKIE_NAME)
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -214,8 +218,7 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
     if not user or not session_id or user.current_session_id != session_id:
         raise HTTPException(status_code=401, detail="Session expired")
 
-    # Issue new token with rotated session ID
-    _set_auth_cookie(response, create_token_for_user(user, db, request))
+    _set_auth_cookie(response, create_token_for_session(user, session_id))
     return _auth_user_response(user)
 
 
