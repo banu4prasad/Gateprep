@@ -9,15 +9,44 @@ import Clock from 'lucide-react/dist/esm/icons/clock'
 import Target from 'lucide-react/dist/esm/icons/target'
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
-import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
+
+function SkeletonBlock({ className = '' }) {
+  return (
+    <span
+      className={clsx('block animate-pulse rounded bg-slate-200/80 dark:bg-slate-800', className)}
+      aria-hidden="true"
+    />
+  )
+}
+
+function TestCardSkeleton() {
+  return (
+    <div className="gate-card p-5 flex flex-col gap-3" aria-hidden="true">
+      <div className="flex items-start justify-between gap-2">
+        <SkeletonBlock className="h-5 w-2/3" />
+        <SkeletonBlock className="h-5 w-12 rounded" />
+      </div>
+      <SkeletonBlock className="h-4 w-full" />
+      <SkeletonBlock className="h-4 w-4/5" />
+      <div className="flex items-center gap-4">
+        <SkeletonBlock className="h-3 w-14" />
+        <SkeletonBlock className="h-3 w-20" />
+        <SkeletonBlock className="h-3 w-16" />
+      </div>
+      <div className="pt-1 border-t border-slate-200 dark:border-slate-800">
+        <SkeletonBlock className="h-9 w-full rounded-xl" />
+      </div>
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const { user } = useAuth()
   
   const { data: tests = [], isLoading: testsLoading } = useSWR('/tests', fetcher)
   const { data: history = [], isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
-  const loading = testsLoading || historyLoading
+  const isInitialDataLoading = testsLoading || historyLoading
 
   const { submitted, completedCount, attemptMap } = useMemo(() => {
     const submitted = history.filter(h => h.status === 'submitted')
@@ -25,8 +54,6 @@ export default function Dashboard() {
     const attemptMap = Object.fromEntries(history.map(h => [h.test_id, h]))
     return { submitted, completedCount, attemptMap }
   }, [history])
-
-  if (loading) return <Layout><div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500"/></div></Layout>
 
   return (
     <Layout>
@@ -41,14 +68,18 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4">
           {[
-            { label: 'Tests Available', value: tests.length, icon: BookOpen, color: 'text-sky-400', bg: 'bg-sky-500/10' },
-            { label: 'Completed', value: completedCount, icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10' },
-          ].map(({ label, value, icon: Icon, color, bg }) => (
+            { label: 'Tests Available', value: tests.length, isLoading: testsLoading, icon: BookOpen, color: 'text-sky-400', bg: 'bg-sky-500/10' },
+            { label: 'Completed', value: completedCount, isLoading: historyLoading, icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10' },
+          ].map(({ label, value, isLoading, icon: Icon, color, bg }) => (
             <div key={label} className="gate-card p-5 flex flex-col gap-2">
               <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}>
                 <Icon size={18} className={color} />
               </div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{value}</p>
+              {isLoading ? (
+                <SkeletonBlock className="mt-1 h-8 w-14" />
+              ) : (
+                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{value}</p>
+              )}
               <p className="text-slate-500 dark:text-slate-400 text-sm">{label}</p>
             </div>
           ))}
@@ -57,7 +88,13 @@ export default function Dashboard() {
         {/* Tests */}
         <div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Available Tests</h2>
-          {tests.length === 0 ? (
+          {isInitialDataLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Loading available tests">
+              <TestCardSkeleton />
+              <TestCardSkeleton />
+              <TestCardSkeleton />
+            </div>
+          ) : tests.length === 0 ? (
             <div className="gate-card p-10 text-center">
               <BookOpen size={36} className="text-slate-700 mx-auto mb-3"/>
               <p className="text-slate-500 dark:text-slate-400">No tests available yet. Check back later.</p>
