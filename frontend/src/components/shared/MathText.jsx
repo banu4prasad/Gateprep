@@ -1,5 +1,6 @@
 import { Fragment, memo } from 'react'
 import { InlineMath, BlockMath } from 'react-katex'
+import 'katex/dist/katex.min.css'
 
 const MATH_PATTERN = /(\$\$[\s\S]+?\$\$|\$[^$]+\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/g
 const LEGACY_MATH_PATTERN = /(\\(?:sqrt|frac|sum|int|log|ln|sin|cos|tan|alpha|beta|gamma|theta|Theta|pi|infty|Omega)(?:\s*(?:\{[^{}]*\}|\([^()]*\)|[A-Za-z0-9]+))*|\\?(?:Theta|Omega)\s*\([^()]+\)|\bO\s*\([^()]+\)|\b[A-Za-z0-9]+\s*\^\s*(?:\{[^{}]+\}|\([^()]+\)|[A-Za-z0-9]+)(?:\s*[-+]\s*\d+)?|\b(?:[A-Za-z]\s+)?(?:log|ln)(?:\s*\^\s*(?:\{[^{}]+\}|\([^()]+\)|[A-Za-z0-9]+))?\s+[A-Za-z]\b)/g

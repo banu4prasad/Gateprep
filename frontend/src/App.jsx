@@ -5,7 +5,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { ProtectedRoute, GuestRoute } from './components/shared/ProtectedRoute'
 import Spinner from './components/shared/Spinner'
 
-const LoginPage        = lazy(() => import('./pages/Login'))
+import LoginPage from './pages/Login'
 const RegisterPage     = lazy(() => import('./pages/Register'))
 const ForgotPassword   = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword    = lazy(() => import('./pages/ResetPassword'))
