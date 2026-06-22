@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Layout from '../components/shared/Layout'
 import { adminAPI, fetcher } from '../api/api'
 import useSWR from 'swr'
@@ -18,9 +18,19 @@ const roleStyle = { admin: 'badge-blue', aspirant: 'badge-green', user: 'badge-a
 export default function AdminUsers() {
   const [pageIndex, setPageIndex] = useState(0)
   const [pageCursors, setPageCursors] = useState([null])
-  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const limit = 50
-  const searchQuery = search.trim()
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput.trim())
+      setPageIndex(0)
+      setPageCursors([null])
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
   const currentCursor = pageCursors[pageIndex]
   const params = new URLSearchParams({ limit: String(limit) })
   if (currentCursor) params.set('cursor', currentCursor)
@@ -101,9 +111,7 @@ export default function AdminUsers() {
   }
 
   const handleSearchChange = (e) => {
-    setSearch(e.target.value)
-    setPageIndex(0)
-    setPageCursors([null])
+    setSearchInput(e.target.value)
   }
 
   const goToPreviousPage = () => setPageIndex(i => Math.max(0, i - 1))
@@ -158,7 +166,7 @@ export default function AdminUsers() {
         <div className="relative">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
           <input
-            value={search} onChange={handleSearchChange}
+            value={searchInput} onChange={handleSearchChange}
             placeholder="Search all users by name or email..."
             className="input pl-10"
           />

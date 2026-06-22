@@ -156,9 +156,16 @@ def list_users(
     if role is not None:
         users_query = users_query.filter(User.role == role)
 
-    total = users_query.count()
-    aspirants_count = db.query(User).filter(User.role == UserRole.aspirant).count()
-    pending_count = db.query(User).filter(User.role == UserRole.user).count()
+    # Optimize counts by grouping
+    role_counts_raw = db.query(User.role, func.count(User.id)).group_by(User.role).all()
+    role_counts = {r: c for r, c in role_counts_raw}
+    aspirants_count = role_counts.get(UserRole.aspirant, 0)
+    pending_count = role_counts.get(UserRole.user, 0)
+
+    if search or role is not None:
+        total = users_query.count()
+    else:
+        total = sum(role_counts.values())
 
     page_query = users_query
     if cursor:
