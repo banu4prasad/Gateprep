@@ -678,7 +678,16 @@ async def upload_questions_file(
     if not file.filename or not file.filename.lower().endswith(".json"):
         raise HTTPException(status_code=400, detail="Only .json files accepted")
 
-    contents = await file.read()
+    MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
+    contents = bytearray()
+    while chunk := await file.read(1024 * 1024):
+        contents.extend(chunk)
+        if len(contents) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413, detail="File too large. Maximum allowed size is 5MB."
+            )
+    contents = bytes(contents)
+    
     if not contents:
         raise HTTPException(status_code=400, detail="Uploaded JSON file is empty")
 
@@ -774,7 +783,9 @@ async def upload_question_image(
     _=Depends(require_admin),
 ):
     """Upload image for a question or option. target='question' or 'A'/'B'/'C'/'D'"""
-    q = db.query(Question).filter(Question.id == question_id).first()
+    q = await run_in_threadpool(
+        lambda: db.query(Question).filter(Question.id == question_id).first()
+    )
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
 
@@ -802,7 +813,7 @@ async def upload_question_image(
             status_code=400, detail="target must be 'question' or A/B/C/D"
         )
 
-    db.commit()
+    await run_in_threadpool(db.commit)
     return {"url": result["url"], "target": target}
 
 

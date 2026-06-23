@@ -96,7 +96,8 @@ class Settings(BaseSettings):
         if self.SECRET_KEY == "change-me-in-production-32-chars-minimum":
             raise ValueError(
                 "SECRET_KEY is still set to the placeholder value. "
-                'Generate a real secret: python -c "import secrets; print(secrets.token_hex(32))"'
+                "Generate a real secret directly into your .env file:\n"
+                '  python3 -c "import secrets; open(\'.env\', \'a\').write(f\'SECRET_KEY={secrets.token_hex(32)}\\n\')"'
             )
         if len(self.SECRET_KEY) < 32:
             raise ValueError("SECRET_KEY must be at least 32 characters.")
