@@ -415,10 +415,9 @@ def get_questions(
     test = db.query(Test).filter(Test.id == test_id).first()
     if not test:
         raise HTTPException(status_code=404, detail="Not found")
-    return [
-        _question_out(q)
-        for q in sorted(test.questions, key=lambda q: q.order_index)
-    ]
+    # Test.questions relationship declares order_by="Question.order_index",
+    # so the lazy-load already returns questions sorted by order_index.
+    return [_question_out(q) for q in test.questions]
 
 
 class QuestionIn(BaseModel):

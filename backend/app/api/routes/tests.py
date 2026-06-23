@@ -402,7 +402,9 @@ def _evaluate_submission(test: Test, answers: List[AnswerSubmit]):
     earned = 0.0
     details = []
 
-    for q in sorted(test.questions, key=lambda x: x.order_index):
+    # Test.questions relationship declares order_by="Question.order_index",
+    # so the lazy-load already returns questions sorted by order_index.
+    for q in test.questions:
         submitted = submitted_by_question.get(q.id)
         selected = submitted.selected_answer if submitted else None
         if selected is not None and selected.strip() == "":
