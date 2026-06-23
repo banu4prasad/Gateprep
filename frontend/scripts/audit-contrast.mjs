@@ -133,7 +133,7 @@ for (const [themeName, themeVars] of Object.entries(themes)) {
   addCheck('header text', themeName, themeVars['header-text'], themeVars['header-bg'])
   addCheck('header muted text', themeName, themeVars['header-muted'], themeVars['header-bg'])
   addCheck('header accent text', themeName, themeVars['header-accent'], themeVars['header-bg'])
-  addCheck('header danger text', themeName, themeName === 'light' ? palette['red-300'] : palette['red-400'], themeVars['header-bg'])
+  addCheck('header danger text', themeName, themeName === 'light' ? themeVars['danger-text'] : palette['red-400'], themeVars['header-bg'])
 }
 
 const darkSurfaceClasses = {
