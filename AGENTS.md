@@ -79,7 +79,7 @@ Do not assume `npm test`, `npm run lint`, or `npm run typecheck` exists. Check `
 ### 1. Choose the right instruction set
 
 Load the smallest relevant set of files from `.agents/`:
-- Always useful: `rules/common-coding-style.md`, `rules/common-development-workflow.md`
+- Always useful: `rules/common-coding-style.md`, `rules/common-development-workflow.md`, `rules/ponytail.md`
 - Frontend tasks: add `rules/web-coding-style.md`, `rules/web-patterns.md`, `rules/web-testing.md`
 - Backend tasks: add `rules/python-coding-style.md`, `rules/python-patterns.md`, `rules/python-testing.md`, `rules/python-security.md`
 - Security-sensitive work: add `rules/common-security.md`
@@ -181,7 +181,6 @@ TDD is preferred for non-trivial backend work, but do not block simple safe fixe
 - Be cautious with first-attempt-only leaderboard logic
 - Keep database access patterns explicit and readable
 - When changing schemas, ensure Alembic implications are considered
-- Be careful with PDF extraction and upload paths; those flows can affect admin tooling and content quality
 
 ## Review Checklist
 
@@ -192,26 +191,6 @@ Before considering work complete, confirm:
 - the relevant build/tests were run when practical
 - auth, scoring, timing, or admin behavior was not accidentally regressed
 - docs were updated only when the task required it
-
-## Suggested Prompt Pattern
-
-When using this repo with an AI assistant, prefer prompts like:
-
-```text
-Read and follow:
-- .agents/rules/common-coding-style.md
-- .agents/rules/common-development-workflow.md
-- .agents/rules/web-coding-style.md
-- .agents/workflows/feature-dev.md
-
-Task:
-Update the test-taking UI in frontend/src/pages/TestEngine.jsx
-
-Constraints:
-- do not change backend code
-- preserve current auth behavior
-- run the relevant validation commands after changes
-```
 
 ## Source of Truth
 
