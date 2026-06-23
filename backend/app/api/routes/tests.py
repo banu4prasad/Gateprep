@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi_cache.decorator import cache
 from pydantic import BaseModel
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.api.deps import get_current_user, require_aspirant
@@ -193,18 +193,29 @@ def start_test(
             detail=f"Maximum attempts ({MAX_REATTEMPTS + 1}) reached for this test.",
         )
 
-    # Delete any leftover in-progress attempt (user exited without submitting)
-    leftovers = (
-        db.query(TestAttempt)
+    # Delete any leftover in-progress attempt (user exited without submitting).
+    # Bulk-delete child UserAnswers first because the ORM cascade is
+    # "delete-orphan" but the DB FK on user_answers.attempt_id has no
+    # ON DELETE CASCADE — skipping the child delete would orphan
+    # user_answers rows and break FK integrity. Collapses N+1 roundtrips
+    # down to 2 DELETEs + 1 COMMIT regardless of leftover count.
+    leftover_attempt_ids = (
+        db.query(TestAttempt.id)
         .filter(
             TestAttempt.user_id == current_user.id,
             TestAttempt.test_id == test_id,
             TestAttempt.status == TestStatus.in_progress,
         )
-        .all()
+        .subquery()
     )
-    for leftover in leftovers:
-        db.delete(leftover)
+    db.query(UserAnswer).filter(
+        UserAnswer.attempt_id.in_(leftover_attempt_ids)
+    ).delete(synchronize_session=False)
+    db.query(TestAttempt).filter(
+        TestAttempt.user_id == current_user.id,
+        TestAttempt.test_id == test_id,
+        TestAttempt.status == TestStatus.in_progress,
+    ).delete(synchronize_session=False)
     db.commit()
 
     # Always create a fresh attempt
@@ -639,29 +650,38 @@ def get_result(
 
 def _get_first_attempts(test_id: int, db: Session) -> list[TestAttempt]:
     if db.get_bind().dialect.name == "postgresql":
-        first_attempts_subquery = (
-            db.query(TestAttempt)
-            .filter(
-                TestAttempt.test_id == test_id,
-                TestAttempt.status == TestStatus.submitted,
-            )
-            .distinct(TestAttempt.user_id)
-            .order_by(TestAttempt.user_id, TestAttempt.id.asc())
-            .subquery()
+        return _first_attempts_pg(test_id, db)
+    return _first_attempts_generic(test_id, db)
+
+
+def _first_attempts_pg(test_id: int, db: Session) -> list[TestAttempt]:
+    """Fetch first attempts using PostgreSQL DISTINCT ON."""
+    first_attempts_subquery = (
+        db.query(TestAttempt)
+        .filter(
+            TestAttempt.test_id == test_id,
+            TestAttempt.status == TestStatus.submitted,
         )
+        .distinct(TestAttempt.user_id)
+        .order_by(TestAttempt.user_id, TestAttempt.id.asc())
+        .subquery()
+    )
 
-        FirstAttempt = aliased(TestAttempt, first_attempts_subquery)
+    FirstAttempt = aliased(TestAttempt, first_attempts_subquery)
 
-        return (
-            db.query(FirstAttempt)
-            .options(joinedload(FirstAttempt.user))
-            .order_by(
-                FirstAttempt.score.desc(),
-                FirstAttempt.id.asc(),
-            )
-            .all()
+    return (
+        db.query(FirstAttempt)
+        .options(joinedload(FirstAttempt.user))
+        .order_by(
+            FirstAttempt.score.desc(),
+            FirstAttempt.id.asc(),
         )
+        .all()
+    )
 
+
+def _first_attempts_generic(test_id: int, db: Session) -> list[TestAttempt]:
+    """Fetch first attempts using ROW_NUMBER() for non-PostgreSQL dialects."""
     first_attempt_ids_subquery = (
         db.query(
             TestAttempt.id.label("attempt_id"),

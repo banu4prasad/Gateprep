@@ -5,7 +5,16 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from app.core.database import Base, get_db
 from app.main import app as fastapi_app
-from app.models.models import User, UserRole, Test, Question, QuestionType, TestStatus, TestAttempt
+from app.models.models import (
+    User,
+    UserRole,
+    Test,
+    Question,
+    QuestionType,
+    TestStatus,
+    TestAttempt,
+    UserAnswer,
+)
 from app.core.security import hash_password, create_access_token
 from app.core.config import settings
 import secrets
@@ -64,6 +73,83 @@ def test_start_test(client, db_session, test_data):
     response = client.post(f"/tests/{test_data['test'].id}/start", cookies=_auth_cookie(test_data['user'], db_session))
     assert response.status_code == 200
     assert response.json()["status"] == "in_progress"
+
+def test_start_test_clears_leftover_in_progress_attempt(client, db_session, test_data):
+    # First start — user begins test #1 (in_progress), then exits without submitting.
+    first_resp = client.post(
+        f"/tests/{test_data['test'].id}/start",
+        cookies=_auth_cookie(test_data["user"], db_session),
+    )
+    assert first_resp.status_code == 200
+    assert first_resp.json()["status"] == "in_progress"
+    old_attempt_id = first_resp.json()["id"]
+
+    # Simulate the in-progress attempt having a saved answer so we can prove
+    # the cleanup also drops the child UserAnswer rows. Inserting via the
+    # test session directly (same DB) to avoid coupling to /save endpoint.
+    db_session.add(
+        UserAnswer(
+            attempt_id=old_attempt_id,
+            question_id=test_data["questions"][0].id,
+            selected_answer="B",
+            time_spent_seconds=10,
+        )
+    )
+    db_session.commit()
+    # Sanity: the orphan-vulnerable row really exists.
+    assert (
+        db_session.query(UserAnswer)
+        .filter(UserAnswer.attempt_id == old_attempt_id)
+        .count()
+        == 1
+    )
+
+    # User comes back and starts the test again — the leftover must be cleared.
+    second_resp = client.post(
+        f"/tests/{test_data['test'].id}/start",
+        cookies=_auth_cookie(test_data["user"], db_session),
+    )
+    assert second_resp.status_code == 200
+    assert second_resp.json()["status"] == "in_progress"
+
+    # FK integrity: no orphaned UserAnswer rows pointing at the old attempt.
+    # This is the strongest evidence the bulk-delete path actually ran —
+    # if the new code skipped the child answers delete, this row would
+    # survive the parent delete and the count would be 1.
+    assert (
+        db_session.query(UserAnswer)
+        .filter(UserAnswer.attempt_id == old_attempt_id)
+        .count()
+        == 0
+    )
+    # Exactly one in_progress attempt remains for this user/test.
+    # (We don't assert by id because SQLite's INTEGER PK reuses deleted
+    # rowids, so the freshly-created attempt can reuse old_attempt_id.
+    # The orphan-free UserAnswer check above is the real proof the cleanup
+    # path executed — a stale attempt would have its UserAnswer row still
+    # pointing at old_attempt_id, which is the FK-integrity risk that the
+    # bulk-delete fix is specifically meant to prevent.)
+    in_progress_count = (
+        db_session.query(TestAttempt)
+        .filter(
+            TestAttempt.user_id == test_data["user"].id,
+            TestAttempt.test_id == test_data["test"].id,
+            TestAttempt.status == TestStatus.in_progress,
+        )
+        .count()
+    )
+    assert in_progress_count == 1
+    # And the only surviving attempt is the one returned by the second call.
+    surviving = (
+        db_session.query(TestAttempt)
+        .filter(
+            TestAttempt.user_id == test_data["user"].id,
+            TestAttempt.test_id == test_data["test"].id,
+            TestAttempt.status == TestStatus.in_progress,
+        )
+        .one()
+    )
+    assert surviving.id == second_resp.json()["id"]
 
 def test_get_questions_returns_optimized_cloudinary_images(client, db_session, test_data):
     question = test_data["questions"][0]
