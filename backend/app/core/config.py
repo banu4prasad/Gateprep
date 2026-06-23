@@ -108,13 +108,35 @@ class Settings(BaseSettings):
         origins = [
             origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()
         ]
+        
+        if not origins:
+            raise ValueError("CORS_ORIGINS must not be empty.")
+            
+        if "*" in origins:
+            raise ValueError(
+                "Wildcard CORS origins ('*') are not permitted. "
+                "Explicitly define your frontend URLs in CORS_ORIGINS."
+            )
+
         has_local = any("localhost" in o or "127.0.0.1" in o for o in origins)
         has_remote = any("localhost" not in o and "127.0.0.1" not in o for o in origins)
+        
         if has_local and has_remote:
             logging.getLogger(__name__).warning(
                 "CORS_ORIGINS contains both localhost and remote origins. "
                 "Remove localhost origins before deploying to production."
             )
+            
+        has_http_remote = any(
+            o.startswith("http://") and "localhost" not in o and "127.0.0.1" not in o
+            for o in origins
+        )
+        if has_http_remote:
+            logging.getLogger(__name__).warning(
+                "CORS_ORIGINS contains insecure HTTP remote origins. "
+                "HTTPS should always be used for remote origins."
+            )
+
         return origins
 
     @property
