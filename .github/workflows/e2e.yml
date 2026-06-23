@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: sqlite:///./test.sqlite3
-      SECRET_KEY: test-secret-key
+      SECRET_KEY: ci-backend-test-secret-key-that-is-long-enough-for-validation
       AUTH_COOKIE_SECURE: "false"
 
     steps:
