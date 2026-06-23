@@ -45,23 +45,13 @@ def test_app_title():
 EXPECTED_ROUTER_PREFIXES = {"/auth", "/admin", "/tests", "/bookmarks", "/series"}
 
 
-def _collect_prefixes(routes, prefix=""):
-    """Recursively walk the route tree and collect first-segment prefixes."""
-    prefixes = set()
-    for route in routes:
-        path = prefix + getattr(route, "path", "")
-        parts = path.strip("/").split("/")
-        if parts and parts[0]:
-            prefixes.add(f"/{parts[0]}")
-        # Recurse into sub-routers / mounts
-        sub_routes = getattr(route, "routes", None)
-        if sub_routes:
-            prefixes.update(_collect_prefixes(sub_routes, path))
-    return prefixes
-
-
 def test_all_routers_mounted():
     """All five core routers (auth, admin, tests, bookmarks, series) must be mounted."""
-    mounted_prefixes = _collect_prefixes(app.routes)
+    schema = app.openapi()
+    mounted_prefixes = set()
+    for path in schema.get("paths", {}):
+        parts = path.strip("/").split("/")
+        if parts and parts[0]:
+            mounted_prefixes.add(f"/{parts[0]}")
     missing = EXPECTED_ROUTER_PREFIXES - mounted_prefixes
     assert not missing, f"Missing routers: {missing}"
