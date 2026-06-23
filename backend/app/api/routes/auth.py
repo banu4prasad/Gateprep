@@ -100,7 +100,20 @@ def create_token_for_user(user: User, db: Session, request: Optional[Request] = 
     if request and request.client:
         user.current_ip = request.client.host
     db.commit()
-    return create_token_for_session(user, session_id)
+    db.refresh(user)
+
+    # Defensive backstop: if anything between commit and return fails, force a
+    # fresh session id and commit again so a failed login cannot leave the user
+    # with a silently broken session.
+    try:
+        return create_token_for_session(user, session_id)
+    except Exception:
+        try:
+            user.current_session_id = generate_session_id()
+            db.commit()
+        except Exception:
+            db.rollback()
+        raise
 
 
 # ── Register ──────────────────────────────────────────────────────
@@ -182,7 +195,7 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
             if user_id:
                 user = db.query(User).filter(User.id == user_id).first()
                 if user and (not session_id or user.current_session_id == session_id):
-                    user.current_session_id = None
+                    user.current_session_id = generate_session_id()
                     db.commit()
 
     _clear_auth_cookie(response)

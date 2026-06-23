@@ -87,6 +87,17 @@ class AuthCookieTests(unittest.TestCase):
             json={"email": "user@example.com", "password": "secret123"},
         )
 
+        db = self.SessionLocal()
+        try:
+            original_session_id = (
+                db.query(User)
+                .filter(User.id == self.user_id)
+                .one()
+                .current_session_id
+            )
+        finally:
+            db.close()
+
         response = self.client.post("/auth/logout")
 
         self.assertEqual(response.status_code, 200)
@@ -99,7 +110,11 @@ class AuthCookieTests(unittest.TestCase):
         db = self.SessionLocal()
         try:
             user = db.query(User).filter(User.id == self.user_id).one()
-            self.assertIsNone(user.current_session_id)
+            # Logout rotates the session id rather than nulling it out, so the
+            # previously issued token is no longer valid even though a fresh
+            # session id is stored.
+            self.assertIsNotNone(user.current_session_id)
+            self.assertNotEqual(user.current_session_id, original_session_id)
         finally:
             db.close()
 

@@ -6,7 +6,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.database import Base, get_db
 from app.main import app as fastapi_app
 from app.models.models import User, UserRole
-from app.core.security import hash_password, create_access_token
+from app.core.security import hash_password, create_access_token, decode_token
 from app.core.config import settings
 
 @pytest.fixture
@@ -94,3 +94,65 @@ def test_stale_session_is_rejected(client, db_session):
     client.cookies.set(settings.AUTH_COOKIE_NAME, token)
     response = client.get("/auth/me")
     assert response.status_code == 401
+
+def test_login_rotates_session_invalidating_previous_token(client, db_session):
+    client.post("/auth/register", json={"email": "rotate@test.com", "full_name": "Rotate", "password": "password123"})
+    first_login = client.post("/auth/login", json={"email": "rotate@test.com", "password": "password123"})
+    assert first_login.status_code == 200
+    first_cookie = client.cookies.get(settings.AUTH_COOKIE_NAME)
+    assert first_cookie is not None
+    first_session = decode_token(first_cookie)["sid"]
+
+    # Second login must rotate the session id, invalidating the first token.
+    client.cookies.clear()
+    second_login = client.post("/auth/login", json={"email": "rotate@test.com", "password": "password123"})
+    assert second_login.status_code == 200
+    second_cookie = client.cookies.get(settings.AUTH_COOKIE_NAME)
+    assert second_cookie is not None
+    second_session = decode_token(second_cookie)["sid"]
+
+    assert first_session != second_session
+
+    user = db_session.query(User).filter(User.email == "rotate@test.com").one()
+    assert user.current_session_id == second_session
+
+    # Replaying the first (now stale) cookie must be rejected.
+    legacy_response = client.get(
+        "/auth/me",
+        headers={"Cookie": f"{settings.AUTH_COOKIE_NAME}={first_cookie}"},
+    )
+    assert legacy_response.status_code == 401
+
+def test_failed_token_issuance_rolls_session_forward(client, db_session, monkeypatch):
+    """If token issuance fails after the DB commit, create_token_for_user must rotate
+    the session id again so the user is not silently logged out from their old session."""
+    from app.api.routes import auth as auth_module
+
+    client.post("/auth/register", json={"email": "rollback@test.com", "full_name": "Rollback", "password": "password123"})
+    initial_login = client.post("/auth/login", json={"email": "rollback@test.com", "password": "password123"})
+    assert initial_login.status_code == 200
+    initial_cookie = client.cookies.get(settings.AUTH_COOKIE_NAME)
+    initial_session = decode_token(initial_cookie)["sid"]
+
+    def _boom(user, session_id):
+        raise RuntimeError("simulated jwt failure")
+
+    monkeypatch.setattr(auth_module, "create_token_for_session", _boom)
+
+    with pytest.raises(RuntimeError):
+        client.post("/auth/login", json={"email": "rollback@test.com", "password": "password123"})
+
+    # The user must not still be pinned to the prior session (which would leave
+    # them with a working session even though login just raised).
+    state = db_session.query(User).filter(User.email == "rollback@test.com").one()
+    assert state.current_session_id is not None
+    assert state.current_session_id != initial_session
+
+    # The previous, legitimate token now has a different (or null) sid in the DB
+    # and must therefore be rejected.
+    db_session.expire_all()
+    legacy = client.get(
+        "/auth/me",
+        headers={"Cookie": f"{settings.AUTH_COOKIE_NAME}={initial_cookie}"},
+    )
+    assert legacy.status_code == 401
