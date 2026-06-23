@@ -9,18 +9,12 @@ app_port: 7860
 A complete GATE exam preparation platform.
 
 ## Features
-- Single active session per user
 - Admin panel (users, tests, series, checklist)
 - GATE-style test interface (fullscreen, tab detection, scientific calculator)
-- MCQ, MSQ, NAT question types
-- Question images via Cloudinary
 - Timed tests with auto-submit
 - Leaderboard (first attempt only)
-- Test series / batches
-- Syllabus checklist
+- Test series
 - Bookmarks with notes
-- Dark / Light mode
-
 ---
 
 ## Quick Start (Docker)
@@ -30,7 +24,6 @@ docker compose up --build
 # Frontend: http://localhost:5173
 # API Docs: http://localhost:8000/docs
 ```
-
 ---
 
 ## Manual Setup
@@ -65,7 +58,7 @@ SECRET_KEY=your-32-char-secret-key
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=480
 CORS_ORIGINS=http://localhost:5173
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=
 PASSWORD_RESET_EXPIRE_MINUTES=30
 UPLOAD_DIR=uploads
 AUTH_COOKIE_SECURE=false
@@ -139,7 +132,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 3. Add env:
 
 ```
-VITE_API_URL=https://banu4prasad-gateprep.hf.space
+VITE_API_URL=https://hfusername-gateprep.hf.space
 ```
 
 For production CORS, set this in the Hugging Face backend environment:

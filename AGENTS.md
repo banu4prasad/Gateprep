@@ -7,9 +7,9 @@ Gateprep is a full-stack GATE exam preparation platform with:
 - `frontend/` — React 18, Vite, Tailwind CSS, JavaScript/JSX
 - root Docker files for local and deployment workflows
 
-Read this file first, then load only the relevant files from `.agent/rules/`, `.agent/workflows/`, and `.agent/skills/` for the task at hand.
+Read this file first, then load only the relevant files from `.agents/rules/`, `.agents/workflows/`, and `.agents/skills/` for the task at hand.
 
-This file describes the application repository, not the `.agent/` package itself.
+This file describes the application repository, not the `.agents/` package itself.
 When repository files disagree with these notes, trust the actual code and update this file if the mismatch matters.
 
 ## Project Priorities
@@ -78,7 +78,7 @@ Do not assume `npm test`, `npm run lint`, or `npm run typecheck` exists. Check `
 
 ### 1. Choose the right instruction set
 
-Load the smallest relevant set of files from `.agent/`:
+Load the smallest relevant set of files from `.agents/`:
 - Always useful: `rules/common-coding-style.md`, `rules/common-development-workflow.md`
 - Frontend tasks: add `rules/web-coding-style.md`, `rules/web-patterns.md`, `rules/web-testing.md`
 - Backend tasks: add `rules/python-coding-style.md`, `rules/python-patterns.md`, `rules/python-testing.md`, `rules/python-security.md`
@@ -199,11 +199,10 @@ When using this repo with an AI assistant, prefer prompts like:
 
 ```text
 Read and follow:
-- .agent/AGENTS.md
-- .agent/rules/common-coding-style.md
-- .agent/rules/common-development-workflow.md
-- .agent/rules/web-coding-style.md
-- .agent/workflows/feature-dev.md
+- .agents/rules/common-coding-style.md
+- .agents/rules/common-development-workflow.md
+- .agents/rules/web-coding-style.md
+- .agents/workflows/feature-dev.md
 
 Task:
 Update the test-taking UI in frontend/src/pages/TestEngine.jsx
