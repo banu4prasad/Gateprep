@@ -1,5 +1,5 @@
 from datetime import timedelta
-import jwt
+from jose import jwt
 
 from app.core.config import settings
 from app.core.security import create_access_token, decode_token
