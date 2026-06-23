@@ -52,7 +52,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   const logout = useCallback(async () => {
-    try { await api.post('/auth/logout') } catch {}
+    try { await api.post('/auth/logout') } catch (err) { console.error('Logout API error:', err) }
     stopTokenRefresh()
     setUser(null)
     setSessionExpired(false)

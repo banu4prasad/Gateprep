@@ -1,8 +1,11 @@
+import logging
 import os
 
 from app.core.database import Base, SessionLocal, engine
 from app.core.security import hash_password
 from app.models.models import User, UserRole
+
+logger = logging.getLogger(__name__)
 
 
 def _upsert_user(db, *, email: str, full_name: str, password: str, role: UserRole) -> None:
@@ -56,7 +59,7 @@ def main() -> None:
         )
         db.commit()
 
-    print(f"Seeded E2E users: {admin_email}, {test_email}, {auth_test_email}")
+    logger.info("Seeded E2E users: %s, %s, %s", admin_email, test_email, auth_test_email)
 
 
 if __name__ == "__main__":
