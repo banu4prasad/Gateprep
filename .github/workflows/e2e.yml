@@ -99,6 +99,7 @@ jobs:
       DATABASE_URL: sqlite:///./test.sqlite3
       SECRET_KEY: ci-backend-test-secret-key-that-is-long-enough-for-validation
       AUTH_COOKIE_SECURE: "false"
+      CORS_ORIGINS: "http://127.0.0.1:5173"
 
     steps:
       - uses: actions/checkout@v6
