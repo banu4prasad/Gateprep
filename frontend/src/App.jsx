@@ -4,19 +4,22 @@ import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { ProtectedRoute, GuestRoute } from './components/shared/ProtectedRoute'
 import Spinner from './components/shared/Spinner'
-
-import LoginPage from './pages/Login'
-const RegisterPage     = lazy(() => import('./pages/Register'))
+import AdminDashboard from './pages/AdminDashboard'
+import Dashboard from './pages/Dashboard'
+const LoginPage      = lazy(() => import('./pages/Login'))
+const RegisterPage   = lazy(() => import('./pages/Register'))
 const ForgotPassword   = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword    = lazy(() => import('./pages/ResetPassword'))
 const PendingPage      = lazy(() => import('./pages/Pending'))
 
-const AdminDashboard   = lazy(() => import('./pages/AdminDashboard'))
+
+
 const AdminUsers       = lazy(() => import('./pages/AdminUsers'))
 const AdminTests       = lazy(() => import('./pages/AdminTests'))
 const AdminTestDetail  = lazy(() => import('./pages/AdminTestDetail'))
 
-const Dashboard        = lazy(() => import('./pages/Dashboard'))
+
+
 const TestsPage        = lazy(() => import('./pages/Tests'))
 const TestEngine       = lazy(() => import('./pages/TestEngine'))
 const Result           = lazy(() => import('./pages/Result'))
@@ -28,7 +31,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Spinner size={36} className="text-sky-500" /></div>}>
+        <Suspense fallback={
+          <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+            <div className="h-14 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }} />
+          </div>
+        }>
           <Routes>
             {/* Public */}
             <Route path="/login"    element={<GuestRoute><LoginPage /></GuestRoute>} />

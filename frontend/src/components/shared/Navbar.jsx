@@ -13,7 +13,7 @@ import Bookmark from 'lucide-react/dist/esm/icons/bookmark'
 import clsx from 'clsx'
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user, logout, loading } = useAuth()
   const { theme, toggle } = useTheme()
   const location = useLocation()
   const isAdmin = user?.role === 'admin'
@@ -50,7 +50,7 @@ export default function Navbar() {
 
         {/* Desktop nav links — hidden on mobile (shown in bottom nav instead) */}
         <div className="hidden sm:flex items-center gap-0.5 flex-1 overflow-x-auto">
-          {links.map(({ to, label, icon: Icon }) => (
+          {!loading && links.map(({ to, label, icon: Icon }) => (
             <Link key={to} to={to} aria-current={isActive(to) ? 'page' : undefined} className={clsx(
               'flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors',
               isActive(to)
@@ -72,10 +72,17 @@ export default function Navbar() {
             className="p-2 sm:p-1.5 rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
-          <div className="text-right hidden sm:block">
-            <p className="text-xs font-medium text-slate-900 dark:text-white leading-none">{user?.full_name}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{user?.role}</p>
-          </div>
+          {loading ? (
+            <div className="hidden sm:flex flex-col gap-1.5 items-end mx-1">
+              <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" aria-hidden="true" />
+              <div className="h-2 w-14 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" aria-hidden="true" />
+            </div>
+          ) : (
+            <div className="text-right hidden sm:block">
+              <p className="text-xs font-medium text-slate-900 dark:text-white leading-none">{user?.full_name}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{user?.role}</p>
+            </div>
+          )}
           <button onClick={logout}
             title="Log out"
             aria-label="Log out"
@@ -87,7 +94,7 @@ export default function Navbar() {
 
       {/* ── Mobile Bottom Navigation ──────────────────────────────── */}
       <nav aria-label="Mobile Navigation" className="mobile-bottom-nav sm:hidden flex items-center justify-around px-1">
-        {links.map(({ to, label, icon: Icon }) => (
+        {!loading && links.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
             to={to}

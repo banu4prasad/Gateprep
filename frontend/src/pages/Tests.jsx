@@ -13,6 +13,7 @@ import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left'
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
 import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
+import { TestCardSkeleton } from '../components/shared/Skeletons'
 
 // ── Test Card ─────────────────────────────────────────────────────
 function TestCard({ test, attempt }) {
@@ -146,9 +147,25 @@ export default function TestsPage() {
     return s.value
   })], [nav])
 
-  if (loading) return (
-    <Layout><div className="flex justify-center py-20"><Spinner size={28} className="text-sky-500" /></div></Layout>
-  )
+  if (loading) {
+    return (
+      <Layout>
+        <div className="max-w-3xl mx-auto animate-fade-in">
+          {nav.length === 0 ? (
+            <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--text)' }}>Tests</h1>
+          ) : (
+            <Breadcrumb steps={breadcrumbs} onBack={goBack} />
+          )}
+          <div className="grid md:grid-cols-2 gap-4">
+            <TestCardSkeleton />
+            <TestCardSkeleton />
+            <TestCardSkeleton />
+            <TestCardSkeleton />
+          </div>
+        </div>
+      </Layout>
+    )
+  }
 
   const currentNav = nav[nav.length - 1]
 

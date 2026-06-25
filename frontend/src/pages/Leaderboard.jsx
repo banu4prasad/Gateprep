@@ -9,6 +9,7 @@ import Crown from 'lucide-react/dist/esm/icons/crown'
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw'
 import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
+import { LeaderboardSkeleton } from '../components/shared/Skeletons'
 
 const MEDAL_COLORS = {
   1: { bg: 'bg-amber-500/20 border-amber-500/40', text: 'text-amber-400', icon: <Crown size={16} className="text-amber-400"/> },
@@ -20,7 +21,25 @@ export default function LeaderboardPage() {
   const { testId } = useParams()
   const { data, isLoading: loading } = useSWR(`/tests/${testId}/leaderboard`, fetcher)
 
-  if (loading) return <Layout><div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500"/></div></Layout>
+  if (loading) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <Link to="/tests" className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300 text-sm">
+              <ArrowLeft size={15}/> Back to Tests
+            </Link>
+          </div>
+          <div className="text-center mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-4 animate-pulse" />
+            <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mx-auto mb-2" />
+            <div className="h-4 w-40 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mx-auto" />
+          </div>
+          <LeaderboardSkeleton />
+        </div>
+      </Layout>
+    )
+  }
   if (!data) return <Layout><p className="text-slate-500 dark:text-slate-400 text-center py-16">Leaderboard not found.</p></Layout>
 
   const top3 = data.leaderboard.slice(0, 3)

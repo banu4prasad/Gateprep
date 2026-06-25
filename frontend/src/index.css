@@ -225,8 +225,8 @@
   .animate-slide-up { animation: slideUp 0.3s ease forwards; }
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0.01; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0.01; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes timerPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
 .timer-critical { animation: timerPulse 1s ease-in-out infinite; }

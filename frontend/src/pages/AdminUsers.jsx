@@ -11,6 +11,7 @@ import UserCheck from 'lucide-react/dist/esm/icons/user-check'
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw'
 import X from 'lucide-react/dist/esm/icons/x'
 import Spinner from '../components/shared/Spinner'
+import { SkeletonBlock } from '../components/shared/Skeletons'
 
 const ROLES = ['admin', 'aspirant', 'user']
 const roleStyle = { admin: 'badge-blue', aspirant: 'badge-green', user: 'badge-amber' }
@@ -173,7 +174,19 @@ export default function AdminUsers() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500" /></div>
+          <div className="gate-card p-4 space-y-4">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 last:border-0 last:pb-0">
+                <SkeletonBlock className="w-8 h-8 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <SkeletonBlock className="h-4 w-48" />
+                  <SkeletonBlock className="h-3 w-32" />
+                </div>
+                <SkeletonBlock className="h-6 w-20 rounded-lg hidden sm:block" />
+                <SkeletonBlock className="h-6 w-24 rounded-lg hidden sm:block" />
+              </div>
+            ))}
+          </div>
         ) : (
           <>
             <div className="gate-card overflow-hidden hidden md:block">

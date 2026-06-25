@@ -10,36 +10,7 @@ import Target from 'lucide-react/dist/esm/icons/target'
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
 import clsx from 'clsx'
-
-function SkeletonBlock({ className = '' }) {
-  return (
-    <span
-      className={clsx('block animate-pulse rounded bg-slate-200/80 dark:bg-slate-800', className)}
-      aria-hidden="true"
-    />
-  )
-}
-
-function TestCardSkeleton() {
-  return (
-    <div className="gate-card p-5 flex flex-col gap-3" aria-hidden="true">
-      <div className="flex items-start justify-between gap-2">
-        <SkeletonBlock className="h-5 w-2/3" />
-        <SkeletonBlock className="h-5 w-12 rounded" />
-      </div>
-      <SkeletonBlock className="h-4 w-full" />
-      <SkeletonBlock className="h-4 w-4/5" />
-      <div className="flex items-center gap-4">
-        <SkeletonBlock className="h-3 w-14" />
-        <SkeletonBlock className="h-3 w-20" />
-        <SkeletonBlock className="h-3 w-16" />
-      </div>
-      <div className="pt-1 border-t border-slate-200 dark:border-slate-800">
-        <SkeletonBlock className="h-9 w-full rounded-xl" />
-      </div>
-    </div>
-  )
-}
+import { SkeletonBlock, TestCardSkeleton } from '../components/shared/Skeletons'
 
 export default function Dashboard() {
   const { user } = useAuth()

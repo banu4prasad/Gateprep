@@ -22,6 +22,7 @@ import MathText from '../components/shared/MathText'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { downloadResultReport } from '../utils/reportGenerator'
+import { ResultSkeleton } from '../components/shared/Skeletons'
 
 function ScoreRing({ pct }) {
   const r = 48, c = 2 * Math.PI * r
@@ -178,7 +179,20 @@ export default function ResultPage() {
     )
   }, [result?.answers, filter])
 
-  if (loading) return <Layout><div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500" /></div></Layout>
+  if (loading) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto space-y-5 animate-fade-in">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <Link to="/dashboard" className="flex items-center gap-1.5 text-sm hover:opacity-80 theme-muted">
+              <ArrowLeft size={14} /> Dashboard
+            </Link>
+          </div>
+          <ResultSkeleton />
+        </div>
+      </Layout>
+    )
+  }
   if (!result) return <Layout><p className="text-center py-16 theme-muted">Result not found.</p></Layout>
 
   const pct = Math.round(result.percentage)

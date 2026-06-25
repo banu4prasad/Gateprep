@@ -6,6 +6,7 @@ import { fetcher } from '../api/api'
 import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list'
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
 import Spinner from '../components/shared/Spinner'
+import { ResultCardSkeleton } from '../components/shared/Skeletons'
 
 export default function MyResults() {
   const { data: historyData, isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
@@ -19,11 +20,24 @@ export default function MyResults() {
     return Object.fromEntries(testsData.map(t => [t.id, t]))
   }, [testsData])
 
-  if (loading) return (
-    <Layout>
-      <div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500" /></div>
-    </Layout>
-  )
+  if (loading) {
+    return (
+      <Layout>
+        <div className="space-y-6 animate-fade-in max-w-2xl">
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>My Results</h1>
+            <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mt-2" />
+          </div>
+          <div className="space-y-2">
+            <ResultCardSkeleton />
+            <ResultCardSkeleton />
+            <ResultCardSkeleton />
+            <ResultCardSkeleton />
+          </div>
+        </div>
+      </Layout>
+    )
+  }
 
   return (
     <Layout>

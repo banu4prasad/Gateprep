@@ -15,6 +15,7 @@ import Upload from 'lucide-react/dist/esm/icons/upload'
 import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down'
 import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up'
 import Spinner from '../components/shared/Spinner'
+import { TestCardSkeleton } from '../components/shared/Skeletons'
 
 function CreateTestModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
@@ -234,7 +235,14 @@ export default function AdminTests() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500" /></div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <TestCardSkeleton />
+            <TestCardSkeleton />
+            <TestCardSkeleton />
+            <TestCardSkeleton />
+            <TestCardSkeleton />
+            <TestCardSkeleton />
+          </div>
         ) : filtered.length === 0 ? (
           <div className="gate-card p-12 text-center">
             <p style={{ color: 'var(--text-muted)' }}>No tests yet. Create your first test.</p>

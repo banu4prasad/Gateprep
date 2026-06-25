@@ -12,6 +12,16 @@ export default defineConfig({
     }),
   ],
   server: { port: 5173 },
+  preview: {
+    port: 4173,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{js,ts,jsx,tsx}'],
@@ -22,6 +32,8 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           ui: ['react-hot-toast', 'clsx'],
+          math: ['katex', 'react-katex'],
+          icons: ['lucide-react'],
         },
       },
     },

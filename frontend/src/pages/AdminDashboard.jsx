@@ -8,13 +8,13 @@ import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
 import Clock from 'lucide-react/dist/esm/icons/clock'
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
 import Spinner from '../components/shared/Spinner'
+import { StatCardSkeleton } from '../components/shared/Skeletons'
 
 export default function AdminDashboard() {
   const { data: usersData, isLoading: usersLoading } = useSWR('/admin/users?limit=1', fetcher)
   const { data: pendingUsersData, isLoading: pendingUsersLoading } = useSWR('/admin/users?role=user&limit=3', fetcher)
   const { data: testsData, isLoading: testsLoading } = useSWR('/admin/tests', fetcher)
   
-  const loading = usersLoading || pendingUsersLoading || testsLoading
   const pendingUsers = pendingUsersData?.items || []
   const tests = testsData || []
 
@@ -30,10 +30,6 @@ export default function AdminDashboard() {
     { label: 'Total Tests',      value: tests.length,   icon: FlaskConical, color: 'text-purple-400', bg: 'rgba(168,85,247,0.1)'  },
   ]
 
-  if (loading) return (
-    <Layout><div className="flex justify-center py-20"><Spinner size={32} className="text-sky-500" /></div></Layout>
-  )
-
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
@@ -43,63 +39,84 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map(({ label, value, icon: Icon, color, bg }) => (
-            <div key={label} className="gate-card p-5 flex flex-col gap-2">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: bg }}>
-                <Icon size={18} className={color} />
+          {usersLoading || testsLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            stats.map(({ label, value, icon: Icon, color, bg }) => (
+              <div key={label} className="gate-card p-5 flex flex-col gap-2">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: bg }}>
+                  <Icon size={18} className={color} />
+                </div>
+                <p className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{value}</p>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</p>
               </div>
-              <p className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{value}</p>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</p>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
           <div className="gate-card p-5">
-            <h3 className="font-semibold mb-1" style={{ color: 'var(--text)' }}>Pending Approvals</h3>
-            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-              {pending} user{pending !== 1 ? 's' : ''} waiting
-            </p>
-            {pending > 0 ? (
-              <div className="space-y-2 mb-4">
-                {pendingUsers.map(u => (
-                  <div key={u.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{u.full_name}</p>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
-                    </div>
-                    <span className="badge badge-amber">Pending</span>
-                  </div>
-                ))}
-              </div>
+            <h2 className="font-semibold mb-1 text-lg" style={{ color: 'var(--text)' }}>Pending Approvals</h2>
+            {usersLoading || pendingUsersLoading ? (
+              <div className="py-8 flex justify-center"><Spinner /></div>
             ) : (
-              <p className="text-green-400 text-sm mb-4">✓ All users approved</p>
+              <>
+                <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+                  {pending} user{pending !== 1 ? 's' : ''} waiting
+                </p>
+                {pending > 0 ? (
+                  <div className="space-y-2 mb-4">
+                    {pendingUsers.map(u => (
+                      <div key={u.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                        <div>
+                          <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{u.full_name}</p>
+                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
+                        </div>
+                        <span className="badge badge-amber">Pending</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-green-400 text-sm mb-4">✓ All users approved</p>
+                )}
+                <Link to="/admin/users" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
+                  Manage Users <ArrowRight size={14} />
+                </Link>
+              </>
             )}
-            <Link to="/admin/users" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
-              Manage Users <ArrowRight size={14} />
-            </Link>
           </div>
 
           <div className="gate-card p-5">
-            <h3 className="font-semibold mb-1" style={{ color: 'var(--text)' }}>Recent Tests</h3>
-            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-              {tests.length} test{tests.length !== 1 ? 's' : ''} · {totalQ} questions total
-            </p>
-            {tests.length > 0 ? (
-              <div className="space-y-2 mb-4">
-                {tests.slice(0, 3).map(t => (
-                  <div key={t.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
-                    <p className="text-sm font-medium truncate max-w-[60%]" style={{ color: 'var(--text)' }}>{t.title}</p>
-                    <span className="badge badge-blue">{t.question_count} Qs</span>
-                  </div>
-                ))}
-              </div>
+            <h2 className="font-semibold mb-1 text-lg" style={{ color: 'var(--text)' }}>Recent Tests</h2>
+            {testsLoading ? (
+              <div className="py-8 flex justify-center"><Spinner /></div>
             ) : (
-              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No tests yet.</p>
+              <>
+                <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+                  {tests.length} test{tests.length !== 1 ? 's' : ''} · {totalQ} questions total
+                </p>
+                {tests.length > 0 ? (
+                  <div className="space-y-2 mb-4">
+                    {tests.slice(0, 3).map(t => (
+                      <div key={t.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                        <p className="text-sm font-medium truncate max-w-[60%]" style={{ color: 'var(--text)' }}>{t.title}</p>
+                        <span className="badge badge-blue">{t.question_count} Qs</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No tests yet.</p>
+                )}
+                <Link to="/admin/tests" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
+                  Manage Tests <ArrowRight size={14} />
+                </Link>
+              </>
             )}
-            <Link to="/admin/tests" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
-              Manage Tests <ArrowRight size={14} />
-            </Link>
           </div>
         </div>
       </div>
