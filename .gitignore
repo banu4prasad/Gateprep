@@ -50,3 +50,6 @@ frontend/debug.png
 
 # Build artifacts
 frontend/stats.html
+
+#graphifyy
+graphify-out/
