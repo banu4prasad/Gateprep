@@ -678,7 +678,7 @@ async def upload_questions_file(
     if not file.filename or not file.filename.lower().endswith(".json"):
         raise HTTPException(status_code=400, detail="Only .json files accepted")
 
-    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
     contents_arr = bytearray()
     while chunk := await file.read(1024 * 1024):
         contents_arr.extend(chunk)
