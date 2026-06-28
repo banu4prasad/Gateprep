@@ -684,7 +684,7 @@ async def upload_questions_file(
         contents_arr.extend(chunk)
         if len(contents_arr) > MAX_FILE_SIZE:
             raise HTTPException(
-                status_code=413, detail="File too large. Maximum allowed size is 5MB."
+                status_code=413, detail="File too large. Maximum allowed size is 50 MB."
             )
     contents_bytes = bytes(contents_arr)
     
