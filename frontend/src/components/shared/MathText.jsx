@@ -180,7 +180,7 @@ function splitLegacyMath(text) {
   return parts
 }
 
-function SafeInlineMath({ math }) {
+const SafeInlineMath = memo(function SafeInlineMath({ math }) {
   const ariaLabel = mathAriaLabel(math)
 
   try {
@@ -195,9 +195,9 @@ function SafeInlineMath({ math }) {
   } catch {
     return <span role="math" aria-label={ariaLabel}>{math}</span>
   }
-}
+})
 
-function SafeBlockMath({ math }) {
+const SafeBlockMath = memo(function SafeBlockMath({ math }) {
   const ariaLabel = mathAriaLabel(math)
 
   try {
@@ -212,7 +212,7 @@ function SafeBlockMath({ math }) {
   } catch {
     return <div role="math" aria-label={ariaLabel}>{math}</div>
   }
-}
+})
 
 function renderMathSegment(text, keyPrefix = '') {
   const hasExplicitMath = MATH_PATTERN.test(text)

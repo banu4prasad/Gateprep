@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
@@ -74,8 +74,6 @@ def get_bookmarks(
     """Get all bookmarked questions for current user."""
     bookmarks = (
         db.query(Bookmark)
-        # Eagerly load question and test relationships to prevent N+1 queries during the loop below
-        .options(joinedload(Bookmark.question).joinedload(Question.test))
         .filter(Bookmark.user_id == current_user.id)
         .order_by(Bookmark.created_at.desc())
         .all()
