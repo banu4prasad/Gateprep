@@ -29,11 +29,21 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          ui: ['react-hot-toast', 'clsx'],
-          math: ['katex', 'react-katex'],
-          icons: ['lucide-react'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor';
+            }
+            if (id.includes('react-hot-toast') || id.includes('clsx')) {
+              return 'ui';
+            }
+            if (id.includes('katex') || id.includes('react-katex')) {
+              return 'math';
+            }
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+          }
         },
       },
     },
