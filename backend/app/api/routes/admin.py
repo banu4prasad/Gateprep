@@ -678,21 +678,21 @@ async def upload_questions_file(
     if not file.filename or not file.filename.lower().endswith(".json"):
         raise HTTPException(status_code=400, detail="Only .json files accepted")
 
-    MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
-    contents = bytearray()
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+    contents_arr = bytearray()
     while chunk := await file.read(1024 * 1024):
-        contents.extend(chunk)
-        if len(contents) > MAX_FILE_SIZE:
+        contents_arr.extend(chunk)
+        if len(contents_arr) > MAX_FILE_SIZE:
             raise HTTPException(
-                status_code=413, detail="File too large. Maximum allowed size is 5MB."
+                status_code=413, detail="File too large. Maximum allowed size is 50 MB."
             )
-    contents = bytes(contents)
+    contents_bytes = bytes(contents_arr)
     
-    if not contents:
+    if not contents_bytes:
         raise HTTPException(status_code=400, detail="Uploaded JSON file is empty")
 
     try:
-        decoded = contents.decode("utf-8")
+        decoded = contents_bytes.decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="JSON file must be UTF-8 encoded")
 
@@ -789,9 +789,24 @@ async def upload_question_image(
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
 
-    contents = await image.read()
+    if not image.content_type or not image.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Only image files are accepted")
+
+    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
+    contents_arr = bytearray()
+    while chunk := await image.read(1024 * 1024):
+        contents_arr.extend(chunk)
+        if len(contents_arr) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413, detail="File too large. Maximum allowed size is 5MB."
+            )
+    contents_bytes = bytes(contents_arr)
+
+    if not contents_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded image file is empty")
+
     result = await run_in_threadpool(
-        upload_image, contents, folder="gate-prep/questions"
+        upload_image, contents_bytes, folder="gate-prep/questions"
     )
     if not result.get("url"):
         raise HTTPException(
