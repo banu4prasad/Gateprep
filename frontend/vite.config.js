@@ -1,11 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 import { visualizer } from 'rollup-plugin-visualizer'
 import browserslist from 'browserslist'
 import { browserslistToTargets } from 'lightningcss'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   plugins: [
     tailwindcss(),
     react(),

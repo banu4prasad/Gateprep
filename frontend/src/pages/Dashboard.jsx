@@ -11,6 +11,8 @@ import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
 import clsx from 'clsx'
 import { SkeletonBlock, TestCardSkeleton } from '../components/shared/Skeletons'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -28,7 +30,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="space-y-8 animate-fade-in">
+      <div className="flex flex-col gap-8 animate-fade-in">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
             Hello, {user?.full_name?.split(' ')[0]}
@@ -42,17 +44,19 @@ export default function Dashboard() {
             { label: 'Tests Available', value: tests.length, isLoading: testsLoading, icon: BookOpen, color: 'text-sky-400', bg: 'bg-sky-500/10' },
             { label: 'Completed', value: completedCount, isLoading: historyLoading, icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10' },
           ].map(({ label, value, isLoading, icon: Icon, color, bg }) => (
-            <div key={label} className="gate-card p-5 flex flex-col gap-2">
-              <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}>
-                <Icon size={18} className={color} />
-              </div>
-              {isLoading ? (
-                <SkeletonBlock className="mt-1 h-8 w-14" />
-              ) : (
-                <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">{value}</p>
-              )}
-              <p className="text-slate-500 dark:text-slate-400 text-sm">{label}</p>
-            </div>
+            <Card key={label} className="flex flex-col border-border">
+              <CardContent className="p-5 flex flex-col gap-2">
+                <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}>
+                  <Icon size={18} className={color} />
+                </div>
+                {isLoading ? (
+                  <SkeletonBlock className="mt-1 h-8 w-14" />
+                ) : (
+                  <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
+                )}
+                <p className="text-muted-foreground text-sm">{label}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
@@ -60,54 +64,64 @@ export default function Dashboard() {
         <div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Available Tests</h2>
           {isInitialDataLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Loading available tests">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Loading available tests">
               <TestCardSkeleton />
               <TestCardSkeleton />
               <TestCardSkeleton />
             </div>
           ) : tests.length === 0 ? (
-            <div className="gate-card p-10 text-center">
-              <BookOpen size={36} className="text-slate-700 mx-auto mb-3"/>
-              <p className="text-slate-500 dark:text-slate-400">No tests available yet. Check back later.</p>
-            </div>
+            <Card className="border-border">
+              <CardContent className="p-10 text-center flex flex-col items-center">
+                <BookOpen size={36} className="text-muted-foreground mb-3"/>
+                <p className="text-muted-foreground">No tests available yet. Check back later.</p>
+              </CardContent>
+            </Card>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {tests.map(t => {
                 const attempt = attemptMap[t.id]
                 const done = attempt?.status === 'submitted'
                 const pct = done && attempt?.total_marks ? Math.round(attempt.score / attempt.total_marks * 100) : null
                 return (
-                  <div key={t.id} className="gate-card p-5 flex flex-col gap-3 hover:border-brand-500/30 transition-colors">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-slate-900 dark:text-white leading-snug">{t.title}</h3>
-                      {done && <span className="badge badge-green flex-shrink-0">Done</span>}
-                    </div>
-                    {t.description && <p className="text-slate-500 dark:text-slate-400 text-sm line-clamp-2">{t.description}</p>}
-                    <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="flex items-center gap-1.5"><Clock size={12}/>{t.duration_minutes} min</span>
-                      <span className="flex items-center gap-1.5"><BookOpen size={12}/>{t.question_count} questions</span>
-                      <span className="flex items-center gap-1.5"><Target size={12}/>{t.total_marks} marks</span>
-                    </div>
-                    {pct !== null && (
-                      <div className={clsx('px-3 py-2 rounded-lg border text-xs',
-                        pct >= 75 ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400' :
-                        pct >= 50 ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'
-                      )}>
-                        Score: {attempt.score?.toFixed(1)} / {attempt.total_marks} ({pct}%)
+                  <Card key={t.id} className="flex flex-col hover:border-primary/50 transition-colors border-border">
+                    <CardHeader className="p-5 pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-base leading-snug">{t.title}</CardTitle>
+                        {done && <span className="badge badge-green flex-shrink-0">Done</span>}
                       </div>
-                    )}
-                    <div className="flex gap-2 pt-1 border-t border-slate-200 dark:border-slate-800">
-                      {done ? (
-                        <Link to={`/results/${attempt.id}`} className="flex-1 flex items-center justify-center gap-1.5 text-sm py-2 rounded-xl font-medium border border-sky-500/30 text-sky-600 dark:text-sky-400 bg-sky-500/5 hover:bg-sky-500/10 transition-colors">
-                          View Result <ArrowRight size={13}/>
-                        </Link>
-                      ) : (
-                        <Link to={`/tests/${t.id}`} className="flex-1 flex items-center justify-center gap-1.5 text-sm py-2 rounded-xl font-medium btn-primary">
-                          Start Test <ArrowRight size={13}/>
-                        </Link>
+                      {t.description && <CardDescription className="line-clamp-2">{t.description}</CardDescription>}
+                    </CardHeader>
+                    <CardContent className="p-5 pt-0 flex-1 flex flex-col gap-3">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1.5"><Clock size={12}/>{t.duration_minutes} min</span>
+                        <span className="flex items-center gap-1.5"><BookOpen size={12}/>{t.question_count} questions</span>
+                        <span className="flex items-center gap-1.5"><Target size={12}/>{t.total_marks} marks</span>
+                      </div>
+                      {pct !== null && (
+                        <div className={clsx('px-3 py-2 rounded-lg border text-xs',
+                          pct >= 75 ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400' :
+                          pct >= 50 ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'
+                        )}>
+                          Score: {attempt.score?.toFixed(1)} / {attempt.total_marks} ({pct}%)
+                        </div>
                       )}
-                    </div>
-                  </div>
+                    </CardContent>
+                    <CardFooter className="p-5 pt-0">
+                      {done ? (
+                        <Button asChild variant="outline" className="w-full border-sky-500/30 text-sky-600 hover:bg-sky-500/10">
+                          <Link to={`/results/${attempt.id}`}>
+                            View Result <ArrowRight size={16} className="ml-2"/>
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button asChild className="w-full">
+                          <Link to={`/tests/${t.id}`}>
+                            Start Test <ArrowRight size={16} className="ml-2"/>
+                          </Link>
+                        </Button>
+                      )}
+                    </CardFooter>
+                  </Card>
                 )
               })}
             </div>

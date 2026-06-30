@@ -39,23 +39,22 @@ export default function Navbar() {
   return (
     <>
       {/* ── Desktop/Tablet Top Bar ────────────────────────────────── */}
-      <nav aria-label="Main Navigation" className="app-header fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-4 border-b"
-           style={{ background: 'var(--header-bg)', borderColor: 'var(--border)', backdropFilter: 'blur(8px)' }}>
+      <nav aria-label="Main Navigation" className="app-header fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-4 border-b bg-background/80 border-border backdrop-blur-md">
         <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 mr-2 sm:mr-4 flex-shrink-0">
-          <div className="w-7 h-7 rounded bg-sky-600 flex items-center justify-center">
-            <span className="font-bold text-slate-900 dark:text-white text-sm">G</span>
+          <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center text-primary-foreground">
+            <span className="font-bold text-sm">G</span>
           </div>
-          <span className="font-bold text-slate-900 dark:text-white text-sm">GATEPrep</span>
+          <span className="font-bold text-foreground text-sm">GATEPrep</span>
         </Link>
 
         {/* Desktop nav links — hidden on mobile (shown in bottom nav instead) */}
         <div className="hidden sm:flex items-center gap-0.5 flex-1 overflow-x-auto">
           {!loading && links.map(({ to, label, icon: Icon }) => (
             <Link key={to} to={to} aria-current={isActive(to) ? 'page' : undefined} className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium whitespace-nowrap transition-colors',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
               isActive(to)
-                ? 'bg-sky-600/20 text-sky-600 dark:text-sky-400'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/50'
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}>
               <Icon size={16} /> <span>{label}</span>
             </Link>
@@ -86,27 +85,27 @@ export default function Navbar() {
           <button onClick={logout}
             title="Log out"
             aria-label="Log out"
-            className="p-2 sm:p-1.5 rounded text-slate-500 dark:text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+            className="p-2 sm:p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
             <LogOut size={14} />
           </button>
         </div>
       </nav>
 
       {/* ── Mobile Bottom Navigation ──────────────────────────────── */}
-      <nav aria-label="Mobile Navigation" className="mobile-bottom-nav sm:hidden flex items-center justify-around px-1">
+      <nav aria-label="Mobile Navigation" className="mobile-bottom-nav sm:hidden flex items-center justify-around px-2 bg-background/80 border-border backdrop-blur-md">
         {!loading && links.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
             to={to}
             aria-current={isActive(to) ? 'page' : undefined}
             className={clsx(
-              'flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 min-w-[52px] rounded-lg transition-colors',
+              'flex flex-col items-center justify-center gap-1 py-2 px-3 min-w-[64px] rounded-2xl transition-all duration-200',
               isActive(to)
-                ? 'text-sky-500'
-                : 'text-slate-500 dark:text-slate-400'
+                ? 'bg-primary/15 text-primary scale-105'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             )}
           >
-            <Icon size={20} strokeWidth={isActive(to) ? 2.5 : 1.8} />
+            <Icon size={22} strokeWidth={isActive(to) ? 2.5 : 1.8} />
             <span className="text-[10px] font-medium leading-none">{label}</span>
           </Link>
         ))}

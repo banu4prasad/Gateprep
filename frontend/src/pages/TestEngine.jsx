@@ -7,6 +7,9 @@ import TestHeader from '../components/test/TestHeader'
 import TestSidebar from '../components/test/TestSidebar'
 import TimerDisplay from '../components/test/TimerDisplay'
 import useTestEngine from '../hooks/useTestEngine'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 function LoadingScreen() {
   return (
@@ -25,32 +28,32 @@ function InstructionScreen({
   test,
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 theme-surface">
-      <div className="gate-card w-full max-w-2xl p-6 animate-fade-in">
-        <div className="flex items-start justify-between gap-4 mb-6">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <Card className="w-full max-w-2xl animate-fade-in border-border">
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold mb-1 theme-text">General Instructions</h1>
-            <p className="text-sm theme-muted">{test?.title}</p>
+            <CardTitle className="text-2xl font-bold mb-1">General Instructions</CardTitle>
+            <p className="text-sm text-muted-foreground">{test?.title}</p>
           </div>
-          <button onClick={() => navigate('/tests')} className="btn-ghost text-sm px-3 py-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/tests')}>
             Back
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           {[
             ['Duration', `${test?.duration_minutes || 0} min`],
             ['Questions', test?.question_count || 0],
             ['Marks', test?.total_marks || 0],
           ].map(([label, value]) => (
-            <div key={label} className="theme-panel-card rounded border p-3 text-center">
-              <p className="text-xs mb-1 theme-muted">{label}</p>
-              <p className="font-semibold theme-text">{value}</p>
+            <div key={label} className="bg-muted rounded border p-3 text-center">
+              <p className="text-xs mb-1 text-muted-foreground">{label}</p>
+              <p className="font-semibold text-foreground">{value}</p>
             </div>
           ))}
         </div>
 
-        <div className="space-y-3 text-sm mb-6 theme-muted">
+        <div className="space-y-3 text-sm mb-6 text-muted-foreground">
           <p>The test opens in fullscreen mode after you click Begin Test.</p>
           <p>Leaving fullscreen or switching tabs may be counted as a violation.</p>
           <p>The timer starts only after the attempt is created.</p>
@@ -63,37 +66,40 @@ function InstructionScreen({
             onChange={event => setAccepted(event.target.checked)}
             className="mt-1"
           />
-          <span className="text-sm theme-text">
+          <span className="text-sm text-foreground">
             I have read and understood the instructions.
           </span>
         </label>
 
-        <button
+        <Button
           onClick={beginTest}
           disabled={!accepted || starting}
-          className="btn-primary w-full flex items-center justify-center gap-2"
+          className="w-full h-11 text-base font-medium"
         >
-          {starting ? <Spinner size={18} /> : <Maximize size={18} />}
+          {starting ? <Spinner size={18} className="mr-2" /> : <Maximize size={18} className="mr-2" />}
           {starting ? 'Starting Test...' : 'Begin Test'}
-        </button>
-      </div>
+        </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }
 
 function EmptyQuestionsScreen({ navigate }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 theme-surface">
-      <div className="gate-card w-full max-w-md p-6 text-center">
-        <AlertTriangle size={36} className="text-amber-400 mx-auto mb-3" />
-        <h1 className="text-xl font-bold mb-2 theme-text">No Questions Available</h1>
-        <p className="text-sm mb-5 theme-muted">
-          This test does not have any questions to display.
-        </p>
-        <button onClick={() => navigate('/tests')} className="btn-primary w-full">
-          Back to Tests
-        </button>
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <Card className="w-full max-w-md text-center border-border">
+        <CardContent className="p-6 pt-8">
+          <AlertTriangle size={36} className="text-amber-400 mx-auto mb-3" />
+          <h1 className="text-xl font-bold mb-2 text-foreground">No Questions Available</h1>
+          <p className="text-sm mb-5 text-muted-foreground">
+            This test does not have any questions to display.
+          </p>
+          <Button onClick={() => navigate('/tests')} className="w-full">
+            Back to Tests
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -147,20 +153,7 @@ function FullscreenWarning({
   )
 }
 
-function MobilePaletteDrawer({ onClose, sidebar }) {
-  return (
-    <div className="md:hidden fixed inset-0 z-40 flex">
-      <div className="flex-1 theme-dim-backdrop" onClick={onClose} />
-      <div className="w-64 flex flex-col overflow-y-auto animate-slide-in-right theme-sidebar-surface">
-        <div className="flex items-center justify-between p-3 border-b theme-border">
-          <span className="text-sm font-semibold theme-text">Question Palette</span>
-          <button onClick={onClose} className="p-1 rounded theme-muted">✕</button>
-        </div>
-        {sidebar}
-      </div>
-    </div>
-  )
-}
+
 
 function ConfirmSubmitModal({
   answered,
@@ -350,16 +343,22 @@ export default function TestEngine() {
           {sidebar}
         </div>
 
-        <button
-          onClick={() => setShowPalette(true)}
-          className="md:hidden fixed bottom-16 right-4 z-30 flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-lg text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 transition-colors"
-        >
-          Q{current + 1}/{questions.length}
-        </button>
-
-        {showPalette && (
-          <MobilePaletteDrawer onClose={() => setShowPalette(false)} sidebar={sidebar} />
-        )}
+        <Sheet open={showPalette} onOpenChange={setShowPalette}>
+          <SheetTrigger asChild>
+            <Button
+              className="md:hidden fixed bottom-16 right-4 z-30 flex items-center gap-1.5 rounded-full shadow-lg"
+              size="sm"
+            >
+              Q{current + 1}/{questions.length}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-[85vw] sm:w-80 p-0 overflow-y-auto">
+            <SheetHeader className="p-3 border-b text-left px-4">
+              <SheetTitle className="text-sm">Question Palette</SheetTitle>
+            </SheetHeader>
+            {sidebar}
+          </SheetContent>
+        </Sheet>
       </div>
 
       {showCalc && <Calculator onClose={() => setShowCalc(false)} />}

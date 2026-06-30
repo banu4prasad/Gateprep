@@ -14,6 +14,8 @@ import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
 import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
 import { TestCardSkeleton } from '../components/shared/Skeletons'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 // ── Test Card ─────────────────────────────────────────────────────
 function TestCard({ test, attempt }) {
@@ -22,42 +24,45 @@ function TestCard({ test, attempt }) {
     ? Math.round(attempt.score / attempt.total_marks * 100) : null
 
   return (
-    <div className="gate-card p-4 flex flex-col gap-3 hover:border-sky-500/30 transition-colors"
-         style={{ borderColor: 'var(--border)' }}>
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-medium text-sm leading-snug" style={{ color: 'var(--text)' }}>{test.title}</h3>
-        {done && <CheckCircle size={15} className="text-green-400 flex-shrink-0 mt-0.5" />}
-      </div>
-
-      <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-        <span className="flex items-center gap-1"><Clock size={11} />{test.duration_minutes}m</span>
-        <span className="flex items-center gap-1"><BookOpen size={11} />{test.question_count} Qs</span>
-        <span className="flex items-center gap-1"><Target size={11} />{test.total_marks}M</span>
-      </div>
-
-      {pct !== null && (
-        <div className={clsx('text-xs px-2.5 py-1.5 rounded',
-          pct >= 75 ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
-          pct >= 50 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'
-        )}>
-          Score: {attempt.score?.toFixed(1)}/{attempt.total_marks} ({pct}%)
+    <Card className="flex flex-col hover:border-primary/50 transition-colors border-border">
+      <CardHeader className="p-4 pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="font-medium text-sm leading-snug">{test.title}</CardTitle>
+          {done && <CheckCircle size={15} className="text-green-400 flex-shrink-0 mt-0.5" />}
         </div>
-      )}
+      </CardHeader>
+      <CardContent className="p-4 pt-0 flex-1 flex flex-col gap-3">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><Clock size={11} />{test.duration_minutes}m</span>
+          <span className="flex items-center gap-1"><BookOpen size={11} />{test.question_count} Qs</span>
+          <span className="flex items-center gap-1"><Target size={11} />{test.total_marks}M</span>
+        </div>
 
-      <div className="pt-1 border-t" style={{ borderColor: 'var(--border)' }}>
-        {done ? (
-          <Link to={`/results/${attempt.id}`}
-            className="flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium w-full border border-sky-500/30 text-sky-600 dark:text-sky-400 bg-sky-500/5 hover:bg-sky-500/10 transition-colors">
-            View Result <ArrowRight size={12} />
-          </Link>
-        ) : (
-          <Link to={`/tests/${test.id}`}
-            className="flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-medium w-full btn-primary">
-            Start Test <ArrowRight size={12} />
-          </Link>
+        {pct !== null && (
+          <div className={clsx('text-xs px-2.5 py-1.5 rounded',
+            pct >= 75 ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
+            pct >= 50 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'
+          )}>
+            Score: {attempt.score?.toFixed(1)}/{attempt.total_marks} ({pct}%)
+          </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+      <CardFooter className="p-4 pt-0">
+        {done ? (
+          <Button asChild variant="outline" className="w-full border-sky-500/30 text-sky-600 hover:bg-sky-500/10 h-8 text-xs">
+            <Link to={`/results/${attempt.id}`}>
+              View Result <ArrowRight size={12} className="ml-1.5" />
+            </Link>
+          </Button>
+        ) : (
+          <Button asChild className="w-full h-8 text-xs">
+            <Link to={`/tests/${test.id}`}>
+              Start Test <ArrowRight size={12} className="ml-1.5" />
+            </Link>
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
   )
 }
 
@@ -82,17 +87,17 @@ function Breadcrumb({ steps, onBack }) {
 // ── Nav Card ──────────────────────────────────────────────────────
 function NavCard({ label, count, onClick, icon }) {
   return (
-    <button onClick={onClick}
-      className="gate-card p-5 text-left flex items-center justify-between gap-4 hover:border-sky-500/40 transition-all group w-full"
-      style={{ borderColor: 'var(--border)' }}>
-      <div>
-        <p className="font-semibold" style={{ color: 'var(--text)' }}>{label}</p>
-        {count !== undefined && (
-          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{count} test{count !== 1 ? 's' : ''}</p>
-        )}
-      </div>
-      <ChevronRight size={18} className="text-sky-400 group-hover:translate-x-1 transition-transform flex-shrink-0" />
-    </button>
+    <Card className="hover:border-primary/50 transition-all group w-full cursor-pointer border-border" onClick={onClick}>
+      <CardContent className="p-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="font-semibold text-foreground">{label}</p>
+          {count !== undefined && (
+            <p className="text-xs mt-1 text-muted-foreground">{count} test{count !== 1 ? 's' : ''}</p>
+          )}
+        </div>
+        <ChevronRight size={18} className="text-primary group-hover:translate-x-1 transition-transform flex-shrink-0" />
+      </CardContent>
+    </Card>
   )
 }
 
@@ -279,10 +284,12 @@ export default function TestsPage() {
       <div className="max-w-3xl mx-auto animate-fade-in">
         <Breadcrumb steps={breadcrumbs} onBack={goBack} />
         {filteredTests.length === 0 ? (
-          <div className="gate-card p-12 text-center">
-            <BookOpen size={36} className="mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
-            <p style={{ color: 'var(--text-muted)' }}>No tests here yet. Check back later.</p>
-          </div>
+          <Card className="border-border">
+            <CardContent className="p-12 text-center flex flex-col items-center">
+              <BookOpen size={36} className="text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No tests here yet. Check back later.</p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
             {filteredTests.map(t => (

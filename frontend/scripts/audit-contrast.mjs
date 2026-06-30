@@ -7,7 +7,6 @@ const require = createRequire(import.meta.url)
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(scriptDir, '..')
 const appCssPath = path.join(rootDir, 'src/index.css')
-const paletteCssPath = require.resolve('tailwindcss-colors/colors.css')
 
 const AA_NORMAL_TEXT = 4.5
 
@@ -40,15 +39,16 @@ function extractVars(cssBlock) {
   )
 }
 
-function loadTailwindPalette(css) {
-  const entries = [...css.matchAll(/--([a-z]+-\d+):\s*(#[0-9a-f]{6})/gi)]
-    .map(([, name, value]) => [name, value.toLowerCase()])
-
-  return {
-    ...Object.fromEntries(entries),
-    black: '#000000',
-    white: '#ffffff',
-  }
+const palette = {
+  'sky-300': '#7dd3fc', 'sky-400': '#38bdf8', 'sky-500': '#0ea5e9', 'sky-600': '#0284c7', 'sky-700': '#0369a1', 'sky-800': '#075985',
+  'green-300': '#86efac', 'green-400': '#4ade80', 'green-700': '#15803d', 'green-800': '#166534',
+  'amber-300': '#fcd34d', 'amber-400': '#fbbf24', 'amber-500': '#f59e0b', 'amber-800': '#92400e',
+  'red-300': '#fca5a5', 'red-400': '#f87171', 'red-600': '#dc2626', 'red-700': '#b91c1c',
+  'purple-400': '#c084fc', 'purple-700': '#7e22ce',
+  'orange-400': '#fb923c', 'orange-500': '#f97316', 'orange-800': '#9a3412',
+  'slate-400': '#94a3b8', 'slate-500': '#64748b', 'slate-600': '#475569', 'slate-700': '#334155',
+  'gray-200': '#e5e7eb', 'gray-700': '#374151',
+  'white': '#ffffff', 'black': '#000000',
 }
 
 function hexToRgb(hex) {
@@ -86,7 +86,6 @@ function resolveColor(value, themeVars) {
   return value.toLowerCase()
 }
 
-const palette = loadTailwindPalette(read(paletteCssPath))
 const appCss = read(appCssPath)
 const darkVars = extractVars(extractBlock(appCss, ':root'))
 const lightVars = {
@@ -224,7 +223,7 @@ const lowest = [...checks]
   .slice(0, 8)
 
 console.log(`WCAG AA contrast audit passed: ${checks.length} text pairs are >= ${AA_NORMAL_TEXT}:1`)
-console.log(`Palette source: ${path.relative(rootDir, paletteCssPath)}`)
+console.log(`Palette source: hardcoded`)
 console.log('Lowest passing pairs:')
 for (const check of lowest) {
   console.log(`- [${check.themeName}] ${check.label}: ${check.ratio.toFixed(2)}:1`)
