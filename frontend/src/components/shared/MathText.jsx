@@ -1,6 +1,4 @@
-import { Fragment, memo } from 'react'
-import { InlineMath, BlockMath } from 'react-katex'
-import 'katex/dist/katex.min.css'
+import { Fragment, memo, useRef, useEffect } from 'react'
 
 // ── Table detection ──────────────────────────────────────────────
 // Require 3+ pipes (2+ columns) so |x| (absolute value) never matches
@@ -65,15 +63,15 @@ function parseTable(text) {
   const dataRows = allRows.filter(l => !SEPARATOR_ROW.test(l))
 
   return (
-    <table className="w-full border-collapse text-sm my-2">
+    <table className="math-table">
       <tbody>
         {dataRows.map((row, i) => {
           const cells = splitTableCells(row, expectedCols)
           const Tag = i === 0 ? 'th' : 'td'
           return (
-            <tr key={i} className={i % 2 === 0 ? 'bg-muted/30' : ''}>
+            <tr key={i} className={i % 2 === 0 ? 'math-table-row-alt' : ''}>
               {cells.map((cell, j) => (
-                <Tag key={j} className="border border-border px-3 py-1.5 text-left font-mono">
+                <Tag key={j} className="math-table-cell">
                   {cell}
                 </Tag>
               ))}
@@ -86,12 +84,26 @@ function parseTable(text) {
 }
 
 // ── Math patterns ────────────────────────────────────────────────
+const MATH_FUNCTIONS_STR = "sqrt|frac|sum|int|log|ln|sin|cos|tan|sec|csc|cot|arcsin|arccos|arctan|sinh|cosh|tanh|exp|lim|max|min|det";
+const GREEK_LETTERS_STR = "alpha|beta|gamma|theta|Theta|pi|infty|Omega";
+
 const MATH_PATTERN = /(\$\$[\s\S]+?\$\$|\$[^$]+\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/g
-const LEGACY_MATH_PATTERN = /(\\(?:sqrt|frac|sum|int|log|ln|sin|cos|tan|alpha|beta|gamma|theta|Theta|pi|infty|Omega)(?:\s*(?:\{[^{}]*\}|\([^()]*\)|[A-Za-z0-9]+))*|\\?(?:Theta|Omega)\s*\([^()]+\)|\bO\s*\([^()]+\)|\b[A-Za-z0-9]+\s*\^\s*(?:\{[^{}]+\}|\([^()]+\)|[A-Za-z0-9]+)(?:\s*[-+]\s*\d+)?|\b(?:[A-Za-z]\s+)?(?:log|ln)(?:\s*\^\s*(?:\{[^{}]+\}|\([^()]+\)|[A-Za-z0-9]+))?\s+[A-Za-z]\b)/g
-const RAW_LATEX_HINT = /\\(sqrt|frac|sum|int|log|ln|sin|cos|tan|alpha|beta|gamma|theta|Theta|pi|infty|Omega)|\\?(Theta|Omega)\s*\(|\bO\s*\(|[\^_]\{?[\w\d]+|\b(?:[A-Za-z]\s+)?(?:log|ln)(?:\s*\^\s*[\w\d]+)?\s+[A-Za-z]\b/
+const LEGACY_MATH_PATTERN = new RegExp(
+  `(\\\\(?:${MATH_FUNCTIONS_STR}|${GREEK_LETTERS_STR})(?:[\\^_]\\s*(?:\\{[^{}]*\\}|[A-Za-z0-9]+))*(?:\\s*(?:\\{[^{}]*\\}|\\([^()]*\\)|[A-Za-z0-9]+))*|` +
+  `\\\\?(?:Theta|Omega)\\s*\\([^()]+\\)|` +
+  `\\bO\\s*\\([^()]+\\)|` +
+  `\\b(?:${MATH_FUNCTIONS_STR})\\s*(?:[\\^_]\\s*(?:\\{[^{}]*\\}|[A-Za-z0-9]+))*\\s*\\([^()]+\\)|` +
+  `\\b[A-Za-z0-9]+\\s*\\^\\s*(?:\\{[^{}]+\\}|\\([^()]+\\)|[A-Za-z0-9]+)(?:\\s*[-+]\\s*\\d+)?|` +
+  `\\b(?:[A-Za-z]\\s+)?(?:log|ln)(?:\\s*\\^\\s*(?:\\{[^{}]+\\}|\\([^()]+\\)|[A-Za-z0-9]+))?\\s+[A-Za-z]\\b)`,
+  "g"
+);
+const RAW_LATEX_HINT = new RegExp(
+  `\\\\(${MATH_FUNCTIONS_STR}|${GREEK_LETTERS_STR})|\\\\?(Theta|Omega)\\s*\\(|\\bO\\s*\\(|[\\^_]\\{?[\\w\\d]+|\\b(?:[A-Za-z]\\s+)?(?:log|ln)(?:\\s*\\^\\s*[\\w\\d]+)?\\s+[A-Za-z]\\b`
+);
+
 const MATH_WORDS = new Set([
   'O', 'o', 'n', 'h', 'm', 'k', 'x', 'y', 'z',
-  'log', 'ln', 'sin', 'cos', 'tan',
+  'log', 'ln', 'sin', 'cos', 'tan', 'sec', 'csc', 'cot', 'arcsin', 'arccos', 'arctan', 'sinh', 'cosh', 'tanh', 'exp', 'lim', 'max', 'min', 'det',
   'sqrt', 'frac', 'sum', 'int',
   'Theta', 'theta', 'Omega',
   'alpha', 'beta', 'gamma', 'pi', 'infty',
@@ -109,7 +121,7 @@ function normalizeMath(math) {
     .replace(/\$$/, '')
     .replace(/(^|[^\\])\blog~/g, '$1\\log ')
     .replace(/\^\(([^()]+)\)/g, '^{$1}')
-    .replace(/(^|[^\\])\b(log|ln|sin|cos|tan)\b/g, '$1\\$2')
+    .replace(/(^|[^\\])\b(log|ln|sin|cos|tan|sec|csc|cot|arcsin|arccos|arctan|sinh|cosh|tanh|exp|lim|max|min|det)\b/g, '$1\\$2')
     .replace(/(^|[^\\])\bTheta\b/g, '$1\\Theta')
     .replace(/(^|[^\\])\bOmega\b/g, '$1\\Omega')
 }
@@ -147,7 +159,10 @@ function isStandaloneMath(text) {
   const trimmed = text.trim()
   if (!RAW_LATEX_HINT.test(trimmed)) return false
 
-  const words = trimmed.match(/[A-Za-z]+/g) || []
+  // Strip LaTeX commands (e.g., \to, \infty, \text) so their names don't trigger the plain-text word check
+  const textWithoutCommands = trimmed.replace(/\\[A-Za-z]+/g, '')
+  
+  const words = textWithoutCommands.match(/[A-Za-z]+/g) || []
   if (words.some(word => word.length > 1 && !MATH_WORDS.has(word))) {
     return false
   }
@@ -158,8 +173,6 @@ function isStandaloneMath(text) {
 function splitLegacyMath(text) {
   const parts = []
   let lastIndex = 0
-
-  LEGACY_MATH_PATTERN.lastIndex = 0
 
   for (const match of text.matchAll(LEGACY_MATH_PATTERN)) {
     const value = match[0]
@@ -181,42 +194,51 @@ function splitLegacyMath(text) {
 }
 
 function SafeInlineMath({ math }) {
+  const containerRef = useRef(null)
   const ariaLabel = mathAriaLabel(math)
 
-  try {
-    return (
-      <span role="math" aria-label={ariaLabel}>
-        <InlineMath
-          math={normalizeMath(math)}
-          renderError={() => <span>{math}</span>}
-        />
-      </span>
-    )
-  } catch {
-    return <span role="math" aria-label={ariaLabel}>{math}</span>
-  }
+  useEffect(() => {
+    if (containerRef.current && window.katex) {
+      try {
+        window.katex.render(normalizeMath(math), containerRef.current, {
+          displayMode: false,
+          throwOnError: false,
+          errorColor: '#cc0000',
+        })
+      } catch (err) {
+        console.error("KaTeX RenderError:", err, "Original:", math)
+        containerRef.current.innerText = math
+      }
+    }
+  }, [math])
+
+  return <span ref={containerRef} role="math" aria-label={ariaLabel} className="inline-math" />
 }
 
 function SafeBlockMath({ math }) {
+  const containerRef = useRef(null)
   const ariaLabel = mathAriaLabel(math)
 
-  try {
-    return (
-      <div role="math" aria-label={ariaLabel}>
-        <BlockMath
-          math={normalizeMath(math)}
-          renderError={() => <span>{math}</span>}
-        />
-      </div>
-    )
-  } catch {
-    return <div role="math" aria-label={ariaLabel}>{math}</div>
-  }
+  useEffect(() => {
+    if (containerRef.current && window.katex) {
+      try {
+        window.katex.render(normalizeMath(math), containerRef.current, {
+          displayMode: true,
+          throwOnError: false,
+          errorColor: '#cc0000',
+        })
+      } catch (err) {
+        console.error("KaTeX RenderError:", err, "Original:", math)
+        containerRef.current.innerText = math
+      }
+    }
+  }, [math])
+
+  return <div ref={containerRef} role="math" aria-label={ariaLabel} className="block-math my-4 flex justify-center" />
 }
 
 function renderMathSegment(text, keyPrefix = '') {
-  const hasExplicitMath = MATH_PATTERN.test(text)
-  MATH_PATTERN.lastIndex = 0
+  const hasExplicitMath = text.search(MATH_PATTERN) !== -1
 
   if (!hasExplicitMath && isStandaloneMath(text)) {
     return <SafeInlineMath math={text} />

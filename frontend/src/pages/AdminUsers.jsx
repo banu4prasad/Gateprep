@@ -155,7 +155,7 @@ export default function AdminUsers() {
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Users</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Users</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">{totalUsers} registered · {pendingUsers} pending approval</p>
           </div>
           <button onClick={load} className="btn-ghost flex items-center gap-2">
@@ -200,7 +200,7 @@ export default function AdminUsers() {
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {users.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-100 dark:bg-slate-800/30 transition-colors">
+                  <tr key={u.id} className="hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-sky-500/20 border border-brand-500/20 flex items-center justify-center flex-shrink-0">

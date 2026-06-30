@@ -1,9 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
+import browserslist from 'browserslist'
+import { browserslistToTargets } from 'lightningcss'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     react(),
     visualizer({
       filename: 'stats.html',
@@ -11,6 +15,17 @@ export default defineConfig({
       brotliSize: true,
     }),
   ],
+  css: {
+    transformer: 'lightningcss',
+    lightningcss: {
+      targets: browserslistToTargets(browserslist('>= 0.25%, not dead')),
+    },
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      charset: 'ascii',
+    },
+  },
   server: { port: 5173 },
   preview: {
     port: 4173,
@@ -36,9 +51,6 @@ export default defineConfig({
             }
             if (id.includes('react-hot-toast') || id.includes('clsx')) {
               return 'ui';
-            }
-            if (id.includes('katex') || id.includes('react-katex')) {
-              return 'math';
             }
             if (id.includes('lucide-react')) {
               return 'icons';
