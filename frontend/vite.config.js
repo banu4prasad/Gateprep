@@ -27,11 +27,7 @@ export default defineConfig({
       targets: browserslistToTargets(browserslist('>= 0.25%, not dead')),
     },
   },
-  optimizeDeps: {
-    esbuildOptions: {
-      charset: 'ascii',
-    },
-  },
+
   server: { port: 5173 },
   preview: {
     port: 4173,
