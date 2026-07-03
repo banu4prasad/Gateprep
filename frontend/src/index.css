@@ -88,6 +88,7 @@
     --warning-text: #f59e0b;
     --info-text: #38bdf8;
     --marked-text: #a78bfa;
+    --accent-indigo: #4f46e5;
     /* Semantic mappings for Tailwind utility classes */
     --color-primary: #38bdf8;
     --color-bg: #1a1a2e;
@@ -118,7 +119,7 @@
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
     --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
+    --ring: #7dd3fc;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -138,12 +139,12 @@
   [data-theme="light"] {
     --bg: #f8fafc;
     --bg-card: #ffffff;
-    --bg-panel: #eef2f7;
+    --bg-panel: #e6f1fb;
     --border: #e2e8f0;
     --text: #0f172a;
     --text-muted: #475569;
-    --brand: #0369a1;
-    --brand-light: #0ea5e9;
+    --brand: #0284c7;
+    --brand-light: #7dd3fc;
     --header-bg: #ffffff;
     --header-text: #0f172a;
     --header-muted: #475569;
@@ -154,15 +155,16 @@
     --warning-text: #92400e;
     --info-text: #0369a1;
     --marked-text: #7e22ce;
+    --accent-indigo: #4f46e5;
     /* Semantic mappings for Tailwind utility classes */
-    --color-primary: #0369a1;
+    --color-primary: #0284c7;
     --color-bg: #f8fafc;
-    --color-bg-secondary: #f1f5f9;
+    --color-bg-secondary: #e6f1fb;
     --color-text-base: #0f172a;
     --color-text-muted: #475569;
 
     /* MD3 + shadcn — light values here */
-    --md-sys-color-primary: #0369a1;
+    --md-sys-color-primary: #0284c7;
     --md-sys-color-on-primary: #ffffff;
     --md-sys-color-surface: #f8fafc;
     --md-sys-color-on-surface: #0f172a;
@@ -180,11 +182,11 @@
     --secondary-foreground: var(--text);
     --muted: var(--bg-panel);
     --muted-foreground: var(--text-muted);
-    --accent: var(--color-brand-50);
-    --accent-foreground: var(--brand);
+    --accent: color-mix(in srgb, var(--accent-indigo) 12%, transparent);
+    --accent-foreground: var(--accent-indigo);
     --destructive: oklch(0.577 0.245 27.325);
     --input: var(--border);
-    --ring: oklch(0.708 0 0);
+    --ring: #0369a1;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -192,11 +194,11 @@
     --chart-5: oklch(0.269 0 0);
     --radius: 0.75rem;
     --sidebar: var(--bg-panel);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-foreground: var(--text);
+    --sidebar-primary: var(--brand);
     --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: color-mix(in srgb, var(--bg-panel) 70%, var(--brand) 8%);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-accent-foreground: var(--text);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.708 0 0);
   }
@@ -288,8 +290,8 @@
     background: rgba(14, 165, 233, 0.08);
   }
   .q-option.selected-msq {
-    border-color: #f59e0b;
-    background: rgba(245, 158, 11, 0.08);
+    border-color: var(--accent-indigo);
+    background: color-mix(in srgb, var(--accent-indigo) 8%, transparent);
   }
 
   /* GATE-style question palette dots */
@@ -310,8 +312,8 @@
   .q-dot-not-visited  { background: #e5e7eb; border-color: #d1d5db; color: #374151; }
   .q-dot-not-answered { background: #b91c1c; border-color: #991b1b; color: white; }
   .q-dot-answered     { background: #15803d; border-color: #166534; color: white; }
-  .q-dot-marked       { background: #7e22ce; border-color: #6b21a8; color: white; }
-  .q-dot-answered-marked { background: #7e22ce; border-color: #6b21a8; color: white; position: relative; }
+  .q-dot-marked       { background: var(--accent-indigo); border-color: color-mix(in srgb, var(--accent-indigo) 80%, black); color: white; }
+  .q-dot-answered-marked { background: var(--accent-indigo); border-color: color-mix(in srgb, var(--accent-indigo) 80%, black); color: white; position: relative; }
 
   /* Buttons */
   .btn-primary {
@@ -398,7 +400,7 @@
   .badge-green { background: rgba(34,197,94,0.15);  color: var(--success-text); border: 1px solid rgba(34,197,94,0.2); }
   .badge-amber { background: rgba(245,158,11,0.15); color: var(--warning-text); border: 1px solid rgba(245,158,11,0.2); }
   .badge-red   { background: rgba(239,68,68,0.15);  color: var(--danger-text);  border: 1px solid rgba(239,68,68,0.2); }
-  .badge-purple{ background: rgba(168,85,247,0.15); color: var(--marked-text);  border: 1px solid rgba(168,85,247,0.2); }
+  .badge-purple{ background: color-mix(in srgb, var(--accent-indigo) 15%, transparent); color: var(--accent-foreground); border: 1px solid color-mix(in srgb, var(--accent-indigo) 25%, transparent); }
 
   /* GATE header bar */
   .gate-header {
@@ -421,8 +423,8 @@
     color: var(--text-muted);
   }
   .subject-tab.active {
-    border-color: var(--brand);
-    color: var(--brand);
+    border-color: var(--info-text);
+    color: var(--info-text);
   }
 
   /* Animations */

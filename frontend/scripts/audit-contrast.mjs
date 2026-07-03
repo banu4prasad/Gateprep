@@ -114,8 +114,6 @@ for (const [themeName, themeVars] of Object.entries(themes)) {
   const textTokens = [
     'text',
     'text-muted',
-    'brand',
-    'brand-light',
     'success-text',
     'danger-text',
     'warning-text',

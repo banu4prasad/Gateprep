@@ -294,7 +294,7 @@ export default function Calculator({ onClose }) {
           'x²','x³','√','10ˣ','1/x',
           'n!','|x|','π','e','%'].map(fn => (
           <button key={fn} onClick={() => sciFunc(fn)}
-            className="calc-btn text-xs h-8" style={{ background: '#0f2850', color: '#7dd3fc' }}>{fn}</button>
+            className="calc-btn text-xs h-8" style={{ background: 'var(--bg-panel)', color: 'var(--brand-light)' }}>{fn}</button>
         ))}
       </div>
 
