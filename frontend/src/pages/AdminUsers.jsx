@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, memo, useCallback } from 'react'
 import Layout from '../components/shared/Layout'
 import { adminAPI, fetcher } from '../api/api'
 import useSWR from 'swr'
@@ -9,13 +9,186 @@ import Search from 'lucide-react/dist/esm/icons/search'
 import UserX from 'lucide-react/dist/esm/icons/user-x'
 import UserCheck from 'lucide-react/dist/esm/icons/user-check'
 import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw'
-import X from 'lucide-react/dist/esm/icons/x'
 import Spinner from '../components/shared/Spinner'
-import { SkeletonBlock } from '../components/shared/Skeletons'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter, DialogClose,
+} from '@/components/ui/dialog'
 
-const ROLES = ['admin', 'aspirant', 'user']
-const roleStyle = { admin: 'badge-blue', aspirant: 'badge-green', user: 'badge-amber' }
+/* ─── constants ─── */
+const ROLE_STYLE = {
+  admin: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+  aspirant: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+  user: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+}
 
+/* ─── memoised sub-components (React perf best-practice) ─── */
+
+/** Desktop table row – only re-renders when its own user or updating state changes. */
+const UserRow = memo(function UserRow({ user: u, updating, onChangeRole, onToggleStatus, onCreateResetLink }) {
+  return (
+    <TableRow className="hover:bg-slate-100 dark:hover:bg-slate-800/30">
+      <TableCell className="px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-sky-500/20 border border-sky-500/20 flex items-center justify-center flex-shrink-0">
+            <span className="text-sky-400 text-xs font-semibold">{u.full_name[0]?.toUpperCase()}</span>
+          </div>
+          <span className="font-medium text-slate-700 dark:text-slate-200">{u.full_name}</span>
+        </div>
+      </TableCell>
+      <TableCell className="px-5 py-4 text-slate-500 dark:text-slate-400">{u.email}</TableCell>
+      <TableCell className="px-5 py-4">
+        <Badge variant="outline" className={ROLE_STYLE[u.role]}>{u.role}</Badge>
+      </TableCell>
+      <TableCell className="px-5 py-4">
+        <Badge variant="outline" className={u.is_active
+          ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+          : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+        }>
+          {u.is_active ? 'Active' : 'Disabled'}
+        </Badge>
+      </TableCell>
+      <TableCell className="px-5 py-4 text-slate-500 dark:text-slate-400">
+        {new Date(u.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+      </TableCell>
+      <TableCell className="px-5 py-4">
+        <div className="flex items-center gap-2">
+          {updating[u.id] ? <Spinner size={14} className="text-sky-400" /> : (
+            <>
+              {u.role === 'user' && (
+                <Button size="xs" variant="ghost"
+                  className="bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20"
+                  onClick={() => onChangeRole(u.id, 'aspirant')}>
+                  <UserCheck size={13} /> Approve
+                </Button>
+              )}
+              {u.role === 'aspirant' && (
+                <Button size="xs" variant="ghost"
+                  className="bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20"
+                  onClick={() => onChangeRole(u.id, 'user')}>
+                  <UserX size={13} /> Revoke
+                </Button>
+              )}
+              {u.role !== 'admin' && (
+                <Button size="xs" variant="ghost"
+                  className="bg-slate-200 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                  onClick={() => onToggleStatus(u.id)}>
+                  {u.is_active ? 'Disable' : 'Enable'}
+                </Button>
+              )}
+              <Button size="xs" variant="ghost"
+                className="bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20"
+                disabled={updating[`reset-${u.id}`]}
+                onClick={() => onCreateResetLink(u.id)}>
+                {updating[`reset-${u.id}`] ? <Spinner size={13} /> : <KeyRound size={13} />} Reset
+              </Button>
+            </>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+})
+
+/** Mobile card view – only re-renders when its own user or updating state changes. */
+const UserMobileCard = memo(function UserMobileCard({ user: u, updating, onChangeRole, onToggleStatus, onCreateResetLink }) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3 p-4">
+        {/* User info */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/20 flex items-center justify-center flex-shrink-0">
+            <span className="text-sky-400 text-sm font-semibold">{u.full_name[0]?.toUpperCase()}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm text-slate-900 dark:text-white truncate">{u.full_name}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{u.email}</p>
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className={ROLE_STYLE[u.role]}>{u.role}</Badge>
+          <Badge variant="outline" className={u.is_active
+            ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+            : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
+          }>
+            {u.is_active ? 'Active' : 'Disabled'}
+          </Badge>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            Joined {new Date(u.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-200 dark:border-slate-800">
+          {updating[u.id] ? <Spinner size={14} className="text-sky-400" /> : (
+            <>
+              {u.role === 'user' && (
+                <Button size="xs" variant="ghost"
+                  className="bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20"
+                  onClick={() => onChangeRole(u.id, 'aspirant')}>
+                  <UserCheck size={13} /> Approve
+                </Button>
+              )}
+              {u.role === 'aspirant' && (
+                <Button size="xs" variant="ghost"
+                  className="bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20"
+                  onClick={() => onChangeRole(u.id, 'user')}>
+                  <UserX size={13} /> Revoke
+                </Button>
+              )}
+              {u.role !== 'admin' && (
+                <Button size="xs" variant="ghost"
+                  className="bg-slate-200 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600/50 text-slate-500 dark:text-slate-400"
+                  onClick={() => onToggleStatus(u.id)}>
+                  {u.is_active ? 'Disable' : 'Enable'}
+                </Button>
+              )}
+              <Button size="xs" variant="ghost"
+                className="bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20"
+                disabled={updating[`reset-${u.id}`]}
+                onClick={() => onCreateResetLink(u.id)}>
+                {updating[`reset-${u.id}`] ? <Spinner size={13} /> : <KeyRound size={13} />} Reset
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+})
+
+/* ─── loading skeleton ─── */
+function UsersTableSkeleton() {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4 p-4">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 last:border-0 last:pb-0">
+            <Skeleton className="size-8 rounded-full" />
+            <div className="flex flex-col flex-1 gap-2">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+            <Skeleton className="h-5 w-20 rounded-full hidden sm:block" />
+            <Skeleton className="h-5 w-24 rounded-full hidden sm:block" />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+/* ─── main component ─── */
 export default function AdminUsers() {
   const [pageIndex, setPageIndex] = useState(0)
   const [pageCursors, setPageCursors] = useState([null])
@@ -43,25 +216,25 @@ export default function AdminUsers() {
   const totalUsers = usersData?.total || 0
   const pendingUsers = usersData?.pending_count || 0
   const aspirantsCount = usersData?.aspirants_count || 0
-  
+
   const [updating, setUpdating] = useState({})
   const [resetLink, setResetLink] = useState(null)
 
-  const load = () => mutate()
+  const load = useCallback(() => mutate(), [mutate])
 
-  const changeRole = async (userId, role) => {
+  const changeRole = useCallback(async (userId, role) => {
     const oldRole = usersById.get(userId)?.role
     setUpdating(u => ({ ...u, [userId]: true }))
     try {
       await adminAPI.updateRole(userId, role)
-      
+
       let newPending = pendingUsers
       let newAspirants = aspirantsCount
       if (oldRole === 'user' && role === 'aspirant') { newPending--; newAspirants++; }
       if (oldRole === 'aspirant' && role === 'user') { newPending++; newAspirants--; }
-      
-      mutate({ 
-        ...usersData, 
+
+      mutate({
+        ...usersData,
         items: users.map(u => u.id === userId ? { ...u, role } : u),
         pending_count: newPending,
         aspirants_count: newAspirants
@@ -72,9 +245,9 @@ export default function AdminUsers() {
     } finally {
       setUpdating(u => ({ ...u, [userId]: false }))
     }
-  }
+  }, [usersById, pendingUsers, aspirantsCount, usersData, users, mutate])
 
-  const toggleStatus = async (userId) => {
+  const toggleStatus = useCallback(async (userId) => {
     setUpdating(u => ({ ...u, [userId]: true }))
     try {
       await adminAPI.toggleStatus(userId)
@@ -85,9 +258,9 @@ export default function AdminUsers() {
     } finally {
       setUpdating(u => ({ ...u, [userId]: false }))
     }
-  }
+  }, [usersData, users, mutate])
 
-  const createResetLink = async (userId) => {
+  const createResetLink = useCallback(async (userId) => {
     const key = `reset-${userId}`
     setUpdating(u => ({ ...u, [key]: true }))
     try {
@@ -99,9 +272,9 @@ export default function AdminUsers() {
     } finally {
       setUpdating(u => ({ ...u, [key]: false }))
     }
-  }
+  }, [])
 
-  const copyResetLink = async () => {
+  const copyResetLink = useCallback(async () => {
     if (!resetLink?.reset_url) return
     try {
       await navigator.clipboard.writeText(resetLink.reset_url)
@@ -109,11 +282,7 @@ export default function AdminUsers() {
     } catch {
       toast.error('Could not copy link')
     }
-  }
-
-  const handleSearchChange = (e) => {
-    setSearchInput(e.target.value)
-  }
+  }, [resetLink])
 
   const goToPreviousPage = () => setPageIndex(i => Math.max(0, i - 1))
   const goToNextPage = () => {
@@ -128,255 +297,137 @@ export default function AdminUsers() {
   const showingTo = Math.min(pageIndex * limit + users.length, totalUsers)
   const hasPagination = totalUsers > limit
 
-  const renderPagination = (className) => hasPagination && (
-    <div className={className}>
-      <button
-        onClick={goToPreviousPage}
-        disabled={pageIndex === 0}
-        className="btn-ghost disabled:opacity-50"
-      >
-        Previous
-      </button>
-      <span className="text-sm text-slate-500">
-        Showing {showingFrom} - {showingTo} of {totalUsers}
-      </span>
-      <button
-        onClick={goToNextPage}
-        disabled={!usersData?.has_more}
-        className="btn-ghost disabled:opacity-50"
-      >
-        Next
-      </button>
-    </div>
-  )
+  const TABLE_HEADERS = ['Name', 'Email', 'Role', 'Status', 'Joined', 'Actions']
 
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-6 animate-fade-in">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Users</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-1">{totalUsers} registered · {pendingUsers} pending approval</p>
           </div>
-          <button onClick={load} className="btn-ghost flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={load}>
             <RefreshCw size={15} /> Refresh
-          </button>
+          </Button>
         </div>
 
         {/* Search */}
         <div className="relative">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
-          <input
-            value={searchInput} onChange={handleSearchChange}
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" />
+          <Input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search all users by name or email..."
-            className="input pl-10"
+            className="pl-10 h-10"
           />
         </div>
 
         {loading ? (
-          <div className="gate-card p-4 space-y-4">
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 last:border-0 last:pb-0">
-                <SkeletonBlock className="w-8 h-8 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <SkeletonBlock className="h-4 w-48" />
-                  <SkeletonBlock className="h-3 w-32" />
-                </div>
-                <SkeletonBlock className="h-6 w-20 rounded-lg hidden sm:block" />
-                <SkeletonBlock className="h-6 w-24 rounded-lg hidden sm:block" />
-              </div>
-            ))}
-          </div>
+          <UsersTableSkeleton />
         ) : (
           <>
-            <div className="gate-card overflow-hidden hidden md:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800">
-                  {['Name', 'Email', 'Role', 'Status', 'Joined', 'Actions'].map(h => (
-                    <th key={h} className="text-left px-5 py-3.5 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">{h}</th>
+            {/* Desktop table */}
+            <Card className="overflow-hidden hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-200 dark:border-slate-800 hover:bg-transparent">
+                    {TABLE_HEADERS.map(h => (
+                      <TableHead key={h} className="px-5 py-3.5 text-xs uppercase tracking-wider font-medium text-slate-500 dark:text-slate-400">{h}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map(u => (
+                    <UserRow
+                      key={u.id}
+                      user={u}
+                      updating={updating}
+                      onChangeRole={changeRole}
+                      onToggleStatus={toggleStatus}
+                      onCreateResetLink={createResetLink}
+                    />
                   ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {users.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-colors">
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-sky-500/20 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sky-400 text-xs font-semibold">{u.full_name[0]?.toUpperCase()}</span>
-                        </div>
-                        <span className="font-medium text-slate-700 dark:text-slate-200">{u.full_name}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-slate-500 dark:text-slate-400">{u.email}</td>
-                    <td className="px-5 py-4">
-                      <span className={`badge ${roleStyle[u.role] || 'badge-slate'}`}>{u.role}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`badge ${u.is_active ? 'badge-green' : 'badge-red'}`}>
-                        {u.is_active ? 'Active' : 'Disabled'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-slate-500 dark:text-slate-400">
-                      {new Date(u.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        {updating[u.id] ? <Spinner size={14} className="text-sky-400" /> : (
-                          <>
-                            {u.role === 'user' && (
-                              <button
-                                onClick={() => changeRole(u.id, 'aspirant')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/20 transition-colors"
-                              >
-                                <UserCheck size={13} /> Approve
-                              </button>
-                            )}
-                            {u.role === 'aspirant' && (
-                              <button
-                                onClick={() => changeRole(u.id, 'user')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors"
-                              >
-                                <UserX size={13} /> Revoke
-                              </button>
-                            )}
-                            {u.role !== 'admin' && (
-                              <button
-                                onClick={() => toggleStatus(u.id)}
-                                className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-xs font-medium hover:bg-slate-200 dark:bg-slate-700 transition-colors"
-                              >
-                                {u.is_active ? 'Disable' : 'Enable'}
-                              </button>
-                            )}
-                            <button
-                              onClick={() => createResetLink(u.id)}
-                              disabled={updating[`reset-${u.id}`]}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-medium hover:bg-sky-500/20 transition-colors disabled:opacity-50"
-                            >
-                              {updating[`reset-${u.id}`] ? <Spinner size={13} /> : <KeyRound size={13} />} Reset
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {users.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-12 text-slate-500 dark:text-slate-400">No users found</td></tr>
-                )}
-              </tbody>
-            </table>
-            
-            {renderPagination('flex justify-between items-center px-5 py-4 border-t border-slate-200 dark:border-slate-800')}
-            
-          </div>
-
-          {/* Mobile card view */}
-          <div className="space-y-3 md:hidden">
-            {users.map(u => (
-              <div key={u.id} className="gate-card p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-brand-500/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sky-400 text-sm font-semibold">{u.full_name[0]?.toUpperCase()}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate" style={{ color: 'var(--text)' }}>{u.full_name}</p>
-                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`badge ${roleStyle[u.role] || 'badge-slate'}`}>{u.role}</span>
-                  <span className={`badge ${u.is_active ? 'badge-green' : 'badge-red'}`}>
-                    {u.is_active ? 'Active' : 'Disabled'}
-                  </span>
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    Joined {new Date(u.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                  {updating[u.id] ? <Spinner size={14} className="text-sky-400" /> : (
-                    <>
-                      {u.role === 'user' && (
-                        <button onClick={() => changeRole(u.id, 'aspirant')}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/20 transition-colors">
-                          <UserCheck size={13} /> Approve
-                        </button>
-                      )}
-                      {u.role === 'aspirant' && (
-                        <button onClick={() => changeRole(u.id, 'user')}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors">
-                          <UserX size={13} /> Revoke
-                        </button>
-                      )}
-                      {u.role !== 'admin' && (
-                        <button onClick={() => toggleStatus(u.id)}
-                          className="px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700/50 border border-slate-300 dark:border-slate-600/50 text-slate-500 dark:text-slate-400 text-xs font-medium">
-                          {u.is_active ? 'Disable' : 'Enable'}
-                        </button>
-                      )}
-                      <button onClick={() => createResetLink(u.id)} disabled={updating[`reset-${u.id}`]}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-medium hover:bg-sky-500/20 transition-colors disabled:opacity-50">
-                        {updating[`reset-${u.id}`] ? <Spinner size={13} /> : <KeyRound size={13} />} Reset
-                      </button>
-                    </>
+                  {users.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">No users found</TableCell>
+                    </TableRow>
                   )}
+                </TableBody>
+              </Table>
+
+              {hasPagination && (
+                <div className="flex justify-between items-center px-5 py-4 border-t border-slate-200 dark:border-slate-800">
+                  <Button variant="ghost" size="sm" onClick={goToPreviousPage} disabled={pageIndex === 0}>Previous</Button>
+                  <span className="text-sm text-slate-500">Showing {showingFrom} – {showingTo} of {totalUsers}</span>
+                  <Button variant="ghost" size="sm" onClick={goToNextPage} disabled={!usersData?.has_more}>Next</Button>
                 </div>
-              </div>
-            ))}
-            {users.length === 0 && (
-              <p className="text-center py-12" style={{ color: 'var(--text-muted)' }}>No users found</p>
-            )}
-            {renderPagination('gate-card p-3 flex justify-between items-center gap-3')}
-          </div>
+              )}
+            </Card>
+
+            {/* Mobile card view */}
+            <div className="flex flex-col gap-3 md:hidden">
+              {users.map(u => (
+                <UserMobileCard
+                  key={u.id}
+                  user={u}
+                  updating={updating}
+                  onChangeRole={changeRole}
+                  onToggleStatus={toggleStatus}
+                  onCreateResetLink={createResetLink}
+                />
+              ))}
+              {users.length === 0 && (
+                <p className="text-center py-12 text-muted-foreground">No users found</p>
+              )}
+              {hasPagination && (
+                <Card>
+                  <CardContent className="flex justify-between items-center gap-3 p-3">
+                    <Button variant="ghost" size="sm" onClick={goToPreviousPage} disabled={pageIndex === 0}>Previous</Button>
+                    <span className="text-sm text-slate-500">Showing {showingFrom} – {showingTo} of {totalUsers}</span>
+                    <Button variant="ghost" size="sm" onClick={goToNextPage} disabled={!usersData?.has_more}>Next</Button>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </>
         )}
 
-        {resetLink && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="gate-card w-full max-w-lg p-5 animate-slide-up">
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">Password Reset Link</h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{resetLink.full_name} · {resetLink.email}</p>
-                </div>
-                <button
-                  onClick={() => setResetLink(null)}
-                  className="p-1.5 rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors"
-                  aria-label="Close"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+        {/* Password Reset Dialog */}
+        <Dialog open={!!resetLink} onOpenChange={(open) => !open && setResetLink(null)}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Password Reset Link</DialogTitle>
+              <DialogDescription>{resetLink?.full_name} · {resetLink?.email}</DialogDescription>
+            </DialogHeader>
 
-              <label className="label">Reset Link</label>
-              <input
-                value={resetLink.reset_url}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-muted-foreground">Reset Link</label>
+              <Input
+                value={resetLink?.reset_url || ''}
                 readOnly
-                className="input font-mono text-xs"
+                className="font-mono text-xs"
                 aria-label="Password reset link"
               />
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                Expires {new Date(resetLink.expires_at).toLocaleString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
+              <p className="text-xs text-muted-foreground">
+                Expires {resetLink && new Date(resetLink.expires_at).toLocaleString('en-IN', {
+                  day: '2-digit', month: 'short', year: 'numeric',
+                  hour: '2-digit', minute: '2-digit',
                 })}
               </p>
-
-              <div className="flex items-center justify-end gap-3 mt-5">
-                <button onClick={() => setResetLink(null)} className="btn-ghost">
-                  Close
-                </button>
-                <button onClick={copyResetLink} className="btn-primary flex items-center gap-2">
-                  <Copy size={15} /> Copy Link
-                </button>
-              </div>
             </div>
-          </div>
-        )}
+
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="ghost">Close</Button>
+              </DialogClose>
+              <Button onClick={copyResetLink}>
+                <Copy size={15} /> Copy Link
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   )

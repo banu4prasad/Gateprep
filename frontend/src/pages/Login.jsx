@@ -31,7 +31,10 @@ export default function LoginPage() {
       else if (user.role === 'aspirant' || user.role === 'user') navigate('/dashboard', { replace: true })
       else navigate('/pending', { replace: true })
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Invalid email or password')
+      const errMsg = err.response 
+        ? (err.response.data?.detail || 'Invalid email or password')
+        : 'Network Error: Could not connect to the server.'
+      toast.error(errMsg)
     } finally { setLoading(false) }
   }
 
