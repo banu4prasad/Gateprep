@@ -744,9 +744,10 @@ async def upload_questions_file(
         db.query(func.count(Question.id)).filter(Question.test_id == test_id).scalar()
         or 0
     )
+    new_questions = []
     total_added = 0.0
     for question in validated_questions:
-        db.add(
+        new_questions.append(
             Question(
                 test_id=test_id,
                 question_type=question.question_type,
@@ -762,6 +763,7 @@ async def upload_questions_file(
         )
         total_added += question.marks
 
+    db.add_all(new_questions)
     test.total_marks = (test.total_marks or 0.0) + total_added
     db.commit()
 

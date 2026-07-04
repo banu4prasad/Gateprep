@@ -206,7 +206,7 @@ def start_test(
             TestAttempt.test_id == test_id,
             TestAttempt.status == TestStatus.in_progress,
         )
-        .subquery()
+        .scalar_subquery()
     )
     db.query(UserAnswer).filter(
         UserAnswer.attempt_id.in_(leftover_attempt_ids)
@@ -352,12 +352,13 @@ def save_answers(
         return {"message": "Practice answers are kept in browser until submit"}
 
     existing = {a.question_id: a for a in attempt.answers}
+    new_answers = []
     for ans in payload.answers:
         if ans.question_id in existing:
             existing[ans.question_id].selected_answer = ans.selected_answer
             existing[ans.question_id].time_spent_seconds = ans.time_spent_seconds
         else:
-            db.add(
+            new_answers.append(
                 UserAnswer(
                     attempt_id=attempt_id,
                     question_id=ans.question_id,
@@ -365,6 +366,8 @@ def save_answers(
                     time_spent_seconds=ans.time_spent_seconds,
                 )
             )
+    if new_answers:
+        db.add_all(new_answers)
     db.commit()
     return {"message": "Saved"}
 
@@ -474,14 +477,19 @@ def _result_payload(
             "percentage": _percentage(topper.score, topper.total_marks),
         }
 
+    correct = 0
+    incorrect = 0
+    skipped = 0
     for detail in answer_details:
         topper_ua = topper_answers_map.get(detail["question_id"])
         detail["topper_answer"] = topper_ua.selected_answer if topper_ua else None
         detail["topper_time_seconds"] = topper_ua.time_spent_seconds if topper_ua else 0
-
-    correct = sum(1 for a in answer_details if a["is_correct"] is True)
-    incorrect = sum(1 for a in answer_details if a["is_correct"] is False)
-    skipped = sum(1 for a in answer_details if a["is_correct"] is None)
+        if detail["is_correct"] is True:
+            correct += 1
+        elif detail["is_correct"] is False:
+            incorrect += 1
+        else:
+            skipped += 1
     rank = next(
         (i + 1 for i, a in enumerate(first_attempts) if a.user_id == current_user.id),
         None,
@@ -548,17 +556,17 @@ def submit_test(
     submitted_at = datetime.now(timezone.utc)
 
     if is_first:
-        for detail in answer_details:
-            db.add(
-                UserAnswer(
-                    attempt_id=attempt_id,
-                    question_id=detail["question_id"],
-                    selected_answer=detail["selected_answer"],
-                    is_correct=detail["is_correct"],
-                    marks_awarded=detail["marks_awarded"],
-                    time_spent_seconds=detail["time_spent_seconds"],
-                )
+        db.add_all(
+            UserAnswer(
+                attempt_id=attempt_id,
+                question_id=detail["question_id"],
+                selected_answer=detail["selected_answer"],
+                is_correct=detail["is_correct"],
+                marks_awarded=detail["marks_awarded"],
+                time_spent_seconds=detail["time_spent_seconds"],
             )
+            for detail in answer_details
+        )
 
         attempt.status = TestStatus.submitted
         attempt.submitted_at = submitted_at
