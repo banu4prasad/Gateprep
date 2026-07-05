@@ -53,9 +53,6 @@ class User(Base):
     bookmarks = relationship(
         "Bookmark", back_populates="user", cascade="all, delete-orphan"
     )
-    checklist_items = relationship(
-        "ChecklistProgress", back_populates="user", cascade="all, delete-orphan"
-    )
     password_reset_tokens = relationship(
         "PasswordResetToken",
         foreign_keys="PasswordResetToken.user_id",
@@ -228,54 +225,3 @@ class Bookmark(Base):
     user = relationship("User", back_populates="bookmarks")
     question = relationship("Question", back_populates="bookmarks")
 
-
-# ── Syllabus Checklist ────────────────────────────────────────────
-
-
-class ChecklistSubject(Base):
-    __tablename__ = "checklist_subjects"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    order_index: Mapped[int] = mapped_column(Integer, default=0)
-    created_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-    topics = relationship(
-        "ChecklistTopic", back_populates="subject", cascade="all, delete-orphan"
-    )
-
-
-class ChecklistTopic(Base):
-    __tablename__ = "checklist_topics"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    subject_id: Mapped[int] = mapped_column(Integer, ForeignKey("checklist_subjects.id"), nullable=False, index=True)
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    order_index: Mapped[int] = mapped_column(Integer, default=0)
-
-    subject = relationship("ChecklistSubject", back_populates="topics")
-    progress = relationship(
-        "ChecklistProgress", back_populates="topic", cascade="all, delete-orphan"
-    )
-
-
-class ChecklistProgress(Base):
-    """Tracks what each user has completed per topic."""
-
-    __tablename__ = "checklist_progress"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    topic_id: Mapped[int] = mapped_column(Integer, ForeignKey("checklist_topics.id"), nullable=False, index=True)
-    completed_items: Mapped[dict] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=dict)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-    __table_args__ = (
-        UniqueConstraint("user_id", "topic_id", name="uq_user_topic_progress"),
-        Index(
-            "ix_checklist_progress_completed_items_gin",
-            "completed_items",
-            postgresql_using="gin",
-        ),
-    )
-
-    user = relationship("User", back_populates="checklist_items")
-    topic = relationship("ChecklistTopic", back_populates="progress")
