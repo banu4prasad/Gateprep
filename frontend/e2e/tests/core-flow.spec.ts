@@ -10,7 +10,7 @@ test.describe('Core Test Execution Flow', () => {
     await expect(dashboardPage.availableTestsHeading).toBeVisible();
     
     // There should be at least one gate-card visible
-    const testCards = page.locator('.gate-card');
+    const testCards = page.getByTestId('test-card');
     await expect(testCards.first()).toBeVisible();
   });
 
@@ -18,7 +18,7 @@ test.describe('Core Test Execution Flow', () => {
     await dashboardPage.goto();
     
     // Start the first available test
-    const testCards = page.locator('.gate-card').filter({ hasText: 'Start Test' });
+    const testCards = page.getByTestId('test-card').filter({ hasText: 'Start Test' });
     
     // If no tests are available to start, skip or fail the test. 
     // We expect the seeding/database to have at least one test.

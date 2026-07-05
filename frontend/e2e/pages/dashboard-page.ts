@@ -15,12 +15,12 @@ export class DashboardPage {
 
   async startTest(testName: string) {
     // Find the gate-card containing the test name and click its "Start Test" button
-    const testCard = this.page.locator('.gate-card').filter({ hasText: testName });
+    const testCard = this.page.getByTestId('test-card').filter({ hasText: testName });
     await testCard.getByRole('link', { name: 'Start Test' }).click();
   }
 
   async viewResult(testName: string) {
-    const testCard = this.page.locator('.gate-card').filter({ hasText: testName });
+    const testCard = this.page.getByTestId('test-card').filter({ hasText: testName });
     await testCard.getByRole('link', { name: 'View Result' }).click();
   }
 }

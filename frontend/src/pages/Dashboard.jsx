@@ -83,7 +83,7 @@ export default function Dashboard() {
                 const done = attempt?.status === 'submitted'
                 const pct = done && attempt?.total_marks ? Math.round(attempt.score / attempt.total_marks * 100) : null
                 return (
-                  <Card key={t.id} className="flex flex-col hover:border-primary/50 transition-colors border-border">
+                  <Card key={t.id} data-testid="test-card" className="flex flex-col hover:border-primary/50 transition-colors border-border">
                     <CardHeader className="p-5 pb-3">
                       <div className="flex items-start justify-between gap-2">
                         <CardTitle className="text-base leading-snug">{t.title}</CardTitle>
