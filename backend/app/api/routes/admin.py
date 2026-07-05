@@ -107,9 +107,7 @@ def _admin_users_cache_key_builder(
 
 
 def _clear_admin_users_cache(background_tasks: BackgroundTasks) -> None:
-    background_tasks.add_task(
-        FastAPICache.clear, namespace=ADMIN_USERS_CACHE_NAMESPACE
-    )
+    background_tasks.add_task(FastAPICache.clear, namespace=ADMIN_USERS_CACHE_NAMESPACE)
 
 
 def _question_out(q: Question) -> dict:
@@ -132,6 +130,75 @@ def _question_out(q: Question) -> dict:
 # ── Users ─────────────────────────────────────────────────────────
 
 
+def _build_users_filter_query(db: Session, search: str, role: Optional[UserRole]):
+    """Build the base query for filtering users by search term and role."""
+    query = db.query(User)
+    if search:
+        pattern = f"%{search}%"
+        query = query.filter(
+            or_(User.full_name.ilike(pattern), User.email.ilike(pattern))
+        )
+    if role is not None:
+        query = query.filter(User.role == role)
+    return query
+
+
+def _get_user_counts(
+    db: Session, query, search: str, role: Optional[UserRole]
+) -> tuple[int, int, int]:
+    """Calculate total matching users, along with global role counts."""
+    role_counts_raw = db.query(User.role, func.count(User.id)).group_by(User.role).all()
+    role_counts = {r: c for r, c in role_counts_raw}
+
+    aspirants_count = role_counts.get(UserRole.aspirant, 0)
+    pending_count = role_counts.get(UserRole.user, 0)
+
+    if search or role is not None:
+        total = query.count()
+    else:
+        total = sum(role_counts.values())
+
+    return total, aspirants_count, pending_count
+
+
+def _get_paginated_users(
+    query, cursor: str | None, limit: int
+) -> tuple[list[User], str | None, bool]:
+    """Apply cursor-based pagination to the user query."""
+    if cursor:
+        cursor_created_at, cursor_id = _parse_user_cursor(cursor)
+        query = query.filter(
+            or_(
+                User.created_at < cursor_created_at,
+                and_(User.created_at == cursor_created_at, User.id < cursor_id),
+            )
+        )
+
+    page = query.order_by(User.created_at.desc(), User.id.desc()).limit(limit + 1).all()
+
+    has_more = len(page) > limit
+    users = page[:limit]
+    next_cursor = _encode_user_cursor(users[-1]) if has_more and users else None
+
+    return users, next_cursor, has_more
+
+
+def _format_user_items(users: list[User]) -> list[dict]:
+    """Format user objects into dictionary representations."""
+    return [
+        {
+            "id": u.id,
+            "email": u.email,
+            "full_name": u.full_name,
+            "role": u.role,
+            "is_active": u.is_active,
+            "google_id": u.google_id is not None,
+            "created_at": u.created_at,
+        }
+        for u in users
+    ]
+
+
 @router.get("/users")
 @cache(
     expire=ADMIN_USERS_CACHE_SECONDS,
@@ -146,59 +213,16 @@ def list_users(
     db: Session = Depends(get_db),
     _=Depends(require_admin),
 ):
-    users_query = db.query(User)
     search = q.strip()
-    if search:
-        pattern = f"%{search}%"
-        users_query = users_query.filter(
-            or_(User.full_name.ilike(pattern), User.email.ilike(pattern))
-        )
-    if role is not None:
-        users_query = users_query.filter(User.role == role)
+    users_query = _build_users_filter_query(db, search, role)
 
-    # Optimize counts by grouping
-    role_counts_raw = db.query(User.role, func.count(User.id)).group_by(User.role).all()
-    role_counts = {r: c for r, c in role_counts_raw}
-    aspirants_count = role_counts.get(UserRole.aspirant, 0)
-    pending_count = role_counts.get(UserRole.user, 0)
-
-    if search or role is not None:
-        total = users_query.count()
-    else:
-        total = sum(role_counts.values())
-
-    page_query = users_query
-    if cursor:
-        cursor_created_at, cursor_id = _parse_user_cursor(cursor)
-        page_query = page_query.filter(
-            or_(
-                User.created_at < cursor_created_at,
-                and_(User.created_at == cursor_created_at, User.id < cursor_id),
-            )
-        )
-
-    page = (
-        page_query.order_by(User.created_at.desc(), User.id.desc())
-        .limit(limit + 1)
-        .all()
+    total, aspirants_count, pending_count = _get_user_counts(
+        db, users_query, search, role
     )
-    has_more = len(page) > limit
-    users = page[:limit]
-    next_cursor = _encode_user_cursor(users[-1]) if has_more and users else None
-    items = [
-        {
-            "id": u.id,
-            "email": u.email,
-            "full_name": u.full_name,
-            "role": u.role,
-            "is_active": u.is_active,
-            "google_id": u.google_id is not None,
-            "created_at": u.created_at,
-        }
-        for u in users
-    ]
+    users, next_cursor, has_more = _get_paginated_users(users_query, cursor, limit)
+
     return {
-        "items": items,
+        "items": _format_user_items(users),
         "total": total,
         "aspirants_count": aspirants_count,
         "pending_count": pending_count,
@@ -256,6 +280,37 @@ def toggle_status(
     }
 
 
+def _revoke_existing_reset_tokens(db: Session, user_id: int) -> None:
+    """Mark all unused password-reset tokens for a user as consumed."""
+    now = _utcnow()
+    (
+        db.query(PasswordResetToken)
+        .filter(
+            PasswordResetToken.user_id == user_id,
+            PasswordResetToken.used_at.is_(None),
+        )
+        .update({PasswordResetToken.used_at: now}, synchronize_session=False)
+    )
+
+
+def _create_reset_token(
+    db: Session, user_id: int, created_by: int
+) -> tuple[str, datetime]:
+    """Generate a new password-reset token, persist it, and return (raw_token, expires_at)."""
+    token = generate_password_reset_token()
+    now = _utcnow()
+    expires_at = now + timedelta(minutes=settings.PASSWORD_RESET_EXPIRE_MINUTES)
+    db.add(
+        PasswordResetToken(
+            user_id=user_id,
+            created_by=created_by,
+            token_hash=hash_password_reset_token(token),
+            expires_at=expires_at,
+        )
+    )
+    return token, expires_at
+
+
 @router.post("/users/{user_id}/password-reset")
 def create_password_reset_link(
     user_id: int, db: Session = Depends(get_db), current=Depends(require_admin)
@@ -264,25 +319,8 @@ def create_password_reset_link(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    now = _utcnow()
-    (
-        db.query(PasswordResetToken)
-        .filter(
-            PasswordResetToken.user_id == user.id,
-            PasswordResetToken.used_at.is_(None),
-        )
-        .update({PasswordResetToken.used_at: now}, synchronize_session=False)
-    )
-
-    token = generate_password_reset_token()
-    expires_at = now + timedelta(minutes=settings.PASSWORD_RESET_EXPIRE_MINUTES)
-    reset_token = PasswordResetToken(
-        user_id=user.id,
-        created_by=current.id,
-        token_hash=hash_password_reset_token(token),
-        expires_at=expires_at,
-    )
-    db.add(reset_token)
+    _revoke_existing_reset_tokens(db, user.id)
+    token, expires_at = _create_reset_token(db, user.id, current.id)
     db.commit()
 
     return {
@@ -408,6 +446,47 @@ def delete_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_a
 # ── Questions ─────────────────────────────────────────────────────
 
 
+def _validate_mcq_answer(answer: str) -> str:
+    """Validate and return a normalised MCQ answer."""
+    if answer not in {"A", "B", "C", "D"}:
+        raise ValueError("MCQ correct_answer must be one of A, B, C, or D")
+    return answer
+
+
+def _validate_msq_answer(answer: str) -> tuple[str, float]:
+    """Validate an MSQ answer and return (normalised_answer, negative_marks)."""
+    selected = [part.strip().upper() for part in split_answer_tokens(answer)]
+    if not selected or any(part not in {"A", "B", "C", "D"} for part in selected):
+        raise ValueError("MSQ correct_answer must contain option letters like A,C")
+    return ",".join(dict.fromkeys(selected)), 0.0
+
+
+def _validate_nat_answer(answer: str) -> float:
+    """Validate a NAT answer and return the forced negative_marks value."""
+    if not is_valid_nat_answer(answer):
+        raise ValueError(
+            "NAT correct_answer must be a number or range like 41.5-42.5 or 41.5:42.5"
+        )
+    return 0.0
+
+
+def _validate_answer_for_type(
+    q_type: str, correct_answer: str
+) -> tuple[str, float | None, bool]:
+    """Validate correct_answer against q_type.
+
+    Returns (normalised_answer, override_negative_marks_or_None, clear_options).
+    """
+    if q_type == "mcq":
+        return _validate_mcq_answer(correct_answer), None, False
+    if q_type == "msq":
+        answer, neg = _validate_msq_answer(correct_answer)
+        return answer, neg, False
+    # nat
+    neg = _validate_nat_answer(correct_answer)
+    return correct_answer, neg, True
+
+
 @router.get("/tests/{test_id}/questions")
 def get_questions(
     test_id: int, db: Session = Depends(get_db), _=Depends(require_admin)
@@ -441,29 +520,14 @@ class QuestionIn(BaseModel):
         if not self.correct_answer:
             raise ValueError("correct_answer is required")
 
-        if q_type == "mcq":
-            if self.correct_answer not in {"A", "B", "C", "D"}:
-                raise ValueError("MCQ correct_answer must be one of A, B, C, or D")
-        elif q_type == "msq":
-            selected = [
-                part.strip().upper()
-                for part in split_answer_tokens(self.correct_answer)
-            ]
-            if not selected or any(
-                part not in {"A", "B", "C", "D"} for part in selected
-            ):
-                raise ValueError(
-                    "MSQ correct_answer must contain option letters like A,C"
-                )
-            self.correct_answer = ",".join(dict.fromkeys(selected))
-            self.negative_marks = 0.0
-        else:
-            if not is_valid_nat_answer(self.correct_answer):
-                raise ValueError(
-                    "NAT correct_answer must be a number or range like 41.5-42.5 or 41.5:42.5"
-                )
+        answer, neg_override, clear_opts = _validate_answer_for_type(
+            q_type, self.correct_answer
+        )
+        self.correct_answer = answer
+        if neg_override is not None:
+            self.negative_marks = neg_override
+        if clear_opts:
             self.options = []
-            self.negative_marks = 0.0
 
         return self
 
@@ -531,29 +595,14 @@ class QuestionFileImport(BaseModel):
         q_type = self.question_type.value
         self.correct_answer = self.correct_answer.strip().upper().replace(" ", "")
 
-        if q_type == "mcq":
-            if self.correct_answer not in {"A", "B", "C", "D"}:
-                raise ValueError("MCQ correct_answer must be one of A, B, C, or D")
-        elif q_type == "msq":
-            selected = [
-                part.strip().upper()
-                for part in split_answer_tokens(self.correct_answer)
-            ]
-            if not selected or any(
-                part not in {"A", "B", "C", "D"} for part in selected
-            ):
-                raise ValueError(
-                    "MSQ correct_answer must contain option letters like A,C"
-                )
-            self.correct_answer = ",".join(dict.fromkeys(selected))
-            self.negative_marks = 0.0
-        else:
-            if not is_valid_nat_answer(self.correct_answer):
-                raise ValueError(
-                    "NAT correct_answer must be a number or range like 41.5-42.5 or 41.5:42.5"
-                )
+        answer, neg_override, clear_opts = _validate_answer_for_type(
+            q_type, self.correct_answer
+        )
+        self.correct_answer = answer
+        if neg_override is not None:
+            self.negative_marks = neg_override
+        if clear_opts:
             self.options = []
-            self.negative_marks = 0.0
 
         return self
 
@@ -591,22 +640,20 @@ def _format_question_validation_errors(
     return errors
 
 
-@router.post("/tests/{test_id}/questions", status_code=201)
-def add_questions(
-    test_id: int,
-    payload: QuestionsBulk,
-    db: Session = Depends(get_db),
-    _=Depends(require_admin),
-):
-    test = db.query(Test).filter(Test.id == test_id).first()
-    if not test:
-        raise HTTPException(status_code=404, detail="Not found")
-    existing = (
+def _get_existing_question_count(db: Session, test_id: int) -> int:
+    """Return the number of questions already associated with a test."""
+    return (
         db.query(func.count(Question.id)).filter(Question.test_id == test_id).scalar()
         or 0
     )
-    total_added = 0.0
-    for idx, q in enumerate(payload.questions):
+
+
+def _insert_questions(
+    db: Session, test_id: int, questions: List[QuestionIn], start_index: int
+) -> float:
+    """Create Question rows and return the total marks added."""
+    total_marks = 0.0
+    for idx, q in enumerate(questions):
         db.add(
             Question(
                 test_id=test_id,
@@ -618,16 +665,52 @@ def add_questions(
                 negative_marks=q.negative_marks,
                 subject=q.subject,
                 topic=q.topic,
-                order_index=existing + idx,
+                order_index=start_index + idx,
             )
         )
-        total_added += q.marks
+        total_marks += q.marks
+    return total_marks
+
+
+@router.post("/tests/{test_id}/questions", status_code=201)
+def add_questions(
+    test_id: int,
+    payload: QuestionsBulk,
+    db: Session = Depends(get_db),
+    _=Depends(require_admin),
+):
+    test = db.query(Test).filter(Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    existing = _get_existing_question_count(db, test_id)
+    total_added = _insert_questions(db, test_id, payload.questions, existing)
+
     test.total_marks = (test.total_marks or 0.0) + total_added
     db.commit()
     return {
         "message": f"Added {len(payload.questions)} questions",
         "total_in_test": existing + len(payload.questions),
     }
+
+
+def _apply_question_payload(question: Question, payload: QuestionIn) -> None:
+    """Apply payload fields onto an existing Question, including NAT cleanup."""
+    question.question_type = QuestionType(payload.question_type)
+    question.question_text = payload.question_text
+    question.options = payload.options
+    question.correct_answer = payload.correct_answer
+    question.marks = payload.marks
+    question.negative_marks = payload.negative_marks
+    question.subject = payload.subject
+    question.topic = payload.topic
+    if question.question_type == QuestionType.nat:
+        question.option_images = None
+
+
+def _recalculate_test_marks(test: Test, old_marks: float, new_marks: float) -> None:
+    """Adjust the test's total_marks after a question's marks change."""
+    test.total_marks = (test.total_marks or 0.0) - old_marks + new_marks
 
 
 @router.patch("/tests/{test_id}/questions/{question_id}")
@@ -651,48 +734,41 @@ def update_question(
         raise HTTPException(status_code=404, detail="Test not found")
 
     old_marks = q.marks or 0.0
-    q.question_type = QuestionType(payload.question_type)
-    q.question_text = payload.question_text
-    q.options = payload.options
-    q.correct_answer = payload.correct_answer
-    q.marks = payload.marks
-    q.negative_marks = payload.negative_marks
-    q.subject = payload.subject
-    q.topic = payload.topic
-    if q.question_type == QuestionType.nat:
-        q.option_images = None
+    _apply_question_payload(q, payload)
+    _recalculate_test_marks(test, old_marks, payload.marks)
 
-    test.total_marks = (test.total_marks or 0.0) - old_marks + payload.marks
     db.commit()
     db.refresh(q)
     return _question_out(q)
 
 
-@router.post("/tests/{test_id}/questions/upload-file", status_code=201)
-async def upload_questions_file(
-    test_id: int,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    _=Depends(require_admin),
-):
+_MAX_UPLOAD_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+
+
+async def _read_upload_bytes(file: UploadFile) -> bytes:
+    """Read and validate an uploaded file, enforcing size and format constraints."""
     if not file.filename or not file.filename.lower().endswith(".json"):
         raise HTTPException(status_code=400, detail="Only .json files accepted")
 
-    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
     contents_arr = bytearray()
     while chunk := await file.read(1024 * 1024):
         contents_arr.extend(chunk)
-        if len(contents_arr) > MAX_FILE_SIZE:
+        if len(contents_arr) > _MAX_UPLOAD_FILE_SIZE:
             raise HTTPException(
                 status_code=413, detail="File too large. Maximum allowed size is 50 MB."
             )
     contents_bytes = bytes(contents_arr)
-    
+
     if not contents_bytes:
         raise HTTPException(status_code=400, detail="Uploaded JSON file is empty")
 
+    return contents_bytes
+
+
+def _parse_json_bytes(contents: bytes) -> list:
+    """Decode bytes to UTF-8, parse JSON, and extract the questions array."""
     try:
-        decoded = contents_bytes.decode("utf-8")
+        decoded = contents.decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="JSON file must be UTF-8 encoded")
 
@@ -710,11 +786,16 @@ async def upload_questions_file(
             status_code=400, detail="JSON file does not contain any questions"
         )
 
-    validated_questions: list[QuestionFileImport] = []
-    validation_errors: list[dict] = []
+    return raw_questions
+
+
+def _validate_raw_questions(raw_questions: list) -> list[QuestionFileImport]:
+    """Validate each raw question dict and return parsed models, or raise on errors."""
+    validated: list[QuestionFileImport] = []
+    errors: list[dict] = []
     for idx, raw_question in enumerate(raw_questions, start=1):
         if not isinstance(raw_question, dict):
-            validation_errors.append(
+            errors.append(
                 {
                     "question_index": idx,
                     "field": "question",
@@ -723,33 +804,33 @@ async def upload_questions_file(
             )
             continue
         try:
-            validated_questions.append(QuestionFileImport.model_validate(raw_question))
+            validated.append(QuestionFileImport.model_validate(raw_question))
         except ValidationError as exc:
-            validation_errors.extend(_format_question_validation_errors(idx, exc))
+            errors.extend(_format_question_validation_errors(idx, exc))
 
-    if validation_errors:
+    if errors:
         raise HTTPException(
             status_code=422,
             detail={
-                "message": f"Validation failed for {len(validation_errors)} field(s)",
-                "errors": validation_errors,
+                "message": f"Validation failed for {len(errors)} field(s)",
+                "errors": errors,
             },
         )
 
-    test = db.query(Test).filter(Test.id == test_id).first()
-    if not test:
-        raise HTTPException(status_code=404, detail="Not found")
+    return validated
 
-    existing = (
-        db.query(func.count(Question.id)).filter(Question.test_id == test_id).scalar()
-        or 0
-    )
-    new_questions = []
-    total_added = 0.0
-    for question in validated_questions:
-        new_questions.append(
+
+def _persist_imported_questions(
+    db: Session, test: Test, questions: list[QuestionFileImport]
+) -> tuple[int, int]:
+    """Bulk-insert validated questions into a test. Returns (imported_count, new_total)."""
+    existing = _get_existing_question_count(db, test.id)
+    new_rows = []
+    total_marks = 0.0
+    for question in questions:
+        new_rows.append(
             Question(
-                test_id=test_id,
+                test_id=test.id,
                 question_type=question.question_type,
                 question_text=question.question_text,
                 options=question.options,
@@ -761,18 +842,37 @@ async def upload_questions_file(
                 topic=question.topic,
             )
         )
-        total_added += question.marks
+        total_marks += question.marks
 
-    db.add_all(new_questions)
-    test.total_marks = (test.total_marks or 0.0) + total_added
+    db.add_all(new_rows)
+    test.total_marks = (test.total_marks or 0.0) + total_marks
     db.commit()
 
-    imported_count = len(validated_questions)
+    return len(questions), existing + len(questions)
+
+
+@router.post("/tests/{test_id}/questions/upload-file", status_code=201)
+async def upload_questions_file(
+    test_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _=Depends(require_admin),
+):
+    contents = await _read_upload_bytes(file)
+    raw_questions = _parse_json_bytes(contents)
+    validated = _validate_raw_questions(raw_questions)
+
+    test = db.query(Test).filter(Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    imported_count, total_in_test = _persist_imported_questions(db, test, validated)
+
     return {
         "status": "success",
         "message": f"Imported {imported_count} question{'' if imported_count == 1 else 's'} from JSON file",
         "imported_count": imported_count,
-        "total_in_test": existing + imported_count,
+        "total_in_test": total_in_test,
     }
 
 

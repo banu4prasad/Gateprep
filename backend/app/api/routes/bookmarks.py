@@ -66,40 +66,43 @@ def toggle_bookmark(
         db.commit()
         return {"bookmarked": True, "message": "Bookmarked"}
 
+def _fetch_user_bookmarks(db: Session, user_id: int) -> List[Bookmark]:
+    """Helper function to fetch all bookmarks for a specific user."""
+    return (
+        db.query(Bookmark)
+        .filter(Bookmark.user_id == user_id)
+        .order_by(Bookmark.created_at.desc())
+        .all()
+    )
+
+
+def _format_bookmark(bookmark: Bookmark) -> BookmarkOut:
+    """Helper function to format a Bookmark ORM model into a BookmarkOut schema."""
+    q = bookmark.question
+    return BookmarkOut(
+        id=bookmark.id,
+        question_id=q.id,
+        question_text=q.question_text,
+        question_type=q.question_type,
+        options=q.options or [],
+        correct_answer=q.correct_answer,
+        marks=q.marks,
+        subject=q.subject,
+        topic=q.topic,
+        note=bookmark.note,
+        created_at=bookmark.created_at,
+        test_id=q.test_id,
+        test_title=q.test.title,
+    )
+
 
 @router.get("", response_model=List[BookmarkOut])
 def get_bookmarks(
     db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
     """Get all bookmarked questions for current user."""
-    bookmarks = (
-        db.query(Bookmark)
-        .filter(Bookmark.user_id == current_user.id)
-        .order_by(Bookmark.created_at.desc())
-        .all()
-    )
-
-    result = []
-    for b in bookmarks:
-        q = b.question
-        result.append(
-            BookmarkOut(
-                id=b.id,
-                question_id=q.id,
-                question_text=q.question_text,
-                question_type=q.question_type,
-                options=q.options or [],
-                correct_answer=q.correct_answer,
-                marks=q.marks,
-                subject=q.subject,
-                topic=q.topic,
-                note=b.note,
-                created_at=b.created_at,
-                test_id=q.test_id,
-                test_title=q.test.title,
-            )
-        )
-    return result
+    bookmarks = _fetch_user_bookmarks(db, current_user.id)
+    return [_format_bookmark(b) for b in bookmarks]
 
 
 @router.patch("/{question_id}/note")

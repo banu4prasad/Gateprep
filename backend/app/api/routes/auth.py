@@ -1,7 +1,14 @@
 from datetime import datetime, timezone
 
 from typing import Optional, cast, Literal
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+)
 from fastapi_cache import FastAPICache
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
@@ -10,9 +17,14 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.limiter import limiter
-from app.core.security import (create_access_token, decode_token,
-                               generate_session_id, hash_password,
-                               hash_password_reset_token, verify_password)
+from app.core.security import (
+    create_access_token,
+    decode_token,
+    generate_session_id,
+    hash_password,
+    hash_password_reset_token,
+    verify_password,
+)
 from app.models.models import PasswordResetToken, User, UserRole
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -64,7 +76,9 @@ def _set_auth_cookie(response: Response, token: str) -> None:
         max_age=_auth_cookie_max_age_seconds(),
         httponly=True,
         secure=settings.AUTH_COOKIE_SECURE,
-        samesite=cast(Literal["lax", "strict", "none"] | None, settings.AUTH_COOKIE_SAMESITE),
+        samesite=cast(
+            Literal["lax", "strict", "none"] | None, settings.AUTH_COOKIE_SAMESITE
+        ),
         path="/",
     )
 
@@ -75,7 +89,9 @@ def _clear_auth_cookie(response: Response) -> None:
         path="/",
         secure=settings.AUTH_COOKIE_SECURE,
         httponly=True,
-        samesite=cast(Literal["lax", "strict", "none"] | None, settings.AUTH_COOKIE_SAMESITE),
+        samesite=cast(
+            Literal["lax", "strict", "none"] | None, settings.AUTH_COOKIE_SAMESITE
+        ),
     )
 
 
@@ -94,7 +110,9 @@ def create_token_for_session(user: User, session_id: str) -> str:
     )
 
 
-def create_token_for_user(user: User, db: Session, request: Optional[Request] = None) -> str:
+def create_token_for_user(
+    user: User, db: Session, request: Optional[Request] = None
+) -> str:
     session_id = generate_session_id()
     user.current_session_id = session_id
     if request and request.client:
@@ -146,9 +164,7 @@ def register(
     db.commit()
     db.refresh(user)
 
-    background_tasks.add_task(
-        FastAPICache.clear, namespace=ADMIN_USERS_CACHE_NAMESPACE
-    )
+    background_tasks.add_task(FastAPICache.clear, namespace=ADMIN_USERS_CACHE_NAMESPACE)
     _set_auth_cookie(response, create_token_for_user(user, db, request))
     return _auth_user_response(user)
 
@@ -178,25 +194,32 @@ def login(
     return _auth_user_response(user)
 
 
+def _invalidate_session(db: Session, token: str) -> None:
+    """Decode a token and rotate the user's session ID to invalidate it."""
+    payload = decode_token(token)
+    if not payload:
+        return
+
+    try:
+        user_id = int(payload.get("sub", ""))
+    except (ValueError, TypeError):
+        return
+
+    session_id = payload.get("sid")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return
+
+    if not session_id or user.current_session_id == session_id:
+        user.current_session_id = generate_session_id()
+        db.commit()
+
+
 @router.post("/logout")
 def logout(request: Request, response: Response, db: Session = Depends(get_db)):
     token = request.cookies.get(settings.AUTH_COOKIE_NAME)
     if token:
-        payload = decode_token(token)
-        if payload:
-            user_id = payload.get("sub")
-            session_id = payload.get("sid")
-            try:
-                if user_id is not None:
-                    user_id = int(user_id)
-            except (ValueError, TypeError):
-                user_id = None
-
-            if user_id:
-                user = db.query(User).filter(User.id == user_id).first()
-                if user and (not session_id or user.current_session_id == session_id):
-                    user.current_session_id = generate_session_id()
-                    db.commit()
+        _invalidate_session(db, token)
 
     _clear_auth_cookie(response)
     return {"message": "Logged out"}
@@ -238,9 +261,8 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
 # ── Reset Password ────────────────────────────────────────────────
 
 
-@router.post("/reset-password")
-@limiter.limit("3/minute")
-def reset_password(request: Request, payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+def _validate_reset_input(payload: ResetPasswordRequest) -> str:
+    """Validate reset payload and return the stripped token."""
     token = payload.token.strip()
     if not token:
         raise HTTPException(status_code=400, detail="Invalid or expired reset link")
@@ -248,7 +270,11 @@ def reset_password(request: Request, payload: ResetPasswordRequest, db: Session 
         raise HTTPException(
             status_code=400, detail="Password must be at least 6 characters"
         )
+    return token
 
+
+def _lookup_valid_reset_token(db: Session, token: str) -> PasswordResetToken:
+    """Find a reset token by hash, raising if missing, used, or expired."""
     reset_token = (
         db.query(PasswordResetToken)
         .filter(PasswordResetToken.token_hash == hash_password_reset_token(token))
@@ -261,12 +287,15 @@ def reset_password(request: Request, payload: ResetPasswordRequest, db: Session 
         or _as_utc(reset_token.expires_at) < now
     ):
         raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+    return reset_token
 
-    user = db.query(User).filter(User.id == reset_token.user_id).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
 
-    user.hashed_password = hash_password(payload.password)
+def _apply_password_reset(
+    db: Session, user: User, reset_token: PasswordResetToken, new_password: str
+) -> None:
+    """Update the user's password, invalidate sessions, and consume all tokens."""
+    now = _utcnow()
+    user.hashed_password = hash_password(new_password)
     user.current_session_id = None
     user.current_ip = None
     reset_token.used_at = now
@@ -280,6 +309,21 @@ def reset_password(request: Request, payload: ResetPasswordRequest, db: Session 
         .update({PasswordResetToken.used_at: now}, synchronize_session=False)
     )
     db.commit()
+
+
+@router.post("/reset-password")
+@limiter.limit("3/minute")
+def reset_password(
+    request: Request, payload: ResetPasswordRequest, db: Session = Depends(get_db)
+):
+    token = _validate_reset_input(payload)
+    reset_token = _lookup_valid_reset_token(db, token)
+
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link")
+
+    _apply_password_reset(db, user, reset_token, payload.password)
 
     return {"message": "Password reset successful. Please sign in."}
 

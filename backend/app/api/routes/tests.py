@@ -9,8 +9,14 @@ from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.api.deps import get_current_user, require_aspirant
 from app.core.database import get_db
-from app.models.models import (PracticeAttemptCounter, Question, Test,
-                               TestAttempt, TestStatus, UserAnswer)
+from app.models.models import (
+    PracticeAttemptCounter,
+    Question,
+    Test,
+    TestAttempt,
+    TestStatus,
+    UserAnswer,
+)
 from app.services.cloudinary_service import (
     optimize_delivery_image_url,
     optimize_delivery_image_urls,
@@ -174,6 +180,57 @@ def get_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_aspi
 # ── Attempt ───────────────────────────────────────────────────────
 
 
+def _enforce_reattempt_limit(progress: dict) -> None:
+    """Raise if the user has exhausted their allowed attempts."""
+    if progress["total_used"] >= MAX_REATTEMPTS + 1:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Maximum attempts ({MAX_REATTEMPTS + 1}) reached for this test.",
+        )
+
+
+def _delete_leftover_attempts(db: Session, user_id: int, test_id: int) -> None:
+    """Delete any in-progress attempts and their child answers.
+
+    Bulk-delete child UserAnswers first because the ORM cascade is
+    "delete-orphan" but the DB FK on user_answers.attempt_id has no
+    ON DELETE CASCADE — skipping the child delete would orphan
+    user_answers rows and break FK integrity.
+    """
+    leftover_attempt_ids = (
+        db.query(TestAttempt.id)
+        .filter(
+            TestAttempt.user_id == user_id,
+            TestAttempt.test_id == test_id,
+            TestAttempt.status == TestStatus.in_progress,
+        )
+        .scalar_subquery()
+    )
+    db.query(UserAnswer).filter(UserAnswer.attempt_id.in_(leftover_attempt_ids)).delete(
+        synchronize_session=False
+    )
+    db.query(TestAttempt).filter(
+        TestAttempt.user_id == user_id,
+        TestAttempt.test_id == test_id,
+        TestAttempt.status == TestStatus.in_progress,
+    ).delete(synchronize_session=False)
+    db.commit()
+
+
+def _create_fresh_attempt(db: Session, user_id: int, test_id: int) -> TestAttempt:
+    """Create and return a new in-progress TestAttempt."""
+    attempt = TestAttempt(
+        user_id=user_id,
+        test_id=test_id,
+        status=TestStatus.in_progress,
+        started_at=datetime.now(timezone.utc),
+    )
+    db.add(attempt)
+    db.commit()
+    db.refresh(attempt)
+    return attempt
+
+
 @router.post("/{test_id}/start")
 def start_test(
     test_id: int, db: Session = Depends(get_db), current_user=Depends(require_aspirant)
@@ -185,51 +242,10 @@ def start_test(
         raise HTTPException(status_code=404, detail="Test not found")
 
     progress = _attempt_progress(db, current_user.id, test_id)
+    _enforce_reattempt_limit(progress)
+    _delete_leftover_attempts(db, current_user.id, test_id)
+    attempt = _create_fresh_attempt(db, current_user.id, test_id)
 
-    # Enforce reattempt limit
-    if progress["total_used"] >= MAX_REATTEMPTS + 1:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Maximum attempts ({MAX_REATTEMPTS + 1}) reached for this test.",
-        )
-
-    # Delete any leftover in-progress attempt (user exited without submitting).
-    # Bulk-delete child UserAnswers first because the ORM cascade is
-    # "delete-orphan" but the DB FK on user_answers.attempt_id has no
-    # ON DELETE CASCADE — skipping the child delete would orphan
-    # user_answers rows and break FK integrity. Collapses N+1 roundtrips
-    # down to 2 DELETEs + 1 COMMIT regardless of leftover count.
-    leftover_attempt_ids = (
-        db.query(TestAttempt.id)
-        .filter(
-            TestAttempt.user_id == current_user.id,
-            TestAttempt.test_id == test_id,
-            TestAttempt.status == TestStatus.in_progress,
-        )
-        .scalar_subquery()
-    )
-    db.query(UserAnswer).filter(
-        UserAnswer.attempt_id.in_(leftover_attempt_ids)
-    ).delete(synchronize_session=False)
-    db.query(TestAttempt).filter(
-        TestAttempt.user_id == current_user.id,
-        TestAttempt.test_id == test_id,
-        TestAttempt.status == TestStatus.in_progress,
-    ).delete(synchronize_session=False)
-    db.commit()
-
-    # Always create a fresh attempt
-    attempt = TestAttempt(
-        user_id=current_user.id,
-        test_id=test_id,
-        status=TestStatus.in_progress,
-        started_at=datetime.now(timezone.utc),
-    )
-    db.add(attempt)
-    db.commit()
-    db.refresh(attempt)
-
-    # First attempts are saved. Later attempts are temporary and deleted after submit.
     attempt_number = progress["total_used"] + 1
     max_attempts = MAX_REATTEMPTS + 1
 
@@ -765,11 +781,7 @@ def get_leaderboard(
     current_user_rank = None
     for rank, attempt in enumerate(first_attempts, 1):
         score = attempt.score or 0.0
-        pct = (
-            round(score / attempt.total_marks * 100, 1)
-            if attempt.total_marks
-            else 0
-        )
+        pct = round(score / attempt.total_marks * 100, 1) if attempt.total_marks else 0
         if attempt.user_id == current_user.id:
             current_user_rank = rank
         leaderboard.append(

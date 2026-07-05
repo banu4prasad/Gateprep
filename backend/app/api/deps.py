@@ -8,27 +8,22 @@ from app.core.security import decode_token
 from app.models.models import User, UserRole
 
 
-def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
-    token = request.cookies.get(settings.AUTH_COOKIE_NAME)
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+def _get_auth_token(request: Request) -> Optional[str]:
+    return request.cookies.get(settings.AUTH_COOKIE_NAME)
 
-    payload = decode_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    if payload.get("auth") != "cookie":
-        raise HTTPException(status_code=401, detail="Invalid token")
 
+def _get_user_id_from_payload(payload: dict) -> int:
     user_id = payload.get("sub")
-    session_id = payload.get("sid")
-
     if user_id is None:
         raise HTTPException(status_code=401, detail="Invalid token")
-    try:
-        user_id = int(user_id)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=401, detail="Invalid token")
 
+    try:
+        return int(user_id)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=401, detail="Invalid token") from exc
+
+
+def _get_authenticated_user(db: Session, user_id: int, session_id: Optional[str]) -> User:
     user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
@@ -41,6 +36,22 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
         )
 
     return user
+
+
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
+    token = _get_auth_token(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    if payload.get("auth") != "cookie":
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user_id = _get_user_id_from_payload(payload)
+    session_id = payload.get("sid")
+    return _get_authenticated_user(db, user_id, session_id)
 
 
 def get_optional_current_user(request: Request, db: Session = Depends(get_db)) -> Optional[User]:
