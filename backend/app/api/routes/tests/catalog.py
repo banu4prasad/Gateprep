@@ -6,10 +6,6 @@ from app.api.deps import require_aspirant
 from app.core.database import get_db
 from app.models.models import Question, Test
 
-router = APIRouter()
-
-
-@router.get("/")
 def list_tests(db: Session = Depends(get_db), _=Depends(require_aspirant)):
     results = (
         db.query(Test, func.count(Question.id).label("question_count"))
@@ -38,7 +34,6 @@ def list_tests(db: Session = Depends(get_db), _=Depends(require_aspirant)):
     ]
 
 
-@router.get("/{test_id}")
 def get_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_aspirant)):
     test = db.query(Test).filter(Test.id == test_id).first()
     if not test:

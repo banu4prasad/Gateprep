@@ -33,7 +33,7 @@ export const adminAPI = {
 
 // ── Tests ─────────────────────────────────────────────────────────
 export const testAPI = {
-  getTests:           ()                        => api.get('/tests/'),
+  getTests:           ()                        => api.get('/tests'),
   getTest:            (id)                      => api.get(`/tests/${id}`),
   startTest:          (id)                      => api.post(`/tests/${id}/start`),
   getQuestions:       (testId, attemptId)       => api.get(`/tests/${testId}/attempt/${attemptId}/questions`),
