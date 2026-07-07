@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import os
 from urllib.parse import urlencode
 
 from fastapi import HTTPException, UploadFile
@@ -56,7 +57,10 @@ async def read_upload_bytes(
 ) -> bytes:
     """Read and validate an uploaded file, enforcing size and format constraints."""
     if allowed_extensions and file.filename:
-        ext = file.filename.rsplit(".", 1)[-1].lower()
+        secure_name = os.path.basename(file.filename.replace("\\", "/"))
+        if "." not in secure_name:
+            raise HTTPException(status_code=400, detail="File must have an extension")
+        ext = secure_name.rsplit(".", 1)[-1].lower()
         if ext not in allowed_extensions:
             raise HTTPException(
                 status_code=400,

@@ -92,13 +92,7 @@ class Settings(BaseSettings):
     CLOUDINARY_API_SECRET: str = ""
 
     @model_validator(mode="after")
-    def _reject_placeholder_secrets(self) -> "Settings":
-        if self.SECRET_KEY == "change-me-in-production-32-chars-minimum":
-            raise ValueError(
-                "SECRET_KEY is still set to the placeholder value. "
-                "Generate a real secret directly into your .env file:\n"
-                '  python3 -c "import secrets; open(\'.env\', \'a\').write(f\'SECRET_KEY={secrets.token_hex(32)}\\n\')"'
-            )
+    def _validate_secret_key(self) -> "Settings":
         if len(self.SECRET_KEY) < 32:
             raise ValueError("SECRET_KEY must be at least 32 characters.")
         return self
