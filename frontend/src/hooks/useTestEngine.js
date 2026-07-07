@@ -336,9 +336,17 @@ export default function useTestEngine() {
     setNatInput('')
   }, [currentQuestion])
 
-  const subjects = useMemo(() => {
-    return [...new Set(questions.map(q => q.subject || 'General'))]
+  const questionGroups = useMemo(() => {
+    const map = new Map()
+    questions.forEach((q, idx) => {
+      const subject = q.subject || 'General'
+      if (!map.has(subject)) map.set(subject, [])
+      map.get(subject).push({ question: q, index: idx })
+    })
+    return map
   }, [questions])
+
+  const subjects = useMemo(() => [...questionGroups.keys()], [questionGroups])
 
   const answered = useMemo(() => {
     return Object.values(answers).filter(Boolean).length
@@ -388,6 +396,7 @@ export default function useTestEngine() {
     showPalette,
     started,
     starting,
+    questionGroups,
     subjects,
     submitting,
     tabViolations,

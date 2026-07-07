@@ -233,6 +233,7 @@ export default function TestEngine() {
     natInput,
     navigate,
     notAnswered,
+    questionGroups,
     questions,
     saveAndNext,
     setAccepted,
@@ -286,9 +287,9 @@ export default function TestEngine() {
         setShowPalette(false)
       }}
       onSubmitClick={() => setShowConfirm(true)}
+      questionGroups={questionGroups}
       questions={questions}
       submitting={submitting}
-      subjects={subjects}
       visited={visited}
     />
   )

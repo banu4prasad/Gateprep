@@ -10,9 +10,9 @@ export default function TestSidebar({
   notAnswered,
   onQuestionSelect,
   onSubmitClick,
+  questionGroups,
   questions,
   submitting,
-  subjects,
   visited,
 }) {
   return (
@@ -37,34 +37,30 @@ export default function TestSidebar({
         ))}
       </div>
 
-      {subjects.map(subject => {
-        const subjectQuestions = questions.filter(q => (q.subject || 'General') === subject)
-        return (
-          <div key={subject} className="p-2 border-b theme-border">
-            <p className="text-xs font-semibold mb-2 truncate theme-text">{subject}</p>
-            <div className="grid grid-cols-5 gap-1">
-              {subjectQuestions.map(question => {
-                const questionIndex = questions.indexOf(question)
-                const isCurrent = question.id === currentQuestion?.id
-                const status = isCurrent
-                  ? 'current'
-                  : !visited.has(question.id)
-                    ? 'not-visited'
-                    : getQStatus(question.id, currentQuestion?.id, answers, marked)
-                return (
-                  <button
-                    key={question.id}
-                    onClick={() => onQuestionSelect(questionIndex)}
-                    className={STATUS_CLASS[status] || STATUS_CLASS['not-visited']}
-                  >
-                    {questionIndex + 1}
-                  </button>
-                )
-              })}
-            </div>
+      {[...questionGroups.entries()].map(([subject, items]) => (
+        <div key={subject} className="p-2 border-b theme-border">
+          <p className="text-xs font-semibold mb-2 truncate theme-text">{subject}</p>
+          <div className="grid grid-cols-5 gap-1">
+            {items.map(({ question, index: questionIndex }) => {
+              const isCurrent = question.id === currentQuestion?.id
+              const status = isCurrent
+                ? 'current'
+                : !visited.has(question.id)
+                  ? 'not-visited'
+                  : getQStatus(question.id, currentQuestion?.id, answers, marked)
+              return (
+                <button
+                  key={question.id}
+                  onClick={() => onQuestionSelect(questionIndex)}
+                  className={STATUS_CLASS[status] || STATUS_CLASS['not-visited']}
+                >
+                  {questionIndex + 1}
+                </button>
+              )
+            })}
           </div>
-        )
-      })}
+        </div>
+      ))}
 
       <div className="p-2 mt-auto">
         <button
