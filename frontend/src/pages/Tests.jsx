@@ -103,7 +103,7 @@ function NavCard({ label, count, onClick, icon }) {
 
 // ── Main Page ─────────────────────────────────────────────────────
 export default function TestsPage() {
-  const { data: testsData, isLoading: testsLoading } = useSWR('/tests', fetcher)
+  const { data: testsData, isLoading: testsLoading } = useSWR('/tests/', fetcher)
   const { data: historyData, isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
   
   const loading = testsLoading || historyLoading

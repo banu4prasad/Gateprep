@@ -10,7 +10,7 @@ import { ResultCardSkeleton } from '../components/shared/Skeletons'
 
 export default function MyResults() {
   const { data: historyData, isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
-  const { data: testsData, isLoading: testsLoading } = useSWR('/tests', fetcher)
+  const { data: testsData, isLoading: testsLoading } = useSWR('/tests/', fetcher)
   
   const loading = historyLoading || testsLoading
   const history = historyData || []

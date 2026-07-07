@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button'
 export default function Dashboard() {
   const { user } = useAuth()
   
-  const { data: tests = [], isLoading: testsLoading } = useSWR('/tests', fetcher)
+  const { data: tests = [], isLoading: testsLoading } = useSWR('/tests/', fetcher)
   const { data: history = [], isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
   const isInitialDataLoading = testsLoading || historyLoading
 
