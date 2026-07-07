@@ -9,6 +9,10 @@ from app.services.answer_utils import (
     split_answer_tokens,
     is_valid_nat_answer,
     normalize_choice_answer,
+    validate_msq_answer,
+    validate_mcq_answer,
+    validate_nat_answer,
+    validate_answer_for_type,
 )
 
 class DummyEnum(Enum):
@@ -109,3 +113,57 @@ def test_nat_colon_range_scores_boundary_values():
 def test_nat_hyphen_negative_range_still_works():
     assert parse_nat_range("-2--1") == (-2.0, -1.0)
     assert is_valid_nat_answer("-2--1") is True
+
+def test_validate_mcq_answer():
+    assert validate_mcq_answer("A") == "A"
+    assert validate_mcq_answer("C") == "C"
+
+    with pytest.raises(ValueError, match="MCQ correct_answer must be one of A, B, C, or D"):
+        validate_mcq_answer("E")
+    
+    with pytest.raises(ValueError, match="MCQ correct_answer must be one of A, B, C, or D"):
+        validate_mcq_answer("A,B")
+
+def test_validate_msq_answer():
+    # Happy paths
+    assert validate_msq_answer("A, B") == ("A,B", 0.0)
+    assert validate_msq_answer(" a ; C / d ") == ("A,C,D", 0.0)
+    assert validate_msq_answer("A") == ("A", 0.0)
+    
+    # Duplicates are removed (order preserved)
+    assert validate_msq_answer("A, B, A, C, b") == ("A,B,C", 0.0)
+    
+    # Error cases
+    with pytest.raises(ValueError, match="MSQ correct_answer must contain option letters like A,C"):
+        validate_msq_answer("")
+        
+    with pytest.raises(ValueError, match="MSQ correct_answer must contain option letters like A,C"):
+        validate_msq_answer("A, E")
+        
+    with pytest.raises(ValueError, match="MSQ correct_answer must contain option letters like A,C"):
+        validate_msq_answer("1, 2")
+def test_validate_nat_answer():
+    assert validate_nat_answer("1.5:2.5") == 0.0
+    assert validate_nat_answer("42") == 0.0
+
+    with pytest.raises(ValueError, match="NAT correct_answer must be a number or range like 41.5-42.5 or 41.5:42.5"):
+        validate_nat_answer("abc")
+
+def test_validate_answer_for_type():
+    # MCQ
+    ans, neg, clear = validate_answer_for_type("mcq", "B")
+    assert ans == "B"
+    assert neg is None
+    assert clear is False
+
+    # MSQ
+    ans, neg, clear = validate_answer_for_type("msq", "A, C")
+    assert ans == "A,C"
+    assert neg == 0.0
+    assert clear is False
+
+    # NAT
+    ans, neg, clear = validate_answer_for_type("nat", "1.5:2.5")
+    assert ans == "1.5:2.5"
+    assert neg == 0.0
+    assert clear is True
