@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
-from app.models.models import TestAttempt, TestStatus
+from app.models.models import Test, TestAttempt, TestStatus
 from app.api.routes.tests.helpers import (
     MAX_REATTEMPTS,
     _attempt_progress,
@@ -22,6 +22,10 @@ def get_result(
 ):
     attempt = (
         db.query(TestAttempt)
+        .options(
+            joinedload(TestAttempt.test).selectinload(Test.questions),
+            selectinload(TestAttempt.answers),
+        )
         .filter(TestAttempt.id == attempt_id, TestAttempt.user_id == current_user.id)
         .first()
     )

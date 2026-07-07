@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session, aliased, joinedload
+from sqlalchemy.orm import Session, aliased, joinedload, selectinload
 
 from app.models.models import (
     PracticeAttemptCounter,
@@ -137,7 +137,10 @@ def _first_attempts_pg(test_id: int, db: Session) -> list[TestAttempt]:
 
     return (
         db.query(FirstAttempt)
-        .options(joinedload(FirstAttempt.user))
+        .options(
+            joinedload(FirstAttempt.user),
+            selectinload(FirstAttempt.answers),
+        )
         .order_by(
             FirstAttempt.score.desc(),
             FirstAttempt.id.asc(),
@@ -167,7 +170,10 @@ def _first_attempts_generic(test_id: int, db: Session) -> list[TestAttempt]:
 
     return (
         db.query(TestAttempt)
-        .options(joinedload(TestAttempt.user))
+        .options(
+            joinedload(TestAttempt.user),
+            selectinload(TestAttempt.answers),
+        )
         .join(
             first_attempt_ids_subquery,
             TestAttempt.id == first_attempt_ids_subquery.c.attempt_id,
