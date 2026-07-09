@@ -1,17 +1,16 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import useSWR from 'swr'
 import { fetcher } from '../api/api'
 import { SUBJECTS, SERIES_LABELS, TYPE_LABELS } from '../utils/constants'
+import { useTestNavigation } from '../hooks/useTestNavigation'
 import Clock from 'lucide-react/dist/esm/icons/clock'
 import BookOpen from 'lucide-react/dist/esm/icons/book-open'
 import Target from 'lucide-react/dist/esm/icons/target'
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
 import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right'
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left'
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
-import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
 import { TestCardSkeleton } from '../components/shared/Skeletons'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
@@ -85,7 +84,7 @@ function Breadcrumb({ steps, onBack }) {
 }
 
 // ── Nav Card ──────────────────────────────────────────────────────
-function NavCard({ label, count, onClick, icon }) {
+function NavCard({ label, count, onClick }) {
   return (
     <Card className="hover:border-primary/50 transition-all group w-full cursor-pointer border-border" onClick={onClick}>
       <CardContent className="p-5 flex items-center justify-between gap-4">
@@ -116,41 +115,7 @@ export default function TestsPage() {
     return map
   }, [historyData])
 
-  // Navigation state: array of {type, value} steps
-  // Examples:
-  // [] = root
-  // [{type:'category', value:'weekly_quiz'}] = weekly quiz subjects
-  // [{type:'category', value:'weekly_quiz'}, {type:'subject', value:'Algorithms'}] = tests
-  // [{type:'category', value:'test_series'}] = series names
-  // [{type:'category', value:'test_series'}, {type:'series', value:'made_easy'}] = test types
-  // [{type:'category', value:'test_series'}, {type:'series', value:'made_easy'}, {type:'type', value:'subject_wise'}] = tests
-  // [{type:'category', value:'test_series'}, {type:'series', value:'made_easy'}, {type:'type', value:'topic_wise'}] = subjects
-  // [{...topic_wise}, {type:'subject', value:'Algorithms'}] = tests
-  const [nav, setNav] = useState([])
-
-  const push = (type, value) => setNav(n => [...n, { type, value }])
-  const goBack = (idx) => setNav(n => n.slice(0, idx))
-
-  // Get current filtered tests based on nav
-  const filteredTests = useMemo(() => {
-    let filtered = tests
-    nav.forEach(step => {
-      if (step.type === 'category') filtered = filtered.filter(t => t.category === step.value)
-      if (step.type === 'series')   filtered = filtered.filter(t => t.series_name === step.value)
-      if (step.type === 'type')     filtered = filtered.filter(t => t.test_type === step.value)
-      if (step.type === 'subject')  filtered = filtered.filter(t => t.subject === step.value)
-    })
-    return filtered
-  }, [tests, nav])
-
-  // Build breadcrumb labels
-  const breadcrumbs = useMemo(() => ['Tests', ...nav.map(s => {
-    if (s.type === 'category') return s.value === 'weekly_quiz' ? 'Weekly Quiz' : 'Test Series'
-    if (s.type === 'series')   return SERIES_LABELS[s.value] || s.value
-    if (s.type === 'type')     return TYPE_LABELS[s.value] || s.value
-    if (s.type === 'subject')  return s.value
-    return s.value
-  })], [nav])
+  const { nav, currentNav, push, goBack, filteredTests, breadcrumbs } = useTestNavigation(tests)
 
   if (loading) {
     return (
@@ -171,8 +136,6 @@ export default function TestsPage() {
       </Layout>
     )
   }
-
-  const currentNav = nav[nav.length - 1]
 
   // ── Root: pick category ───────────────────────────────────────
   if (nav.length === 0) {
