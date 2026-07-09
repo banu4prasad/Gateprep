@@ -3,22 +3,11 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down'
 import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up'
 import Pencil from 'lucide-react/dist/esm/icons/pencil'
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2'
-import Upload from 'lucide-react/dist/esm/icons/upload'
+import ImageSlot from './ImageSlot'
 import QuestionEditForm from './QuestionEditForm'
 import { OPTION_LETTERS } from './questionUtils'
 
 const typeColor = { mcq: 'badge-blue', msq: 'badge-amber', nat: 'badge-green' }
-
-const openImage = (url) => {
-  window.open(url, '_blank')
-}
-
-const imageKeyHandler = (url) => (event) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault()
-    openImage(url)
-  }
-}
 
 const QuestionCard = memo(function QuestionCard({
   q,
@@ -108,37 +97,21 @@ const QuestionCard = memo(function QuestionCard({
                         <p>
                           <span className="font-mono font-semibold mr-1.5">{letter}.</span>{option}
                         </p>
-                        {optionImages[letter] ? (
-                          <div className="flex items-start gap-2">
-                            <img
-                              src={optionImages[letter]}
-                              alt={`Option ${letter}`}
-                              role="button"
-                              tabIndex={0}
-                              aria-label={`View option ${letter} image`}
-                              loading="lazy"
-                              decoding="async"
-                              onKeyDown={imageKeyHandler(optionImages[letter])}
-                              className="max-h-24 rounded border theme-border cursor-pointer theme-surface focus-visible:ring-2 focus-visible:ring-sky-500 outline-none"
-                              onClick={() => openImage(optionImages[letter])}
-                            />
-                            <button onClick={() => onDeleteImage(q.id, letter)} className="text-xs text-red-400 hover:text-red-300 mt-1">
-                              Remove
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="flex items-center gap-2 cursor-pointer w-fit">
-                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-dashed theme-border text-xs theme-muted hover:border-sky-500 hover:text-sky-400 transition-colors">
-                              <Upload size={12}/> Add answer image
-                            </div>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={event => { if (event.target.files[0]) onUploadImage(q.id, event.target.files[0], letter) }}
-                            />
-                          </label>
-                        )}
+                        <ImageSlot
+                          imageUrl={optionImages[letter] || null}
+                          ariaLabel={`View option ${letter} image`}
+                          imgAlt={`Option ${letter}`}
+                          maxHeight="max-h-24"
+                          imgExtraClass="theme-surface"
+                          wrapperGap="gap-2"
+                          uploadLabel="Add answer image"
+                          uploadIconSize={12}
+                          uploadPadX="px-2.5"
+                          onUploadImage={(file) => onUploadImage(q.id, file, letter)}
+                          onDeleteImage={onDeleteImage}
+                          deleteTarget={q.id}
+                          deleteExtraArg={letter}
+                        />
                       </div>
                     )
                   })}
@@ -155,37 +128,20 @@ const QuestionCard = memo(function QuestionCard({
 
               <div className="border-t theme-border pt-3">
                 <p className="text-xs theme-muted mb-2">Question Image (optional)</p>
-                {q.question_image_url ? (
-                  <div className="flex items-start gap-3">
-                    <img
-                      src={q.question_image_url}
-                      alt="Question image"
-                      role="button"
-                      tabIndex={0}
-                      aria-label="View full size image"
-                      loading="lazy"
-                      decoding="async"
-                      onKeyDown={imageKeyHandler(q.question_image_url)}
-                      className="max-h-32 rounded border theme-border cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 outline-none"
-                      onClick={() => openImage(q.question_image_url)}
-                    />
-                    <button onClick={() => onDeleteImage(q.id, 'question')} className="text-xs text-red-400 hover:text-red-300 mt-1">
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <label className="flex items-center gap-2 cursor-pointer w-fit">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-dashed theme-border text-xs theme-muted hover:border-sky-500 hover:text-sky-400 transition-colors">
-                      <Upload size={13}/> Upload Image
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={event => { if (event.target.files[0]) onUploadImage(q.id, event.target.files[0], 'question') }}
-                    />
-                  </label>
-                )}
+                <ImageSlot
+                  imageUrl={q.question_image_url || null}
+                  ariaLabel="View full size image"
+                  imgAlt="Question image"
+                  maxHeight="max-h-32"
+                  wrapperGap="gap-3"
+                  uploadLabel="Upload Image"
+                  uploadIconSize={13}
+                  uploadPadX="px-3"
+                  onUploadImage={(file) => onUploadImage(q.id, file, 'question')}
+                  onDeleteImage={onDeleteImage}
+                  deleteTarget={q.id}
+                  deleteExtraArg={'question'}
+                />
                 <div className="mt-3">
                   <button onClick={() => setEditing(true)} className="btn-ghost inline-flex items-center gap-2 text-sm">
                     <Pencil size={13}/> Edit Question

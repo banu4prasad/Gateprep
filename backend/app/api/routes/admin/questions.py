@@ -292,7 +292,7 @@ async def upload_question_image(
 
     if target == "question":
         if q.question_image_id:
-            delete_image(q.question_image_id)
+            await run_in_threadpool(delete_image, q.question_image_id)
         q.question_image_url = result["url"]
         q.question_image_id = result["public_id"]
     elif target.upper() in ["A", "B", "C", "D"]:
