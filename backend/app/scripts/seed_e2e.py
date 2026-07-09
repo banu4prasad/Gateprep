@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 
@@ -22,7 +23,16 @@ def _upsert_user(db, *, email: str, full_name: str, password: str, role: UserRol
     user.current_ip = None
 
 
+def _delete_user(db, email: str) -> None:
+    user = db.query(User).filter(User.email == email).first()
+    if user:
+        db.delete(user)
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cleanup", action="store_true", help="Remove E2E users instead of creating them")
+    args = parser.parse_args()
     Base.metadata.create_all(bind=engine)
 
     admin_email = os.getenv("E2E_ADMIN_EMAIL", "e2e-admin@example.com")
@@ -36,30 +46,36 @@ def main() -> None:
         raise SystemExit("E2E admin, test user, and auth test user emails must be different.")
 
     with SessionLocal() as db:
-        _upsert_user(
-            db,
-            email=admin_email,
-            full_name="E2E Admin",
-            password=admin_password,
-            role=UserRole.admin,
-        )
-        _upsert_user(
-            db,
-            email=test_email,
-            full_name="Test User",
-            password=test_password,
-            role=UserRole.aspirant,
-        )
-        _upsert_user(
-            db,
-            email=auth_test_email,
-            full_name="Auth Flow User",
-            password=auth_test_password,
-            role=UserRole.aspirant,
-        )
-        db.commit()
-
-    logger.info("Seeded E2E users: %s, %s, %s", admin_email, test_email, auth_test_email)
+        if args.cleanup:
+            _delete_user(db, admin_email)
+            _delete_user(db, test_email)
+            _delete_user(db, auth_test_email)
+            db.commit()
+            logger.info("Cleaned up E2E users: %s, %s, %s", admin_email, test_email, auth_test_email)
+        else:
+            _upsert_user(
+                db,
+                email=admin_email,
+                full_name="E2E Admin",
+                password=admin_password,
+                role=UserRole.admin,
+            )
+            _upsert_user(
+                db,
+                email=test_email,
+                full_name="Test User",
+                password=test_password,
+                role=UserRole.aspirant,
+            )
+            _upsert_user(
+                db,
+                email=auth_test_email,
+                full_name="Auth Flow User",
+                password=auth_test_password,
+                role=UserRole.aspirant,
+            )
+            db.commit()
+            logger.info("Seeded E2E users: %s, %s, %s", admin_email, test_email, auth_test_email)
 
 
 if __name__ == "__main__":
