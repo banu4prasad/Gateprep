@@ -34,6 +34,9 @@ export default function App() {
         <Suspense fallback={
           <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
             <div className="h-14 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg-card)' }} />
+            <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 3.5rem)' }}>
+              <Spinner size={32} />
+            </div>
           </div>
         }>
           <Routes>

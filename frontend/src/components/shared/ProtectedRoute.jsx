@@ -13,7 +13,8 @@ export function ProtectedRoute({ children, role }) {
 }
 
 export function GuestRoute({ children }) {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
+  if (loading) return <Layout><PageLoader /></Layout>
   if (user) {
     if (user.role === 'admin') return <Navigate to="/admin" replace />
     if (user.role === 'aspirant') return <Navigate to="/dashboard" replace />

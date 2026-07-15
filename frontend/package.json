@@ -15,7 +15,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fontsource-variable/geist": "^5.2.9",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.6.7",

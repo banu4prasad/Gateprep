@@ -198,17 +198,21 @@ function SafeInlineMath({ math }) {
   const ariaLabel = mathAriaLabel(math)
 
   useEffect(() => {
-    if (containerRef.current && window.katex) {
-      try {
-        window.katex.render(normalizeMath(math), containerRef.current, {
-          displayMode: false,
-          throwOnError: false,
-          errorColor: '#cc0000',
+    if (containerRef.current) {
+      Promise.all([import('katex'), import('katex/dist/katex.min.css')])
+        .then(([katexModule]) => {
+          if (containerRef.current) {
+            katexModule.default.render(normalizeMath(math), containerRef.current, {
+              displayMode: false,
+              throwOnError: false,
+              errorColor: '#cc0000',
+            })
+          }
         })
-      } catch (err) {
-        console.error("KaTeX RenderError:", err, "Original:", math)
-        containerRef.current.innerText = math
-      }
+        .catch(err => {
+          console.error("KaTeX load/render error:", err, "Original:", math)
+          if (containerRef.current) containerRef.current.innerText = math
+        })
     }
   }, [math])
 
@@ -220,17 +224,21 @@ function SafeBlockMath({ math }) {
   const ariaLabel = mathAriaLabel(math)
 
   useEffect(() => {
-    if (containerRef.current && window.katex) {
-      try {
-        window.katex.render(normalizeMath(math), containerRef.current, {
-          displayMode: true,
-          throwOnError: false,
-          errorColor: '#cc0000',
+    if (containerRef.current) {
+      Promise.all([import('katex'), import('katex/dist/katex.min.css')])
+        .then(([katexModule]) => {
+          if (containerRef.current) {
+            katexModule.default.render(normalizeMath(math), containerRef.current, {
+              displayMode: true,
+              throwOnError: false,
+              errorColor: '#cc0000',
+            })
+          }
         })
-      } catch (err) {
-        console.error("KaTeX RenderError:", err, "Original:", math)
-        containerRef.current.innerText = math
-      }
+        .catch(err => {
+          console.error("KaTeX load/render error:", err, "Original:", math)
+          if (containerRef.current) containerRef.current.innerText = math
+        })
     }
   }, [math])
 
