@@ -93,19 +93,3 @@ def health():
     return {"status": "ok", "version": "2.0.0"}
 
 
-# ── Temporary endpoint — remove after verifying X-Forwarded-For behaviour ──
-# Deploy, then run from an external machine:
-#   curl -H "X-Forwarded-For: 1.2.3.4" https://your-space.hf.space/debug/ip
-# If resolved_ip shows "1.2.3.4" (spoofed), HF appends rather than overwrites
-# and _get_real_client_ip needs to read the rightmost entry instead.
-from fastapi import Request as _DebugRequest
-from app.core.limiter import _get_real_client_ip
-
-
-@app.get("/debug/ip")
-def debug_ip(request: _DebugRequest):
-    return {
-        "client_host": request.client.host if request.client else None,
-        "x_forwarded_for_raw": request.headers.get("x-forwarded-for"),
-        "resolved_ip": _get_real_client_ip(request),
-    }
