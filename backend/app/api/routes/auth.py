@@ -147,10 +147,13 @@ def register(
     db: Session = Depends(get_db),
 ):
     if db.query(User).filter(User.email == payload.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-    if len(payload.password) < 6:
         raise HTTPException(
-            status_code=400, detail="Password must be at least 6 characters"
+            status_code=400,
+            detail="Unable to create account. Please try a different email.",
+        )
+    if len(payload.password) < 8:
+        raise HTTPException(
+            status_code=400, detail="Password must be at least 8 characters"
         )
 
     is_first = db.query(User).count() == 0
@@ -266,9 +269,9 @@ def _validate_reset_input(payload: ResetPasswordRequest) -> str:
     token = payload.token.strip()
     if not token:
         raise HTTPException(status_code=400, detail="Invalid or expired reset link")
-    if len(payload.password) < 6:
+    if len(payload.password) < 8:
         raise HTTPException(
-            status_code=400, detail="Password must be at least 6 characters"
+            status_code=400, detail="Password must be at least 8 characters"
         )
     return token
 

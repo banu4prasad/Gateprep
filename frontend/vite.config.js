@@ -41,7 +41,10 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    include: ['src/**/*.test.{js,ts,jsx,tsx}'],
+    include: ['src/**/*.test.{js,ts,jsx,tsx}', 'api/**/*.test.{js,ts}'],
+    environmentMatchGlobs: [
+      ['api/**', 'node'],
+    ],
   },
   build: {
     rollupOptions: {

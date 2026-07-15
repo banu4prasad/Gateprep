@@ -12,6 +12,7 @@ const HOP_BY_HOP_HEADERS = new Set([
   'upgrade',
 ])
 
+
 function readRequestBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
@@ -21,7 +22,7 @@ function readRequestBody(req) {
   })
 }
 
-function buildTargetUrl(req) {
+export function buildTargetUrl(req) {
   const base = process.env.API_PROXY_TARGET || process.env.BACKEND_URL
   if (!base) {
     throw new Error('API_PROXY_TARGET is not configured')
@@ -31,7 +32,22 @@ function buildTargetUrl(req) {
   const path = incoming.searchParams.get('path') || ''
   incoming.searchParams.delete('path')
 
-  const target = new URL(path.replace(/^\/+/, ''), `${base.replace(/\/+$/, '')}/`)
+  // Reject paths that contain a protocol scheme — these cause
+  // `new URL(path, base)` to ignore the base entirely per the WHATWG
+  // URL spec, enabling SSRF to arbitrary hosts.
+  if (/^[a-zA-Z][a-zA-Z0-9+\-.]*:/.test(path) || path.includes('://')) {
+    throw new Error('Invalid proxy path')
+  }
+
+  const normalizedBase = `${base.replace(/\/+$/, '')}/`
+  const target = new URL(path.replace(/^\/+/, ''), normalizedBase)
+
+  // Defence-in-depth: verify the resolved URL still points at our backend.
+  const expectedOrigin = new URL(normalizedBase).origin
+  if (target.origin !== expectedOrigin) {
+    throw new Error('Invalid proxy path')
+  }
+
   incoming.searchParams.forEach((value, key) => {
     target.searchParams.append(key, value)
   })
@@ -64,7 +80,7 @@ export default async function handler(req, res) {
   try {
     target = buildTargetUrl(req)
   } catch (error) {
-    res.statusCode = 500
+    res.statusCode = 400
     res.setHeader('content-type', 'application/json')
     res.end(JSON.stringify({ detail: error.message }))
     return

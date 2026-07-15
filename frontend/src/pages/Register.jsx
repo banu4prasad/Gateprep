@@ -20,7 +20,7 @@ export default function RegisterPage() {
   const submit = async e => {
     e.preventDefault()
     if (form.password !== form.confirm) { toast.error('Passwords do not match'); return }
-    if (form.password.length < 6) { toast.error('Password must be at least 6 characters'); return }
+    if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return }
     setLoading(true)
     try {
       const res = await authAPI.register({
@@ -66,7 +66,7 @@ export default function RegisterPage() {
               <label htmlFor="password" className="label">Password</label>
               <div className="relative">
                 <input id="password" type={show ? 'text' : 'password'} required value={form.password}
-                  onChange={handle('password')} placeholder="Min. 6 characters" className="input pr-10" />
+                  onChange={handle('password')} placeholder="Min. 8 characters" className="input pr-10" />
                 <button type="button" onClick={() => setShow(s => !s)}
                   aria-label="Toggle password visibility"
                   className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-sky-500 transition-colors"

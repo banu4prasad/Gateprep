@@ -17,7 +17,7 @@ email-validator>=2.1.0
 slowapi>=0.1.9
 
 # Test runner
-pytest>=8.0,<9
+pytest>=9.0.3
 
 # Type checking stubs
 types-passlib

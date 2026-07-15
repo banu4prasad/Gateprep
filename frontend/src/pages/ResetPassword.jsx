@@ -22,7 +22,7 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     if (!token) { toast.error('Invalid reset link'); return }
     if (form.password !== form.confirm) { toast.error('Passwords do not match'); return }
-    if (form.password.length < 6) { toast.error('Password must be at least 6 characters'); return }
+    if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return }
 
     setLoading(true)
     try {
@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
                     required
                     value={form.password}
                     onChange={handle('password')}
-                    placeholder="Min. 6 characters"
+                    placeholder="Min. 8 characters"
                     className="input pr-10"
                     autoComplete="new-password"
                     autoFocus
