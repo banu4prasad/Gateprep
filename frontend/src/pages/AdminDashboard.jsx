@@ -9,6 +9,8 @@ import Clock from 'lucide-react/dist/esm/icons/clock'
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
 import Spinner from '../components/shared/Spinner'
 import { StatCardSkeleton } from '../components/shared/Skeletons'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 
 export default function AdminDashboard() {
   const { data: usersData, isLoading: usersLoading } = useSWR('/admin/users?limit=1', fetcher)
@@ -32,7 +34,7 @@ export default function AdminDashboard() {
 
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-6 animate-fade-in">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Admin Dashboard</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Platform overview</p>
@@ -48,76 +50,82 @@ export default function AdminDashboard() {
             </>
           ) : (
             stats.map(({ label, value, icon: Icon, color, bg }) => (
-              <div key={label} className="gate-card p-5 flex flex-col gap-2">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: bg }}>
-                  <Icon size={18} className={color} />
-                </div>
-                <p className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{value}</p>
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</p>
-              </div>
+              <Card key={label}>
+                <CardContent className="p-5 flex flex-col gap-2">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: bg }}>
+                    <Icon size={18} className={color} />
+                  </div>
+                  <p className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{value}</p>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                </CardContent>
+              </Card>
             ))
           )}
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <div className="gate-card p-5">
-            <h2 className="font-semibold mb-1 text-lg" style={{ color: 'var(--text)' }}>Pending Approvals</h2>
-            {usersLoading || pendingUsersLoading ? (
-              <div className="py-8 flex justify-center"><Spinner /></div>
-            ) : (
-              <>
-                <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-                  {pending} user{pending !== 1 ? 's' : ''} waiting
-                </p>
-                {pending > 0 ? (
-                  <div className="space-y-2 mb-4">
-                    {pendingUsers.map(u => (
-                      <div key={u.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
-                        <div>
-                          <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{u.full_name}</p>
-                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
+          <Card>
+            <CardContent className="p-5">
+              <h2 className="font-semibold mb-1 text-lg" style={{ color: 'var(--text)' }}>Pending Approvals</h2>
+              {usersLoading || pendingUsersLoading ? (
+                <div className="py-8 flex justify-center"><Spinner /></div>
+              ) : (
+                <>
+                  <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+                    {pending} user{pending !== 1 ? 's' : ''} waiting
+                  </p>
+                  {pending > 0 ? (
+                    <div className="flex flex-col gap-2 mb-4">
+                      {pendingUsers.map(u => (
+                        <div key={u.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                          <div>
+                            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{u.full_name}</p>
+                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
+                          </div>
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">Pending</Badge>
                         </div>
-                        <span className="badge badge-amber">Pending</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-green-400 text-sm mb-4">✓ All users approved</p>
-                )}
-                <Link to="/admin/users" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
-                  Manage Users <ArrowRight size={14} />
-                </Link>
-              </>
-            )}
-          </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-green-400 text-sm mb-4">✓ All users approved</p>
+                  )}
+                  <Link to="/admin/users" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
+                    Manage Users <ArrowRight size={14} />
+                  </Link>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
-          <div className="gate-card p-5">
-            <h2 className="font-semibold mb-1 text-lg" style={{ color: 'var(--text)' }}>Recent Tests</h2>
-            {testsLoading ? (
-              <div className="py-8 flex justify-center"><Spinner /></div>
-            ) : (
-              <>
-                <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-                  {tests.length} test{tests.length !== 1 ? 's' : ''} · {totalQ} questions total
-                </p>
-                {tests.length > 0 ? (
-                  <div className="space-y-2 mb-4">
-                    {tests.slice(0, 3).map(t => (
-                      <div key={t.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
-                        <p className="text-sm font-medium truncate max-w-[60%]" style={{ color: 'var(--text)' }}>{t.title}</p>
-                        <span className="badge badge-blue">{t.question_count} Qs</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No tests yet.</p>
-                )}
-                <Link to="/admin/tests" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
-                  Manage Tests <ArrowRight size={14} />
-                </Link>
-              </>
-            )}
-          </div>
+          <Card>
+            <CardContent className="p-5">
+              <h2 className="font-semibold mb-1 text-lg" style={{ color: 'var(--text)' }}>Recent Tests</h2>
+              {testsLoading ? (
+                <div className="py-8 flex justify-center"><Spinner /></div>
+              ) : (
+                <>
+                  <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+                    {tests.length} test{tests.length !== 1 ? 's' : ''} · {totalQ} questions total
+                  </p>
+                  {tests.length > 0 ? (
+                    <div className="flex flex-col gap-2 mb-4">
+                      {tests.slice(0, 3).map(t => (
+                        <div key={t.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                          <p className="text-sm font-medium truncate max-w-[60%]" style={{ color: 'var(--text)' }}>{t.title}</p>
+                          <Badge variant="outline" className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20">{t.question_count} Qs</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No tests yet.</p>
+                  )}
+                  <Link to="/admin/tests" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
+                    Manage Tests <ArrowRight size={14} />
+                  </Link>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>

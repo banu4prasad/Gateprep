@@ -16,6 +16,10 @@ import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down'
 import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up'
 import Spinner from '../components/shared/Spinner'
 import { TestCardSkeleton } from '../components/shared/Skeletons'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 
 function CreateTestModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
@@ -52,118 +56,120 @@ function CreateTestModal({ onClose, onCreated }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}>
-      <div className="gate-card w-full max-w-lg p-6 animate-slide-up my-4">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>Create New Test</h3>
-          <button onClick={onClose} aria-label="Close" style={{ color: 'var(--text-muted)' }}><X size={18} /></button>
-        </div>
-
-        <form onSubmit={submit} className="space-y-4">
-          {/* Basic info */}
-          <div>
-            <label className="label">Test Title *</label>
-            <input className="input" placeholder="e.g. DBMS Weekly Quiz #3"
-              value={form.title} onChange={set('title')} required />
-          </div>
-          <div>
-            <label className="label">Description</label>
-            <textarea className="input resize-none" rows={2} placeholder="Optional..."
-              value={form.description} onChange={set('description')} />
-          </div>
-          <div>
-            <label className="label">Duration (minutes)</label>
-            <input type="number" className="input" value={form.duration_minutes}
-              min={5} max={360} onChange={set('duration_minutes')} />
+      <Card className="w-full max-w-lg animate-slide-up my-4">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>Create New Test</h3>
+            <button onClick={onClose} aria-label="Close" style={{ color: 'var(--text-muted)' }}><X size={18} /></button>
           </div>
 
-          {/* Category */}
-          <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
-            <label className="label">Category *</label>
-            <div className="grid grid-cols-2 gap-2">
-              {[['weekly_quiz','Weekly Quiz'], ['test_series','Test Series']].map(([v, l]) => (
-                <button key={v} type="button"
-                  onClick={() => setForm(f => ({ ...f, category: v, series_name: '', test_type: '', subject: '' }))}
-                  className={`py-2.5 rounded border text-sm font-medium transition-all ${
-                    form.category === v
-                      ? 'bg-sky-600/20 border-sky-500 text-sky-400'
-                      : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
-                  }`}>
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Weekly Quiz → subject */}
-          {isWeeklyQuiz && (
+          <form onSubmit={submit} className="flex flex-col gap-4">
+            {/* Basic info */}
             <div>
-              <label className="label">Subject *</label>
-              <select className="input" value={form.subject} onChange={set('subject')}>
-                <option value="">— Select Subject —</option>
-                {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <label className="label">Test Title *</label>
+              <Input placeholder="e.g. DBMS Weekly Quiz #3"
+                value={form.title} onChange={set('title')} required />
             </div>
-          )}
+            <div>
+              <label className="label">Description</label>
+              <textarea className="input resize-none" rows={2} placeholder="Optional..."
+                value={form.description} onChange={set('description')} />
+            </div>
+            <div>
+              <label className="label">Duration (minutes)</label>
+              <Input type="number" value={form.duration_minutes}
+                min={5} max={360} onChange={set('duration_minutes')} />
+            </div>
 
-          {/* Test Series → series name + test type */}
-          {isTestSeries && (
-            <>
-              <div>
-                <label className="label">Series *</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {SERIES_NAMES.map(({ value, label }) => (
-                    <button key={value} type="button"
-                      onClick={() => setForm(f => ({ ...f, series_name: value }))}
-                      className={`py-2.5 rounded border text-sm font-medium transition-all ${
-                        form.series_name === value
-                          ? 'bg-sky-600/20 border-sky-500 text-sky-400'
-                          : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
-                      }`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
+            {/* Category */}
+            <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
+              <label className="label">Category *</label>
+              <div className="grid grid-cols-2 gap-2">
+                {[['weekly_quiz','Weekly Quiz'], ['test_series','Test Series']].map(([v, l]) => (
+                  <button key={v} type="button"
+                    onClick={() => setForm(f => ({ ...f, category: v, series_name: '', test_type: '', subject: '' }))}
+                    className={`py-2.5 rounded border text-sm font-medium transition-all ${
+                      form.category === v
+                        ? 'bg-sky-600/20 border-sky-500 text-sky-400'
+                        : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
+                    }`}>
+                    {l}
+                  </button>
+                ))}
               </div>
+            </div>
+
+            {/* Weekly Quiz → subject */}
+            {isWeeklyQuiz && (
               <div>
-                <label className="label">Test Type *</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {TEST_TYPES.map(({ value, label }) => (
-                    <button key={value} type="button"
-                      onClick={() => setForm(f => ({ ...f, test_type: value, subject: '' }))}
-                      className={`py-2.5 rounded border text-sm font-medium transition-all ${
-                        form.test_type === value
-                          ? 'bg-sky-600/20 border-sky-500 text-sky-400'
-                          : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
-                      }`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <label className="label">Subject *</label>
+                <select className="input" value={form.subject} onChange={set('subject')}>
+                  <option value="">— Select Subject —</option>
+                  {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
-              {/* Topic Wise → subject */}
-              {isTopicWise && (
+            )}
+
+            {/* Test Series → series name + test type */}
+            {isTestSeries && (
+              <>
                 <div>
-                  <label className="label">Subject *</label>
-                  <select className="input" value={form.subject} onChange={set('subject')}>
-                    <option value="">— Select Subject —</option>
-                    {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <label className="label">Series *</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SERIES_NAMES.map(({ value, label }) => (
+                      <button key={value} type="button"
+                        onClick={() => setForm(f => ({ ...f, series_name: value }))}
+                        className={`py-2.5 rounded border text-sm font-medium transition-all ${
+                          form.series_name === value
+                            ? 'bg-sky-600/20 border-sky-500 text-sky-400'
+                            : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
+                        }`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </>
-          )}
+                <div>
+                  <label className="label">Test Type *</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {TEST_TYPES.map(({ value, label }) => (
+                      <button key={value} type="button"
+                        onClick={() => setForm(f => ({ ...f, test_type: value, subject: '' }))}
+                        className={`py-2.5 rounded border text-sm font-medium transition-all ${
+                          form.test_type === value
+                            ? 'bg-sky-600/20 border-sky-500 text-sky-400'
+                            : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
+                        }`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Topic Wise → subject */}
+                {isTopicWise && (
+                  <div>
+                    <label className="label">Subject *</label>
+                    <select className="input" value={form.subject} onChange={set('subject')}>
+                      <option value="">— Select Subject —</option>
+                      {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                )}
+              </>
+            )}
 
 
 
-          <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="btn-ghost flex-1">Cancel</button>
-            <button type="submit" disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2">
-              {loading && <Spinner size={15} />}
-              {loading ? 'Creating...' : 'Create Test'}
-            </button>
-          </div>
-        </form>
-      </div>
+            <div className="flex gap-3">
+              <Button type="button" variant="ghost" onClick={onClose} className="flex-1">Cancel</Button>
+              <Button type="submit" disabled={loading} className="flex-1 flex items-center justify-center gap-2">
+                {loading && <Spinner size={15} />}
+                {loading ? 'Creating...' : 'Create Test'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -173,9 +179,9 @@ function TestTag({ test }) {
   if (!test.category) return null
   if (test.category === 'weekly_quiz') {
     return (
-      <span className="badge badge-blue text-xs">
+      <Badge variant="outline" className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 text-xs">
         Weekly Quiz{test.subject ? ` · ${test.subject.split(' ')[0]}` : ''}
-      </span>
+      </Badge>
     )
   }
   if (test.category === 'test_series') {
@@ -184,7 +190,7 @@ function TestTag({ test }) {
       TYPE_LABELS[test.test_type],
       test.test_type === 'topic_wise' && test.subject ? test.subject.split(' ')[0] : null
     ].filter(Boolean)
-    return <span className="badge badge-purple text-xs">{parts.join(' · ')}</span>
+    return <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 text-xs">{parts.join(' · ')}</Badge>
   }
   return null
 }
@@ -213,15 +219,15 @@ export default function AdminTests() {
 
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Tests</h1>
             <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{tests.length} total</p>
           </div>
-          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
+          <Button onClick={() => setShowCreate(true)} className="flex items-center gap-2">
             <Plus size={15} /> New Test
-          </button>
+          </Button>
         </div>
 
         {/* Filter tabs */}
@@ -244,44 +250,52 @@ export default function AdminTests() {
             <TestCardSkeleton />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="gate-card p-12 text-center">
-            <p style={{ color: 'var(--text-muted)' }}>No tests yet. Create your first test.</p>
-            <button onClick={() => setShowCreate(true)} className="btn-primary mt-4 inline-flex items-center gap-2">
-              <Plus size={15} /> Create Test
-            </button>
-          </div>
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p style={{ color: 'var(--text-muted)' }}>No tests yet. Create your first test.</p>
+              <Button onClick={() => setShowCreate(true)} className="mt-4 inline-flex items-center gap-2">
+                <Plus size={15} /> Create Test
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map(t => (
-              <div key={t.id} className="gate-card p-4 flex flex-col gap-3">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-sm leading-snug line-clamp-2" style={{ color: 'var(--text)' }}>
-                    {t.title}
-                  </h3>
-                  <span className={`badge flex-shrink-0 text-xs ${t.question_count > 0 ? 'badge-green' : 'badge-amber'}`}>
-                    {t.question_count} Qs
-                  </span>
-                </div>
+              <Card key={t.id}>
+                <CardContent className="p-4 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-sm leading-snug line-clamp-2" style={{ color: 'var(--text)' }}>
+                      {t.title}
+                    </h3>
+                    <Badge variant="outline" className={`flex-shrink-0 text-xs ${t.question_count > 0
+                      ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                    }`}>
+                      {t.question_count} Qs
+                    </Badge>
+                  </div>
 
-                <TestTag test={t} />
+                  <TestTag test={t} />
 
-                <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-                  <span className="flex items-center gap-1"><Clock size={11} />{t.duration_minutes}m</span>
-                  <span>{t.total_marks} marks</span>
-                </div>
+                  <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    <span className="flex items-center gap-1"><Clock size={11} />{t.duration_minutes}m</span>
+                    <span>{t.total_marks} marks</span>
+                  </div>
 
-                <div className="flex gap-1.5 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                  <button onClick={() => navigate(`/admin/tests/${t.id}`)}
-                    className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded text-xs font-medium"
-                    style={{ background: 'var(--bg-panel)', color: 'var(--text)' }}>
-                    <Eye size={12} /> Manage
-                  </button>
-                  <button onClick={() => deleteTest(t.id)} disabled={deleting[t.id]}
-                    aria-label="Delete test" className="p-1.5 rounded text-red-400 hover:bg-red-500/10 transition-colors">
-                    {deleting[t.id] ? <Spinner size={12} /> : <Trash2 size={12} />}
-                  </button>
-                </div>
-              </div>
+                  <div className="flex gap-1.5 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                    <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/tests/${t.id}`)}
+                      className="flex-1 flex items-center justify-center gap-1 text-xs"
+                      style={{ background: 'var(--bg-panel)', color: 'var(--text)' }}>
+                      <Eye size={12} /> Manage
+                    </Button>
+                    <Button variant="ghost" size="icon"
+                      onClick={() => deleteTest(t.id)} disabled={deleting[t.id]}
+                      aria-label="Delete test" className="text-red-400 hover:bg-red-500/10">
+                      {deleting[t.id] ? <Spinner size={12} /> : <Trash2 size={12} />}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}

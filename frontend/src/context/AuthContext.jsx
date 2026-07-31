@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo } 
 import { useLocation, useNavigate } from 'react-router-dom'
 import api, { AUTH_UNAUTHORIZED_EVENT, startTokenRefresh, stopTokenRefresh } from '../api/client'
 import { mutate } from 'swr'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 const AuthContext = createContext(null)
 
@@ -87,25 +89,27 @@ export function AuthProvider({ children }) {
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
           role="presentation"
         >
-          <div
-            className="gate-card w-full max-w-sm p-5"
+          <Card
+            className="w-full max-w-sm"
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="session-expired-title"
             aria-describedby="session-expired-description"
           >
-            <h2 id="session-expired-title" className="text-lg font-bold text-slate-900 dark:text-white">
-              Session expired
-            </h2>
-            <p id="session-expired-description" className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Sign in again to continue.
-            </p>
-            <div className="mt-5 flex justify-end">
-              <button onClick={confirmSessionExpired} className="btn-primary" autoFocus>
-                Sign in
-              </button>
-            </div>
-          </div>
+            <CardContent className="p-5">
+              <h2 id="session-expired-title" className="text-lg font-bold text-slate-900 dark:text-white">
+                Session expired
+              </h2>
+              <p id="session-expired-description" className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                Sign in again to continue.
+              </p>
+              <div className="mt-5 flex justify-end">
+                <Button onClick={confirmSessionExpired} autoFocus>
+                  Sign in
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </AuthContext.Provider>

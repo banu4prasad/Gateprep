@@ -7,6 +7,10 @@ import EyeOff from 'lucide-react/dist/esm/icons/eye-off'
 import KeyRound from 'lucide-react/dist/esm/icons/key-round'
 import { authAPI } from '../api/api'
 import Spinner from '../components/shared/Spinner'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -40,8 +44,8 @@ export default function ResetPasswordPage() {
     <div className="theme-light-surface min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-md animate-slide-up">
         <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded bg-sky-600 flex items-center justify-center">
-            <span className="font-bold text-slate-900 dark:text-white">G</span>
+          <div className="size-8 rounded bg-primary flex items-center justify-center">
+            <span className="font-bold text-text-base">G</span>
           </div>
           <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>GATEPrep</span>
         </div>
@@ -49,62 +53,72 @@ export default function ResetPasswordPage() {
         <h2 className="text-2xl font-bold mb-1" style={{ color: 'var(--text)' }}>Reset password</h2>
         <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Choose a new password for your account</p>
 
-        <div className="gate-card p-6">
+        <Card
+          className="border border-border/80 shadow-sm"
+          style={{ background: 'var(--bg-card)', '--card-spacing': '1.5rem' }}
+        >
+          <CardContent>
           {!token ? (
             <div className="text-center">
               <p className="text-sm mb-5" style={{ color: 'var(--text-muted)' }}>This reset link is invalid.</p>
-              <Link to="/login" className="btn-ghost w-full flex items-center justify-center gap-2">
-                <ArrowLeft size={15} /> Back to sign in
-              </Link>
+              <Button
+                asChild
+                variant="outline"
+                className="w-full gap-2 rounded-md border-border/80 bg-[var(--bg-panel)] text-[var(--text)] shadow-sm hover:bg-[var(--bg-panel)]/90"
+              >
+                <Link to="/login">
+                  <ArrowLeft size={15} /> Back to sign in
+                </Link>
+              </Button>
             </div>
           ) : (
-            <form onSubmit={submit} className="space-y-4">
-              <div>
-                <label className="label">New Password</label>
+            <form onSubmit={submit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label style={{ color: 'var(--text-muted)' }}>New Password</Label>
                 <div className="relative">
-                  <input
+                  <Input
                     type={show ? 'text' : 'password'}
                     required
                     value={form.password}
                     onChange={handle('password')}
                     placeholder="Min. 8 characters"
-                    className="input pr-10"
+                    className="h-11 rounded-md bg-[var(--bg-card)] px-4 pr-11 text-sm shadow-sm"
                     autoComplete="new-password"
                     autoFocus
                   />
                   <button
                     type="button"
                     onClick={() => setShow(s => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    style={{ color: 'var(--text-muted)' }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
                   >
                     {show ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
-              <div>
-                <label className="label">Confirm Password</label>
-                <input
+              <div className="flex flex-col gap-2">
+                <Label style={{ color: 'var(--text-muted)' }}>Confirm Password</Label>
+                <Input
                   type={show ? 'text' : 'password'}
                   required
                   value={form.confirm}
                   onChange={handle('confirm')}
                   placeholder="Re-enter password"
-                  className="input"
+                  className="h-11 rounded-md bg-[var(--bg-card)] px-4 text-sm shadow-sm"
                   autoComplete="new-password"
                 />
               </div>
-              <button
+              <Button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
+                className="mt-2 h-11 w-full gap-2 rounded-md px-5 shadow-sm"
               >
                 {loading ? <Spinner size={15} /> : <KeyRound size={15} />}
                 {loading ? 'Updating password...' : 'Update Password'}
-              </button>
+              </Button>
             </form>
           )}
-        </div>
+          </CardContent>
+        </Card>
 
         <p className="text-center mt-4 text-sm" style={{ color: 'var(--text-muted)' }}>
           Remember your password?{' '}

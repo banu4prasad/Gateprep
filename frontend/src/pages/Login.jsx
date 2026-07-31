@@ -4,6 +4,10 @@ import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
 import toast from 'react-hot-toast'
 import Spinner from '../components/shared/Spinner'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
 import Eye from 'lucide-react/dist/esm/icons/eye'
 import EyeOff from 'lucide-react/dist/esm/icons/eye-off'
 import LogIn from 'lucide-react/dist/esm/icons/log-in'
@@ -44,7 +48,7 @@ export default function LoginPage() {
       <div className="hidden lg:flex flex-col justify-between w-5/12 p-12"
            style={{ background: 'var(--header-bg)', borderRight: '1px solid var(--border)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded bg-primary flex items-center justify-center">
+          <div className="size-9 rounded bg-primary flex items-center justify-center">
             <span className="font-bold text-text-base text-lg">G</span>
           </div>
           <span className="font-bold text-text-base text-xl">GATEPrep</span>
@@ -79,7 +83,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md animate-slide-up">
           <div className="lg:hidden mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
+              <div className="size-8 rounded bg-primary flex items-center justify-center">
                 <span className="font-bold text-text-base">G</span>
               </div>
               <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>GATEPrep</span>
@@ -92,38 +96,65 @@ export default function LoginPage() {
           <h2 className="text-2xl font-bold mb-1" style={{ color: 'var(--text)' }}>Sign in</h2>
           <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Enter your credentials to continue</p>
 
-          <div className="gate-card p-6">
-            <form onSubmit={submit} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="label">Email address</label>
-                <input id="email" type="email" required value={form.email} onChange={handle('email')}
-                  placeholder="you@example.com" className="input" autoFocus />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="password" className="label !mb-0">Password</label>
-                  <Link to="/forgot-password" className="text-xs text-primary hover:text-primary font-medium">
-                    Forgot password?
-                  </Link>
+          <Card
+            className="border border-border/80 shadow-sm"
+            style={{ background: 'var(--bg-card)', '--card-spacing': '1.5rem' }}
+          >
+            <CardContent>
+              <form onSubmit={submit} className="flex flex-col gap-6">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="email" style={{ color: 'var(--text-muted)' }}>Email address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={handle('email')}
+                    placeholder="you@example.com"
+                    autoFocus
+                    className="h-11 rounded-md bg-[var(--bg-card)] px-4 text-sm shadow-sm"
+                  />
                 </div>
-                <div className="relative">
-                  <input id="password" type={show ? 'text' : 'password'} required value={form.password}
-                    onChange={handle('password')} placeholder="••••••••" className="input pr-10" />
-                  <button type="button" onClick={() => setShow(s => !s)}
-                    aria-label="Toggle password visibility"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 hover:text-primary transition-colors"
-                    style={{ color: 'var(--text-muted)' }}>
-                    {show ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="password" style={{ color: 'var(--text-muted)' }}>Password</Label>
+                    <Link to="/forgot-password" className="text-xs text-primary hover:text-primary font-medium">
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={show ? 'text' : 'password'}
+                      required
+                      value={form.password}
+                      onChange={handle('password')}
+                      placeholder="••••••••"
+                      className="h-11 rounded-md bg-[var(--bg-card)] px-4 pr-11 text-sm shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShow(s => !s)}
+                      aria-label="Toggle password visibility"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                    >
+                      {show ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <button type="submit" disabled={loading}
-                className="btn-primary w-full flex items-center justify-center gap-2 mt-4">
-                {loading ? <Spinner size={18} /> : <LogIn size={18} />}
-                {loading ? 'Signing in...' : 'Sign In'}
-              </button>
-            </form>
-          </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-4 h-11 w-full rounded-md px-5 gap-2 shadow-sm"
+                >
+                  {loading ? <Spinner size={18} /> : <LogIn size={18} />}
+                  {loading ? 'Signing in...' : 'Sign In'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
           <p className="text-center mt-4 text-sm" style={{ color: 'var(--text-muted)' }}>
             Don't have an account?{' '}

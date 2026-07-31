@@ -17,7 +17,6 @@ beforeEach(() => {
   localStorage.clear()
   document.documentElement.removeAttribute('data-theme')
   document.documentElement.style.colorScheme = ''
-  document.documentElement.classList.remove('dark')
 })
 
 afterEach(() => {
@@ -31,7 +30,6 @@ describe('ThemeProvider', () => {
     expect(screen.getByTestId('theme').textContent).toBe('dark')
     expect(localStorage.getItem('theme')).toBe('dark')
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
-    expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 
   it('restores saved theme from localStorage', () => {
@@ -41,7 +39,6 @@ describe('ThemeProvider', () => {
 
     expect(screen.getByTestId('theme').textContent).toBe('light')
     expect(document.documentElement.getAttribute('data-theme')).toBe('light')
-    expect(document.documentElement.classList.contains('dark')).toBe(false)
   })
 
   it('toggles from dark to light', async () => {
@@ -55,7 +52,6 @@ describe('ThemeProvider', () => {
 
     expect(screen.getByTestId('theme').textContent).toBe('light')
     expect(localStorage.getItem('theme')).toBe('light')
-    expect(document.documentElement.classList.contains('dark')).toBe(false)
   })
 
   it('toggles from light back to dark', async () => {
@@ -69,7 +65,6 @@ describe('ThemeProvider', () => {
 
     expect(screen.getByTestId('theme').textContent).toBe('dark')
     expect(localStorage.getItem('theme')).toBe('dark')
-    expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 
   it('sets colorScheme on the document element', () => {

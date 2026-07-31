@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { Button } from '../components/ui/button'
+import { Card, CardContent } from '../components/ui/card'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
 import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check'
 
@@ -18,9 +20,13 @@ export default function ForgotPasswordPage() {
           Contact your administrator to receive a secure reset link.
         </p>
 
-        <div className="gate-card p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded bg-sky-500/15 border border-sky-500/25 flex items-center justify-center flex-shrink-0">
+        <Card
+          className="border border-border/80 shadow-sm"
+          style={{ background: 'var(--bg-card)', '--card-spacing': '1.5rem' }}
+        >
+          <CardContent>
+            <div className="flex items-start gap-4">
+            <div className="size-10 rounded bg-sky-500/15 border border-sky-500/25 flex items-center justify-center shrink-0">
               <ShieldCheck size={18} className="text-sky-400" />
             </div>
             <div>
@@ -31,10 +37,17 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
 
-          <Link to="/login" className="btn-ghost w-full mt-6 flex items-center justify-center gap-2">
-            <ArrowLeft size={15} /> Back to sign in
-          </Link>
-        </div>
+            <Button
+              asChild
+              variant="outline"
+              className="w-full mt-6 gap-2 rounded-md border-border/80 bg-[var(--bg-panel)] text-[var(--text)] shadow-sm hover:bg-[var(--bg-panel)]/90"
+            >
+              <Link to="/login">
+                <ArrowLeft size={15} /> Back to sign in
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

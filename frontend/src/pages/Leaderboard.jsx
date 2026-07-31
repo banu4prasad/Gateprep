@@ -10,6 +10,11 @@ import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw'
 import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
 import { LeaderboardSkeleton } from '../components/shared/Skeletons'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table'
 
 const MEDAL_COLORS = {
   1: { bg: 'bg-amber-500/20 border-amber-500/40', text: 'text-amber-400', icon: <Crown size={16} className="text-amber-400"/> },
@@ -24,7 +29,7 @@ export default function LeaderboardPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+        <div className="max-w-2xl mx-auto flex flex-col gap-6 animate-fade-in">
           <div className="flex items-center justify-between">
             <Link to="/tests" className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300 text-sm">
               <ArrowLeft size={15}/> Back to Tests
@@ -46,7 +51,7 @@ export default function LeaderboardPage() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+      <div className="max-w-2xl mx-auto flex flex-col gap-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <Link to="/tests" className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:text-slate-300 text-sm">
             <ArrowLeft size={15}/> Back to Tests
@@ -71,12 +76,16 @@ export default function LeaderboardPage() {
         </div>
 
         {data.leaderboard.length === 0 ? (
-          <div className="gate-card p-12 text-center">
-            <p className="text-slate-500 dark:text-slate-400">No submissions yet. Be the first!</p>
-            <Link to={`/tests/${testId}`} className="btn-primary mt-4 inline-flex items-center gap-2 text-sm">
-              Take Test
-            </Link>
-          </div>
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-slate-500 dark:text-slate-400">No submissions yet. Be the first!</p>
+              <Button asChild className="mt-4 inline-flex items-center gap-2 text-sm">
+                <Link to={`/tests/${testId}`}>
+                  Take Test
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <>
             {/* Top 3 podium */}
@@ -89,8 +98,8 @@ export default function LeaderboardPage() {
                   const m = MEDAL_COLORS[actualRank] || {}
                   const heights = ['h-24 sm:h-28', 'h-28 sm:h-36', 'h-20 sm:h-24']
                   return (
-                    <div key={`podium-${podiumIdx}-user-${entry.user_id}`} className={clsx(
-                      'gate-card border p-2.5 sm:p-4 flex flex-col items-center justify-end text-center',
+                    <Card key={`podium-${podiumIdx}-user-${entry.user_id}`} className={clsx(
+                      'border p-2.5 sm:p-4 flex flex-col items-center justify-end text-center',
                       m.bg, heights[podiumIdx],
                       entry.is_current_user && 'ring-2 ring-brand-500/50'
                     )}>
@@ -101,38 +110,38 @@ export default function LeaderboardPage() {
                       </p>
                       <p className="text-slate-500 dark:text-slate-400 text-xs">{entry.percentage}%</p>
                       <p className="text-slate-500 dark:text-slate-400 text-xs">{entry.score}/{entry.total_marks}</p>
-                    </div>
+                    </Card>
                   )
                 })}
               </div>
             )}
 
             {/* Full table */}
-            <div className="gate-card overflow-hidden overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-slate-800">
-                    <th className="text-left px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider w-12">Rank</th>
-                    <th className="text-left px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">Name</th>
-                    <th className="text-right px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">Score</th>
-                    <th className="text-right px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">%</th>
-                    <th className="text-right px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider hidden sm:table-cell">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
+            <Card className="overflow-hidden overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-slate-200 dark:border-slate-800 hover:bg-transparent">
+                    <TableHead className="text-left px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider w-12">Rank</TableHead>
+                    <TableHead className="text-left px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">Name</TableHead>
+                    <TableHead className="text-right px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">Score</TableHead>
+                    <TableHead className="text-right px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider">%</TableHead>
+                    <TableHead className="text-right px-3 sm:px-5 py-3 text-slate-500 dark:text-slate-400 font-medium text-xs uppercase tracking-wider hidden sm:table-cell">Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-800/60">
                   {data.leaderboard.map(entry => {
                     const m = MEDAL_COLORS[entry.rank]
                     return (
-                      <tr key={`leaderboard-rank-${entry.rank}-user-${entry.user_id}`} className={clsx(
+                      <TableRow key={`leaderboard-rank-${entry.rank}-user-${entry.user_id}`} className={clsx(
                         'transition-colors',
                         entry.is_current_user ? 'bg-sky-500/5' : 'hover:bg-slate-100 dark:bg-slate-800/30'
                       )} style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 53px' }}>
-                        <td className="px-3 sm:px-5 py-3.5">
+                        <TableCell className="px-3 sm:px-5 py-3.5">
                           <div className="flex items-center justify-center w-7 h-7">
                             {m ? m.icon : <span className="text-slate-500 dark:text-slate-400 font-mono text-sm">#{entry.rank}</span>}
                           </div>
-                        </td>
-                        <td className="px-3 sm:px-5 py-3.5">
+                        </TableCell>
+                        <TableCell className="px-3 sm:px-5 py-3.5">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
                               <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{entry.full_name[0]?.toUpperCase()}</span>
@@ -142,24 +151,24 @@ export default function LeaderboardPage() {
                               {entry.is_current_user && <span className="text-sky-400 text-xs ml-1">(You)</span>}
                             </span>
                           </div>
-                        </td>
-                        <td className="px-3 sm:px-5 py-3.5 text-right font-mono text-slate-600 dark:text-slate-300">
+                        </TableCell>
+                        <TableCell className="px-3 sm:px-5 py-3.5 text-right font-mono text-slate-600 dark:text-slate-300">
                           {entry.score}/{entry.total_marks}
-                        </td>
-                        <td className="px-3 sm:px-5 py-3.5 text-right">
+                        </TableCell>
+                        <TableCell className="px-3 sm:px-5 py-3.5 text-right">
                           <span className={clsx('font-semibold', entry.percentage >= 75 ? 'text-green-400' : entry.percentage >= 50 ? 'text-amber-400' : 'text-red-400')}>
                             {entry.percentage}%
                           </span>
-                        </td>
-                        <td className="px-3 sm:px-5 py-3.5 text-right text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">
+                        </TableCell>
+                        <TableCell className="px-3 sm:px-5 py-3.5 text-right text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">
                           {entry.submitted_at ? new Date(entry.submitted_at).toLocaleDateString('en-IN') : '-'}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )
                   })}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </Card>
 
             <p className="text-center text-slate-600 text-xs">
               Only first attempts count toward rankings. Reattempts are for practice only.

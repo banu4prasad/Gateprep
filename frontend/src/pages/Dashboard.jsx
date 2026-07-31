@@ -13,6 +13,7 @@ import clsx from 'clsx'
 import { SkeletonBlock, TestCardSkeleton } from '../components/shared/Skeletons'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -87,7 +88,7 @@ export default function Dashboard() {
                     <CardHeader className="p-5 pb-3">
                       <div className="flex items-start justify-between gap-2">
                         <CardTitle className="text-base leading-snug">{t.title}</CardTitle>
-                        {done && <span className="badge badge-green flex-shrink-0">Done</span>}
+                        {done && <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 flex-shrink-0">Done</Badge>}
                       </div>
                       {t.description && <CardDescription className="line-clamp-2">{t.description}</CardDescription>}
                     </CardHeader>
