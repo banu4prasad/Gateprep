@@ -120,7 +120,7 @@ function BookmarkCard({ bm, onRemove }) {
                   autoFocus
                 />
                 <div className="flex gap-2">
-                  <Button onClick={saveNote} disabled={savingNote} variant="outline" size="sm" className="gap-1 rounded-md bg-[var(--success-text)]/10 text-success-text hover:bg-green-500/20 hover:text-success-text border-[var(--success-text)]/20">
+                  <Button onClick={saveNote} disabled={savingNote} variant="outline" size="sm" className="gap-1 rounded-md bg-success-text/10 text-success-text hover:bg-success-text/20 hover:text-success-text border-success-text/20">
                     {savingNote ? <Spinner size={12} /> : <Check data-icon="inline-start" />} Save
                   </Button>
                   <Button onClick={() => { setEditingNote(false); setNote(bm.note || '') }} variant="outline" size="sm" className="gap-1 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 text-muted-foreground border-transparent">
