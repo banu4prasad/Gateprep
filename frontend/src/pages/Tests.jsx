@@ -16,7 +16,32 @@ import { TestCardSkeleton } from '../components/shared/Skeletons'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-// ── Test Card ─────────────────────────────────────────────────────
+function scoreBadgeClass(pct) {
+  if (pct >= 75) return 'bg-[var(--success-text)]/10 text-success-text dark:text-success-text'
+  if (pct >= 50) return 'bg-[var(--warning-text)]/10 text-warning-text dark:text-warning-text'
+  return 'bg-[var(--destructive)]/10 text-destructive dark:text-destructive'
+}
+
+function TestCardFooter({ done, attempt, test }) {
+  return (
+    <CardFooter className="p-4 pt-0">
+      {done ? (
+        <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10 h-8 text-xs">
+          <Link to={`/results/${attempt.id}`}>
+            View Result <ArrowRight size={12} className="ml-1.5" />
+          </Link>
+        </Button>
+      ) : (
+        <Button asChild className="w-full h-8 text-xs">
+          <Link to={`/tests/${test.id}`}>
+            Start Test <ArrowRight size={12} className="ml-1.5" />
+          </Link>
+        </Button>
+      )}
+    </CardFooter>
+  )
+}
+
 function TestCard({ test, attempt }) {
   const done = attempt?.status === 'submitted'
   const pct = done && attempt?.total_marks
@@ -36,31 +61,13 @@ function TestCard({ test, attempt }) {
           <span className="flex items-center gap-1"><BookOpen size={11} />{test.question_count} Qs</span>
           <span className="flex items-center gap-1"><Target size={11} />{test.total_marks}M</span>
         </div>
-
         {pct !== null && (
-          <div className={clsx('text-xs px-2.5 py-1.5 rounded',
-            pct >= 75 ? 'bg-[var(--success-text)]/10 text-success-text dark:text-success-text' :
-            pct >= 50 ? 'bg-[var(--warning-text)]/10 text-warning-text dark:text-warning-text' : 'bg-[var(--destructive)]/10 text-destructive dark:text-destructive'
-          )}>
+          <div className={clsx('text-xs px-2.5 py-1.5 rounded', scoreBadgeClass(pct))}>
             Score: {attempt.score?.toFixed(1)}/{attempt.total_marks} ({pct}%)
           </div>
         )}
       </CardContent>
-      <CardFooter className="p-4 pt-0">
-        {done ? (
-          <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10 h-8 text-xs">
-            <Link to={`/results/${attempt.id}`}>
-              View Result <ArrowRight size={12} className="ml-1.5" />
-            </Link>
-          </Button>
-        ) : (
-          <Button asChild className="w-full h-8 text-xs">
-            <Link to={`/tests/${test.id}`}>
-              Start Test <ArrowRight size={12} className="ml-1.5" />
-            </Link>
-          </Button>
-        )}
-      </CardFooter>
+      <TestCardFooter done={done} attempt={attempt} test={test} />
     </Card>
   )
 }
@@ -100,11 +107,155 @@ function NavCard({ label, count, onClick }) {
   )
 }
 
-// ── Main Page ─────────────────────────────────────────────────────
+// ── View components (one per nav level) ──────────────────────────
+
+function CategoryPicker({ tests, push }) {
+  const wqCount = tests.filter(t => t.category === 'weekly_quiz').length
+  const tsCount = tests.filter(t => t.category === 'test_series').length
+  return (
+    <Layout>
+      <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Tests</h1>
+        <div className="grid gap-4">
+          <NavCard label="Weekly Quiz" count={wqCount} onClick={() => push('category', 'weekly_quiz')} />
+          <NavCard label="Test Series" count={tsCount} onClick={() => push('category', 'test_series')} />
+        </div>
+      </div>
+    </Layout>
+  )
+}
+
+function WeeklyQuizSubjects({ tests, push, breadcrumbs, goBack }) {
+  return (
+    <Layout>
+      <div className="max-w-2xl mx-auto animate-fade-in">
+        <Breadcrumb steps={breadcrumbs} onBack={goBack} />
+        <div className="grid gap-3">
+          {SUBJECTS.map(sub => {
+            const count = tests.filter(t => t.category === 'weekly_quiz' && t.subject === sub).length
+            if (count === 0) return null
+            return <NavCard key={sub} label={sub} count={count} onClick={() => push('subject', sub)} />
+          })}
+          {tests.filter(t => t.category === 'weekly_quiz' && !t.subject).length > 0 && (
+            <NavCard label="General"
+              count={tests.filter(t => t.category === 'weekly_quiz' && !t.subject).length}
+              onClick={() => push('subject', '')} />
+          )}
+        </div>
+      </div>
+    </Layout>
+  )
+}
+
+function TestSeriesPicker({ tests, push, breadcrumbs, goBack }) {
+  return (
+    <Layout>
+      <div className="max-w-2xl mx-auto animate-fade-in">
+        <Breadcrumb steps={breadcrumbs} onBack={goBack} />
+        <div className="grid gap-4">
+          {['made_easy', 'go_classes'].map(sn => {
+            const count = tests.filter(t => t.category === 'test_series' && t.series_name === sn).length
+            if (count === 0) return null
+            return <NavCard key={sn} label={SERIES_LABELS[sn]} count={count} onClick={() => push('series', sn)} />
+          })}
+        </div>
+      </div>
+    </Layout>
+  )
+}
+
+function TestTypePicker({ tests, nav, push, breadcrumbs, goBack }) {
+  return (
+    <Layout>
+      <div className="max-w-2xl mx-auto animate-fade-in">
+        <Breadcrumb steps={breadcrumbs} onBack={goBack} />
+        <div className="grid gap-4">
+          {['subject_wise', 'topic_wise', 'full_length'].map(tt => {
+            const count = tests.filter(t =>
+              t.category === 'test_series' && t.series_name === nav[1].value && t.test_type === tt
+            ).length
+            if (count === 0) return null
+            return <NavCard key={tt} label={TYPE_LABELS[tt]} count={count} onClick={() => push('type', tt)} />
+          })}
+        </div>
+      </div>
+    </Layout>
+  )
+}
+
+function TopicWiseSubjects({ filteredTests, push, breadcrumbs, goBack }) {
+  return (
+    <Layout>
+      <div className="max-w-2xl mx-auto animate-fade-in">
+        <Breadcrumb steps={breadcrumbs} onBack={goBack} />
+        <div className="grid gap-3">
+          {SUBJECTS.map(sub => {
+            const count = filteredTests.filter(t => t.subject === sub).length
+            if (count === 0) return null
+            return <NavCard key={sub} label={sub} count={count} onClick={() => push('subject', sub)} />
+          })}
+        </div>
+      </div>
+    </Layout>
+  )
+}
+
+function TestList({ filteredTests, history, breadcrumbs, goBack }) {
+  return (
+    <Layout>
+      <div className="max-w-3xl mx-auto animate-fade-in">
+        <Breadcrumb steps={breadcrumbs} onBack={goBack} />
+        {filteredTests.length === 0 ? (
+          <Card className="border-border">
+            <CardContent className="p-12 text-center flex flex-col items-center">
+              <BookOpen size={36} className="text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No tests here yet. Check back later.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            {filteredTests.map(t => (
+              <TestCard key={t.id} test={t} attempt={history[t.id]} />
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
+  )
+}
+
+// ── View resolver: table-driven dispatch ─────────────────────────
+function resolveView({ nav, currentNav, tests, filteredTests, history, push, goBack, breadcrumbs }) {
+  const props = { tests, filteredTests, history, push, goBack, breadcrumbs, nav }
+
+  // Root
+  if (nav.length === 0) return <CategoryPicker {...props} />
+
+  // Level 1: by category
+  if (nav.length === 1) {
+    return nav[0].value === 'weekly_quiz'
+      ? <WeeklyQuizSubjects {...props} />
+      : <TestSeriesPicker {...props} />
+  }
+
+  // Level 2: inside a series → test types
+  if (nav.length === 2 && nav[0].value === 'test_series') {
+    return <TestTypePicker {...props} />
+  }
+
+  // Topic wise → subjects
+  if (currentNav?.type === 'type' && currentNav?.value === 'topic_wise') {
+    return <TopicWiseSubjects {...props} />
+  }
+
+  // Default: final test list
+  return <TestList {...props} />
+}
+
 export default function TestsPage() {
   const { data: testsData, isLoading: testsLoading } = useSWR('/tests', fetcher)
   const { data: historyData, isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
-  
+
   const loading = testsLoading || historyLoading
   const tests = testsData || []
 
@@ -127,140 +278,12 @@ export default function TestsPage() {
             <Breadcrumb steps={breadcrumbs} onBack={goBack} />
           )}
           <div className="grid md:grid-cols-2 gap-4">
-            <TestCardSkeleton />
-            <TestCardSkeleton />
-            <TestCardSkeleton />
-            <TestCardSkeleton />
+            <TestCardSkeleton /><TestCardSkeleton /><TestCardSkeleton /><TestCardSkeleton />
           </div>
         </div>
       </Layout>
     )
   }
 
-  // ── Root: pick category ───────────────────────────────────────
-  if (nav.length === 0) {
-    const wqCount = tests.filter(t => t.category === 'weekly_quiz').length
-    const tsCount = tests.filter(t => t.category === 'test_series').length
-    return (
-      <Layout>
-        <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>Tests</h1>
-          <div className="grid gap-4">
-            <NavCard label="Weekly Quiz" count={wqCount} onClick={() => push('category', 'weekly_quiz')} />
-            <NavCard label="Test Series" count={tsCount} onClick={() => push('category', 'test_series')} />
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
-  // ── Weekly Quiz → show subjects ───────────────────────────────
-  if (nav.length === 1 && nav[0].value === 'weekly_quiz') {
-    return (
-      <Layout>
-        <div className="max-w-2xl mx-auto animate-fade-in">
-          <Breadcrumb steps={breadcrumbs} onBack={goBack} />
-          <div className="grid gap-3">
-            {SUBJECTS.map(sub => {
-              const count = tests.filter(t => t.category === 'weekly_quiz' && t.subject === sub).length
-              if (count === 0) return null
-              return <NavCard key={sub} label={sub} count={count} onClick={() => push('subject', sub)} />
-            })}
-            {/* Show uncategorized weekly quizzes too */}
-            {tests.filter(t => t.category === 'weekly_quiz' && !t.subject).length > 0 && (
-              <NavCard label="General" count={tests.filter(t => t.category === 'weekly_quiz' && !t.subject).length}
-                onClick={() => push('subject', '')} />
-            )}
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
-  // ── Test Series → show Made Easy / GO Classes ─────────────────
-  if (nav.length === 1 && nav[0].value === 'test_series') {
-    return (
-      <Layout>
-        <div className="max-w-2xl mx-auto animate-fade-in">
-          <Breadcrumb steps={breadcrumbs} onBack={goBack} />
-          <div className="grid gap-4">
-            {['made_easy', 'go_classes'].map(sn => {
-              const count = tests.filter(t => t.category === 'test_series' && t.series_name === sn).length
-              if (count === 0) return null
-              return (
-                <NavCard key={sn} label={SERIES_LABELS[sn]} count={count}
-                  onClick={() => push('series', sn)} />
-              )
-            })}
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
-  // ── Inside a series → show Subject Wise / Topic Wise / Full Length ──
-  if (nav.length === 2 && nav[0].value === 'test_series') {
-    return (
-      <Layout>
-        <div className="max-w-2xl mx-auto animate-fade-in">
-          <Breadcrumb steps={breadcrumbs} onBack={goBack} />
-          <div className="grid gap-4">
-            {['subject_wise', 'topic_wise', 'full_length'].map(tt => {
-              const count = tests.filter(t =>
-                t.category === 'test_series' &&
-                t.series_name === nav[1].value &&
-                t.test_type === tt
-              ).length
-              if (count === 0) return null
-              return (
-                <NavCard key={tt} label={TYPE_LABELS[tt]} count={count}
-                  onClick={() => push('type', tt)} />
-              )
-            })}
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
-  // ── Topic Wise → show subjects ────────────────────────────────
-  if (currentNav?.type === 'type' && currentNav?.value === 'topic_wise') {
-    return (
-      <Layout>
-        <div className="max-w-2xl mx-auto animate-fade-in">
-          <Breadcrumb steps={breadcrumbs} onBack={goBack} />
-          <div className="grid gap-3">
-            {SUBJECTS.map(sub => {
-              const count = filteredTests.filter(t => t.subject === sub).length
-              if (count === 0) return null
-              return <NavCard key={sub} label={sub} count={count} onClick={() => push('subject', sub)} />
-            })}
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
-  // ── Show tests (final level) ──────────────────────────────────
-  return (
-    <Layout>
-      <div className="max-w-3xl mx-auto animate-fade-in">
-        <Breadcrumb steps={breadcrumbs} onBack={goBack} />
-        {filteredTests.length === 0 ? (
-          <Card className="border-border">
-            <CardContent className="p-12 text-center flex flex-col items-center">
-              <BookOpen size={36} className="text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No tests here yet. Check back later.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-4">
-            {filteredTests.map(t => (
-              <TestCard key={t.id} test={t} attempt={history[t.id]} />
-            ))}
-          </div>
-        )}
-      </div>
-    </Layout>
-  )
+  return resolveView({ nav, currentNav, tests, filteredTests, history, push, goBack, breadcrumbs })
 }

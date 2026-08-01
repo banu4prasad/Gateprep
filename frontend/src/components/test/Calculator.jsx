@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import X from 'lucide-react/dist/esm/icons/x'
-import { DEG_TO_RAD, isOperatorTail, tokenizeExpression, formatResult, evaluateExpression } from '../../utils/calculatorEngine'
+import { DEG_TO_RAD, isOperatorTail, tokenizeExpression, formatResult, evaluateExpression, SCIENTIFIC_FUNCTIONS, SCIENTIFIC_CONSTANTS } from '../../utils/calculatorEngine'
 
 const Btn = ({ label, onClick, type = 'default', wide = false }) => (
   <button onClick={onClick}
@@ -94,40 +94,20 @@ export default function Calculator({ onClose }) {
   }
 
   const sciFunc = (fn) => {
-    const val = parseFloat(display)
-    let result
-    try {
-      switch (fn) {
-        case 'sin':   result = Math.sin(getAngle(val)); break
-        case 'cos':   result = Math.cos(getAngle(val)); break
-        case 'tan':   result = Math.tan(getAngle(val)); break
-        case 'sin⁻¹': result = isDeg ? Math.asin(val) / DEG_TO_RAD : Math.asin(val); break
-        case 'cos⁻¹': result = isDeg ? Math.acos(val) / DEG_TO_RAD : Math.acos(val); break
-        case 'tan⁻¹': result = isDeg ? Math.atan(val) / DEG_TO_RAD : Math.atan(val); break
-        case 'log':   result = Math.log10(val); break
-        case 'ln':    result = Math.log(val); break
-        case 'log₂':  result = Math.log2(val); break
-        case '√':     result = Math.sqrt(val); break
-        case 'x²':    result = val * val; break
-        case 'x³':    result = val * val * val; break
-        case '1/x':   result = 1 / val; break
-        case 'n!':    result = factorial(val); break
-        case 'eˣ':    result = Math.exp(val); break
-        case '10ˣ':   result = Math.pow(10, val); break
-        case '|x|':   result = Math.abs(val); break
-        case 'π':     setDisplay(String(Math.PI)); return
-        case 'e':     setDisplay(String(Math.E)); return
-        default: return
-      }
-      setDisplay(formatResult(result))
-      setWaitingForOperand(true)
-    } catch { setDisplay('Error') }
-  }
+    if (fn in SCIENTIFIC_CONSTANTS) {
+      setDisplay(String(SCIENTIFIC_CONSTANTS[fn]))
+      return
+    }
 
-  const factorial = (n) => {
-    if (n < 0 || !Number.isInteger(n)) return NaN
-    if (n === 0 || n === 1) return 1
-    let r = 1; for (let i = 2; i <= n; i++) r *= i; return r
+    const compute = SCIENTIFIC_FUNCTIONS[fn]
+    if (!compute) return
+
+    try {
+      setDisplay(formatResult(compute(parseFloat(display), isDeg)))
+      setWaitingForOperand(true)
+    } catch { 
+      setDisplay('Error') 
+    }
   }
 
   const clear = () => { setDisplay('0'); setExpressionText(''); setWaitingForOperand(false) }

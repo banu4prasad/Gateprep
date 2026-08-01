@@ -87,4 +87,35 @@ export const evaluateExpression = (expression) => {
   return stack[0]
 }
 
+const factorial = (n) => {
+  if (n < 0 || !Number.isInteger(n)) return NaN
+  if (n === 0 || n === 1) return 1
+  let r = 1; for (let i = 2; i <= n; i++) r *= i; return r
+}
+
+export const SCIENTIFIC_FUNCTIONS = {
+  'sin':   (v, deg) => Math.sin(deg ? v * DEG_TO_RAD : v),
+  'cos':   (v, deg) => Math.cos(deg ? v * DEG_TO_RAD : v),
+  'tan':   (v, deg) => Math.tan(deg ? v * DEG_TO_RAD : v),
+  'sin⁻¹': (v, deg) => (deg ? Math.asin(v) / DEG_TO_RAD : Math.asin(v)),
+  'cos⁻¹': (v, deg) => (deg ? Math.acos(v) / DEG_TO_RAD : Math.acos(v)),
+  'tan⁻¹': (v, deg) => (deg ? Math.atan(v) / DEG_TO_RAD : Math.atan(v)),
+  'log':   (v) => Math.log10(v),
+  'ln':    (v) => Math.log(v),
+  'log₂':  (v) => Math.log2(v),
+  '√':     (v) => Math.sqrt(v),
+  'x²':    (v) => v * v,
+  'x³':    (v) => v * v * v,
+  '1/x':   (v) => 1 / v,
+  'n!':    (v) => factorial(v),
+  'eˣ':    (v) => Math.exp(v),
+  '10ˣ':   (v) => Math.pow(10, v),
+  '|x|':   (v) => Math.abs(v),
+}
+
+export const SCIENTIFIC_CONSTANTS = {
+  'π': Math.PI,
+  'e': Math.E,
+}
+
 export { DEG_TO_RAD }

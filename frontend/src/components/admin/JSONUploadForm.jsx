@@ -51,22 +51,37 @@ const validateNumberField = (question, idx, field) => {
   return question[field]
 }
 
-const validateAnswer = (questionType, answer, idx) => {
-  if (questionType === 'mcq' && !OPTION_LETTERS.has(answer)) {
+const validateMcqAnswer = (answer, idx) => {
+  if (!OPTION_LETTERS.has(answer)) {
     throw new Error(`Question ${idx + 1} MCQ correct_answer must be A, B, C, or D`)
   }
+}
 
-  if (questionType === 'msq') {
-    const selected = answer.split(',').map(part => part.trim()).filter(Boolean)
-    if (!selected.length || selected.some(part => !OPTION_LETTERS.has(part))) {
-      throw new Error(`Question ${idx + 1} MSQ correct_answer must use option letters like A,C`)
-    }
+const validateMsqAnswer = (answer, idx) => {
+  const selected = answer.split(',').map(part => part.trim()).filter(Boolean)
+  if (!selected.length || selected.some(part => !OPTION_LETTERS.has(part))) {
+    throw new Error(`Question ${idx + 1} MSQ correct_answer must use option letters like A,C`)
   }
+}
 
-  if (questionType === 'nat' && !NAT_ANSWER_PATTERN.test(answer)) {
+const validateNatAnswer = (answer, idx) => {
+  if (!NAT_ANSWER_PATTERN.test(answer)) {
     throw new Error(`Question ${idx + 1} NAT correct_answer must be a number or range`)
   }
 }
+
+const ANSWER_VALIDATORS = {
+  mcq: validateMcqAnswer,
+  msq: validateMsqAnswer,
+  nat: validateNatAnswer,
+}
+
+const validateAnswer = (questionType, answer, idx) => {
+  ANSWER_VALIDATORS[questionType]?.(answer, idx)
+}
+
+const areAllOptionsNonEmptyStrings = (options) =>
+  options.every(option => typeof option === 'string' && option.trim())
 
 const validateOptions = (question, questionType, idx) => {
   const options = question.options ?? []
@@ -76,7 +91,7 @@ const validateOptions = (question, questionType, idx) => {
 
   if (questionType === 'nat') return []
 
-  if (options.length !== 4 || options.some(option => typeof option !== 'string' || !option.trim())) {
+  if (options.length !== 4 || !areAllOptionsNonEmptyStrings(options)) {
     throw new Error(`Question ${idx + 1} options must contain exactly 4 non-empty strings`)
   }
 
@@ -152,21 +167,29 @@ export function readJsonFile(file) {
   })
 }
 
+const formatErrorList = (errors) => {
+  const lines = errors.slice(0, 5).map(err => {
+    const question = err.question_index ? `Q${err.question_index}` : 'Question'
+    const field = err.field ? ` ${err.field}` : ''
+    return `${question}${field}: ${err.message}`
+  })
+  if (errors.length > 5) lines.push(`...and ${errors.length - 5} more`)
+  return lines
+}
+
+const formatArrayDetail = (detail) =>
+  detail.map(item => item?.msg || item?.message || String(item)).join('; ')
+
+const formatErrorsObject = (detail) => {
+  const lines = formatErrorList(detail.errors)
+  return [detail.message, ...lines].filter(Boolean).join(' | ')
+}
+
 const formatServerDetail = (detail) => {
   if (!detail) return 'Failed to upload questions file'
   if (typeof detail === 'string') return detail
-  if (Array.isArray(detail)) {
-    return detail.map(item => item?.msg || item?.message || String(item)).join('; ')
-  }
-  if (Array.isArray(detail.errors)) {
-    const lines = detail.errors.slice(0, 5).map(err => {
-      const question = err.question_index ? `Q${err.question_index}` : 'Question'
-      const field = err.field ? ` ${err.field}` : ''
-      return `${question}${field}: ${err.message}`
-    })
-    if (detail.errors.length > 5) lines.push(`...and ${detail.errors.length - 5} more`)
-    return [detail.message, ...lines].filter(Boolean).join(' | ')
-  }
+  if (Array.isArray(detail)) return formatArrayDetail(detail)
+  if (Array.isArray(detail.errors)) return formatErrorsObject(detail)
   return detail.message || JSON.stringify(detail)
 }
 
