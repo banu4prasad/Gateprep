@@ -3,6 +3,7 @@ import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right'
 import Flag from 'lucide-react/dist/esm/icons/flag'
 import clsx from 'clsx'
 import MathText from '../shared/MathText'
+import { Button } from '@/components/ui/button'
 
 export default function QuestionView({
   answers,
@@ -171,7 +172,7 @@ export default function QuestionView({
                 placeholder="Enter answer..."
                 aria-label="Numerical Answer"
               />
-              <button onClick={commitNAT} className="btn-primary px-4">Save</button>
+              <Button onClick={commitNAT} className="px-4">Save</Button>
             </div>
             {answers[question.id] && (
               <p className="text-success-text text-sm mt-2">

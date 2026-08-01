@@ -4,6 +4,7 @@ import Save from 'lucide-react/dist/esm/icons/save'
 import X from 'lucide-react/dist/esm/icons/x'
 import Spinner from '../shared/Spinner'
 import { OPTION_LETTERS, optionsFromQuestion } from './questionUtils'
+import { Button } from '@/components/ui/button'
 
 export default function QuestionEditForm({ question, onSave, onCancel }) {
   const [form, setForm] = useState(() => ({
@@ -148,13 +149,13 @@ export default function QuestionEditForm({ question, onSave, onCancel }) {
       </div>
 
       <div className="flex gap-2">
-        <button type="button" onClick={onCancel} className="btn-ghost flex items-center justify-center gap-2 text-sm">
+        <Button type="button" variant="ghost" onClick={onCancel} className="flex items-center justify-center gap-2 text-sm">
           <X size={14}/> Cancel
-        </button>
-        <button type="submit" disabled={saving} className="btn-primary flex items-center justify-center gap-2 text-sm">
+        </Button>
+        <Button type="submit" disabled={saving} className="flex items-center justify-center gap-2 text-sm">
           {saving ? <Spinner size={14}/> : <Save size={14}/>}
           {saving ? 'Saving...' : 'Save Question'}
-        </button>
+        </Button>
       </div>
     </form>
   )

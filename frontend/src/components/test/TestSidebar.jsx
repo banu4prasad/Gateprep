@@ -1,6 +1,7 @@
 import Send from 'lucide-react/dist/esm/icons/send'
 import Spinner from '../shared/Spinner'
 import { getQStatus, STATUS_CLASS } from '../../utils/testEngineUtils'
+import { Button } from '@/components/ui/button'
 
 export default function TestSidebar({
   answered,
@@ -63,13 +64,14 @@ export default function TestSidebar({
       ))}
 
       <div className="p-2 mt-auto">
-        <button
+        <Button
           onClick={onSubmitClick}
           disabled={submitting}
-          className="btn-primary w-full flex items-center justify-center gap-1.5 text-xs py-2"
+          size="sm"
+          className="w-full flex items-center justify-center gap-1.5 text-xs py-2"
         >
           {submitting ? <Spinner size={12} /> : <Send size={12} />} Submit Test
-        </button>
+        </Button>
       </div>
     </>
   )

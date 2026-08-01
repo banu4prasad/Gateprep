@@ -1,5 +1,6 @@
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle'
 import Spinner from '../shared/Spinner'
+import { Button } from '@/components/ui/button'
 
 export default function ConfirmSubmitModal({
   answered,
@@ -39,17 +40,17 @@ export default function ConfirmSubmitModal({
           This cannot be undone. Your answers will be evaluated.
         </p>
         <div className="flex gap-3">
-          <button onClick={() => setShowConfirm(false)} className="btn-ghost flex-1">Go Back</button>
-          <button
+          <Button variant="ghost" onClick={() => setShowConfirm(false)} className="flex-1">Go Back</Button>
+          <Button
             onClick={() => {
               setShowConfirm(false)
               doSubmit(false)
             }}
             disabled={submitting}
-            className="btn-primary flex-1 flex items-center justify-center gap-2"
+            className="flex-1 flex items-center justify-center gap-2"
           >
             {submitting && <Spinner size={13} />} Submit
-          </button>
+          </Button>
         </div>
       </div>
     </div>

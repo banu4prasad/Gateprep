@@ -3,6 +3,8 @@ import toast from 'react-hot-toast'
 import X from 'lucide-react/dist/esm/icons/x'
 import Spinner from '../shared/Spinner'
 import { EMPTY_QUESTION, OPTION_LETTERS } from './questionUtils'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export default function QuestionForm({ onAdd, onClose }) {
   const [question, setQuestion] = useState({ ...EMPTY_QUESTION, options: ['', '', '', ''] })
@@ -40,7 +42,8 @@ export default function QuestionForm({ onAdd, onClose }) {
   }
 
   return (
-    <div className="gate-card p-5 space-y-4">
+    <Card>
+      <CardContent className="p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h4 className="font-semibold theme-text">Add Question Manually</h4>
         <button onClick={onClose} aria-label="Close" className="theme-muted hover:opacity-80">
@@ -142,11 +145,12 @@ export default function QuestionForm({ onAdd, onClose }) {
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onClose} className="btn-ghost flex-1">Cancel</button>
-        <button onClick={submit} disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2">
+        <Button variant="ghost" onClick={onClose} className="flex-1">Cancel</Button>
+        <Button onClick={submit} disabled={loading} className="flex-1 flex items-center justify-center gap-2">
           {loading && <Spinner size={14}/>} Add Question
-        </button>
+        </Button>
       </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

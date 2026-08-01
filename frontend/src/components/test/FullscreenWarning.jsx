@@ -1,6 +1,7 @@
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle'
 import Maximize from 'lucide-react/dist/esm/icons/maximize'
 import TimerDisplay from './TimerDisplay'
+import { Button } from '@/components/ui/button'
 
 export default function FullscreenWarning({
   endTimeMs,
@@ -25,26 +26,27 @@ export default function FullscreenWarning({
           lowClassName="text-destructive timer-critical"
           normalClassName="theme-text"
         />
-        <div className="space-y-3">
-          <button
+        <div className="flex flex-col gap-3">
+          <Button
             onClick={() => {
               document.documentElement.requestFullscreen?.()
                 .then(() => setShowFsWarning(false))
                 .catch(() => setShowFsWarning(false))
             }}
-            className="btn-primary w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center gap-2"
           >
             <Maximize size={16} /> Return to Fullscreen
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="destructive"
             onClick={() => {
               setShowFsWarning(false)
               setShowConfirm(true)
             }}
-            className="btn-danger w-full"
+            className="w-full"
           >
             Submit Test Now
-          </button>
+          </Button>
         </div>
       </div>
     </div>

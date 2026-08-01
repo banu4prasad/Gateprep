@@ -3,6 +3,7 @@ import FileJson from 'lucide-react/dist/esm/icons/file-json'
 import Pencil from 'lucide-react/dist/esm/icons/pencil'
 import Plus from 'lucide-react/dist/esm/icons/plus'
 import TestMetaForm from './TestMetaForm'
+import { Button } from '@/components/ui/button'
 
 export default function TestHeader({
   test,
@@ -51,24 +52,26 @@ export default function TestHeader({
       )}
 
       <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
-        <button
+        <Button
+          variant="ghost"
           onClick={onPreview}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all btn-ghost"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all"
         >
           <Eye size={15}/> Preview Test
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
           onClick={onToggleJson}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode === 'json' ? 'bg-[var(--warning-text)]/15 border-[var(--warning-text)]/30 text-[var(--warning-text)]' : 'btn-ghost'}`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode === 'json' ? 'bg-[var(--warning-text)]/15 border-[var(--warning-text)]/30 text-[var(--warning-text)]' : ''}`}
         >
           <FileJson size={15}/> JSON
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={onToggleManual}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode === 'manual' ? 'bg-primary/15 border-primary/30 text-primary' : 'btn-primary'}`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode === 'manual' ? 'bg-primary/15 border-primary/30 text-primary' : ''}`}
         >
           <Plus size={15}/> Manual
-        </button>
+        </Button>
       </div>
     </div>
   )

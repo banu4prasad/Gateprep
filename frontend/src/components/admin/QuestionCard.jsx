@@ -6,8 +6,15 @@ import Trash2 from 'lucide-react/dist/esm/icons/trash-2'
 import ImageSlot from './ImageSlot'
 import QuestionEditForm from './QuestionEditForm'
 import { OPTION_LETTERS } from './questionUtils'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
-const typeColor = { mcq: 'badge-blue', msq: 'badge-amber', nat: 'badge-green' }
+const typeColor = {
+  mcq: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+  msq: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  nat: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+}
 
 const QuestionCard = memo(function QuestionCard({
   q,
@@ -30,7 +37,7 @@ const QuestionCard = memo(function QuestionCard({
   }
 
   return (
-    <div className="gate-card overflow-hidden" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 80px' }}>
+    <Card className="overflow-hidden" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 80px' }}>
       <div
         className="flex items-start gap-3 p-4 cursor-pointer focus-visible:ring-2 focus-visible:ring-ring rounded outline-none"
         role="button"
@@ -43,7 +50,7 @@ const QuestionCard = memo(function QuestionCard({
         <div className="flex-1 min-w-0">
           <p className="theme-text text-sm line-clamp-2">{q.question_text}</p>
           <div className="flex items-center gap-2 mt-2">
-            <span className={`badge text-xs ${typeColor[q.question_type]}`}>{q.question_type.toUpperCase()}</span>
+            <Badge variant="outline" className={`text-xs ${typeColor[q.question_type]}`}>{q.question_type.toUpperCase()}</Badge>
             <span className="theme-muted text-xs">{q.marks}M</span>
             {q.subject && <span className="theme-muted text-xs">&middot; {q.subject}</span>}
           </div>
@@ -143,16 +150,16 @@ const QuestionCard = memo(function QuestionCard({
                   deleteExtraArg={'question'}
                 />
                 <div className="mt-3">
-                  <button onClick={() => setEditing(true)} className="btn-ghost inline-flex items-center gap-2 text-sm">
+                  <Button variant="ghost" onClick={() => setEditing(true)} className="inline-flex items-center gap-2 text-sm">
                     <Pencil size={13}/> Edit Question
-                  </button>
+                  </Button>
                 </div>
               </div>
             </>
           )}
         </div>
       )}
-    </div>
+    </Card>
   )
 })
 
