@@ -122,7 +122,7 @@ export default function ResetPasswordPage() {
 
         <p className="text-center mt-4 text-sm" style={{ color: 'var(--text-muted)' }}>
           Remember your password?{' '}
-          <Link to="/login" className="text-sky-400 hover:text-sky-300 font-medium">Sign in</Link>
+          <Link to="/login" className="text-primary hover:text-primary font-medium">Sign in</Link>
         </p>
       </div>
     </div>

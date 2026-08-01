@@ -28,7 +28,7 @@ export default function MyResults() {
         <div className="flex flex-col gap-6 animate-fade-in max-w-2xl">
           <div>
             <h1 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>My Results</h1>
-            <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded animate-pulse mt-2" />
+            <div className="h-4 w-24 bg-muted rounded animate-pulse mt-2" />
           </div>
           <div className="flex flex-col gap-2">
             <ResultCardSkeleton />
@@ -56,7 +56,7 @@ export default function MyResults() {
             <CardContent className="p-10 text-center">
               <ClipboardList size={36} className="mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
               <p style={{ color: 'var(--text-muted)' }}>No completed tests yet</p>
-              <Link to="/tests" className="text-sky-400 text-sm hover:text-sky-300 mt-2 block">
+              <Link to="/tests" className="text-primary text-sm hover:text-primary mt-2 block">
                 Browse tests →
               </Link>
             </CardContent>
@@ -66,8 +66,8 @@ export default function MyResults() {
             {history.map(a => {
               const t   = tests[a.test_id]
               const pct = a.total_marks ? Math.round(a.score / a.total_marks * 100) : 0
-              const color = pct >= 75 ? 'text-green-400' : pct >= 50 ? 'text-amber-400' : 'text-red-400'
-              const bg    = pct >= 75 ? 'rgba(81,207,102,0.1)' : pct >= 50 ? 'rgba(245,158,11,0.1)' : 'rgba(255,107,107,0.1)'
+              const color = pct >= 75 ? 'text-success-text' : pct >= 50 ? 'text-warning-text' : 'text-destructive'
+              const bg    = pct >= 75 ? 'color-mix(in srgb, var(--success-text) 10%, transparent)' : pct >= 50 ? 'color-mix(in srgb, var(--warning-text) 10%, transparent)' : 'rgba(255,107,107,0.1)'
               return (
                 <Card key={a.id}>
                   <CardContent className="p-4 flex items-center gap-4">

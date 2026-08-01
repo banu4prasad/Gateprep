@@ -14,8 +14,8 @@ export default function PendingPage() {
       >
         <CardContent>
           <div className="flex flex-col items-center">
-            <div className="size-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6">
-              <Clock size={28} className="text-amber-400" />
+            <div className="size-16 rounded-2xl bg-[var(--warning-text)]/10 border border-[var(--warning-text)]/20 flex items-center justify-center mb-6">
+              <Clock size={28} className="text-warning-text" />
             </div>
             <h2 className="text-2xl font-bold mb-3" style={{ color: 'var(--text)' }}>Awaiting Approval</h2>
             <p className="leading-relaxed mb-2" style={{ color: 'var(--text-muted)' }}>

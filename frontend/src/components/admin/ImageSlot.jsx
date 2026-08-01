@@ -37,16 +37,16 @@ export default function ImageSlot({
         loading="lazy"
         decoding="async"
         onKeyDown={imageKeyHandler(imageUrl)}
-        className={`${maxHeight} rounded border theme-border cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 outline-none ${imgExtraClass}`}
+        className={`${maxHeight} rounded border theme-border cursor-pointer focus-visible:ring-2 focus-visible:ring-ring outline-none ${imgExtraClass}`}
         onClick={() => openImage(imageUrl)}
       />
-      <button onClick={() => onDeleteImage(deleteTarget, deleteExtraArg)} className="text-xs text-red-400 hover:text-red-300 mt-1">
+      <button onClick={() => onDeleteImage(deleteTarget, deleteExtraArg)} className="text-xs text-destructive hover:opacity-80 mt-1">
         Remove
       </button>
     </div>
   ) : (
     <label className="flex items-center gap-2 cursor-pointer w-fit">
-      <div className={`flex items-center gap-1.5 ${uploadPadX} py-1.5 rounded border border-dashed theme-border text-xs theme-muted hover:border-sky-500 hover:text-sky-400 transition-colors`}>
+      <div className={`flex items-center gap-1.5 ${uploadPadX} py-1.5 rounded border border-dashed theme-border text-xs theme-muted hover:border-ring hover:text-ring transition-colors`}>
         <Upload size={uploadIconSize}/> {uploadLabel}
       </div>
       <input

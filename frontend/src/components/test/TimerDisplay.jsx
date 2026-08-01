@@ -8,8 +8,8 @@ export default function TimerDisplay({
   onExpire,
   announceWarnings = true,
   className = 'flex items-center gap-1.5 px-3 py-1 rounded font-mono font-bold text-sm border',
-  lowClassName = 'bg-red-500/20 border-red-500/50 text-red-400 timer-critical',
-  normalClassName = 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200',
+  lowClassName = 'bg-destructive/20 border-destructive/50 text-destructive timer-critical',
+  normalClassName = 'bg-muted theme-border text-foreground',
 }) {
   const getRemaining = useCallback(
     () => Number.isFinite(endTime) ? Math.max(0, endTime - Date.now()) : null,

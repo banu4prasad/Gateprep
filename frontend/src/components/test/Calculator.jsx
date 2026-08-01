@@ -172,11 +172,11 @@ export default function Calculator({ onClose }) {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
             <button onClick={() => setIsDeg(true)}
-              className={`px-2 py-0.5 rounded ${isDeg ? 'bg-sky-600 text-white' : ''}`}>Deg</button>
+              className={`px-2 py-0.5 rounded ${isDeg ? 'bg-primary text-white' : ''}`}>Deg</button>
             <button onClick={() => setIsDeg(false)}
-              className={`px-2 py-0.5 rounded ${!isDeg ? 'bg-sky-600 text-white' : ''}`}>Rad</button>
+              className={`px-2 py-0.5 rounded ${!isDeg ? 'bg-primary text-white' : ''}`}>Rad</button>
           </div>
-          <button onClick={onClose} aria-label="Close Calculator" className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200"><X size={16} /></button>
+          <button onClick={onClose} aria-label="Close Calculator" className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
         </div>
       </div>
 

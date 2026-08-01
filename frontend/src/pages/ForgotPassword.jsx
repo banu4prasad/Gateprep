@@ -9,8 +9,8 @@ export default function ForgotPasswordPage() {
     <div className="theme-light-surface min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-md animate-slide-up">
         <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded bg-sky-600 flex items-center justify-center">
-            <span className="font-bold text-slate-900 dark:text-white">G</span>
+          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
+            <span className="font-bold text-foreground">G</span>
           </div>
           <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>GATEPrep</span>
         </div>
@@ -26,8 +26,8 @@ export default function ForgotPasswordPage() {
         >
           <CardContent>
             <div className="flex items-start gap-4">
-            <div className="size-10 rounded bg-sky-500/15 border border-sky-500/25 flex items-center justify-center shrink-0">
-              <ShieldCheck size={18} className="text-sky-400" />
+            <div className="size-10 rounded bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
+              <ShieldCheck size={18} className="text-primary" />
             </div>
             <div>
               <h3 className="font-semibold text-base" style={{ color: 'var(--text)' }}>Admin-assisted reset</h3>

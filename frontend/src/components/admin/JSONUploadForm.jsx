@@ -4,6 +4,7 @@ import FileJson from 'lucide-react/dist/esm/icons/file-json'
 import Upload from 'lucide-react/dist/esm/icons/upload'
 import X from 'lucide-react/dist/esm/icons/x'
 import Spinner from '../shared/Spinner'
+import { ALERT_STYLE } from '../shared/alertStyles'
 
 const QUESTION_TYPES = new Set(['mcq', 'msq', 'nat'])
 const OPTION_LETTERS = new Set(['A', 'B', 'C', 'D'])
@@ -297,12 +298,12 @@ export default function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
           </div>
         </div>
         {fileMessage && (
-          <div className="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+          <div className={ALERT_STYLE.success}>
             {fileMessage}
           </div>
         )}
         {fileError && (
-          <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <div className={ALERT_STYLE.error}>
             {fileError}
           </div>
         )}
@@ -321,8 +322,8 @@ export default function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
       <div className="px-3 py-2 rounded-lg border theme-panel-card text-xs theme-muted">
         Format: <span className="font-mono theme-muted">{"{ \"questions\": [ { question_type, question_text, options, correct_answer, marks, negative_marks } ] }"}</span>
         <br/>
-        question_type: <span className="text-sky-400">mcq</span> / <span className="text-amber-400">msq</span> / <span className="text-green-400">nat</span>
-        {' '} &middot; correct_answer: <span className="text-sky-400">A</span> or <span className="text-amber-400">A,C</span> or <span className="text-green-400">42</span>
+        question_type: <span className="text-info-text">mcq</span> / <span className="text-warning-text">msq</span> / <span className="text-success-text">nat</span>
+        {' '} &middot; correct_answer: <span className="text-info-text">A</span> or <span className="text-warning-text">A,C</span> or <span className="text-success-text">42</span>
       </div>
 
       <div>
@@ -337,21 +338,21 @@ export default function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
       </div>
 
       {error && (
-        <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+        <div className={ALERT_STYLE.error}>
           {error}
         </div>
       )}
 
       {preview && !error && (
-        <div className="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+        <div className={ALERT_STYLE.success}>
           Valid JSON - {preview.length} question{preview.length !== 1 ? 's' : ''} ready to upload
           <div className="mt-1 space-y-0.5">
             {preview.slice(0, 3).map((question, idx) => (
-              <p key={`${question.question_type}-${idx}`} className="text-green-400/70 text-xs truncate">
+              <p key={`${question.question_type}-${idx}`} className="opacity-80 text-xs truncate">
                 {idx + 1}. [{question.question_type?.toUpperCase()}] {question.question_text}
               </p>
             ))}
-            {preview.length > 3 && <p className="text-green-400/50 text-xs">...and {preview.length - 3} more</p>}
+            {preview.length > 3 && <p className="opacity-60 text-xs">...and {preview.length - 3} more</p>}
           </div>
         </div>
       )}

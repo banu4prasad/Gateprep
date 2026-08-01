@@ -11,6 +11,7 @@ import Spinner from '../components/shared/Spinner'
 import { StatCardSkeleton } from '../components/shared/Skeletons'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { BADGE_COLORS } from '@/utils/badgeStyles'
 
 export default function AdminDashboard() {
   const { data: usersData, isLoading: usersLoading } = useSWR('/admin/users?limit=1', fetcher)
@@ -26,10 +27,10 @@ export default function AdminDashboard() {
   const totalQ    = tests.reduce((s, t) => s + (t.question_count || 0), 0)
 
   const stats = [
-    { label: 'Total Users',      value: totalUsers,  icon: Users,        color: 'text-sky-400',    bg: 'rgba(14,165,233,0.1)'  },
-    { label: 'Aspirants',        value: aspirants,      icon: CheckCircle,  color: 'text-green-400',  bg: 'rgba(81,207,102,0.1)'  },
-    { label: 'Pending Approval', value: pending,        icon: Clock,        color: 'text-amber-400',  bg: 'rgba(245,158,11,0.1)'  },
-    { label: 'Total Tests',      value: tests.length,   icon: FlaskConical, color: 'text-purple-400', bg: 'rgba(168,85,247,0.1)'  },
+    { label: 'Total Users',      value: totalUsers,  icon: Users,        color: 'text-primary',    bg: 'var(--bg-panel)'  },
+    { label: 'Aspirants',        value: aspirants,      icon: CheckCircle,  color: 'text-success-text',  bg: 'color-mix(in srgb, var(--success-text) 10%, transparent)'  },
+    { label: 'Pending Approval', value: pending,        icon: Clock,        color: 'text-warning-text',  bg: 'color-mix(in srgb, var(--warning-text) 10%, transparent)'  },
+    { label: 'Total Tests',      value: tests.length,   icon: FlaskConical, color: 'text-[var(--marked-text)]', bg: 'color-mix(in srgb, var(--marked-text) 10%, transparent)'  },
   ]
 
   return (
@@ -82,14 +83,14 @@ export default function AdminDashboard() {
                             <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{u.full_name}</p>
                             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
                           </div>
-                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">Pending</Badge>
+                          <Badge variant="outline" className={BADGE_COLORS.amber}>Pending</Badge>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-green-400 text-sm mb-4">✓ All users approved</p>
+                    <p className="text-success-text text-sm mb-4">✓ All users approved</p>
                   )}
-                  <Link to="/admin/users" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
+                  <Link to="/admin/users" className="flex items-center gap-1.5 text-primary hover:text-primary text-sm font-medium">
                     Manage Users <ArrowRight size={14} />
                   </Link>
                 </>
@@ -112,14 +113,14 @@ export default function AdminDashboard() {
                       {tests.slice(0, 3).map(t => (
                         <div key={t.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
                           <p className="text-sm font-medium truncate max-w-[60%]" style={{ color: 'var(--text)' }}>{t.title}</p>
-                          <Badge variant="outline" className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20">{t.question_count} Qs</Badge>
+                          <Badge variant="outline" className={BADGE_COLORS.sky}>{t.question_count} Qs</Badge>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No tests yet.</p>
                   )}
-                  <Link to="/admin/tests" className="flex items-center gap-1.5 text-sky-400 hover:text-sky-300 text-sm font-medium">
+                  <Link to="/admin/tests" className="flex items-center gap-1.5 text-primary hover:text-primary text-sm font-medium">
                     Manage Tests <ArrowRight size={14} />
                   </Link>
                 </>

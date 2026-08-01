@@ -44,22 +44,22 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
 
   return (
     <div className="gate-card overflow-hidden mb-2">
-      <div className="flex items-start gap-3 p-3 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 rounded outline-none" role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} onClick={() => setOpen(o => !o)}>
+      <div className="flex items-start gap-3 p-3 cursor-pointer focus-visible:ring-2 focus-visible:ring-ring rounded outline-none" role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} onClick={() => setOpen(o => !o)}>
         <span className="text-xs font-mono mt-0.5 w-5 flex-shrink-0 theme-muted">Q{idx + 1}</span>
-        {qa.is_correct === true ? <CheckCircle size={14} className="text-green-400 flex-shrink-0 mt-0.5" /> :
-         qa.is_correct === false ? <XCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" /> :
-         <MinusCircle size={14} className="text-slate-500 dark:text-slate-400 flex-shrink-0 mt-0.5" />}
+        {qa.is_correct === true ? <CheckCircle size={14} className="text-success-text flex-shrink-0 mt-0.5" /> :
+         qa.is_correct === false ? <XCircle size={14} className="text-destructive flex-shrink-0 mt-0.5" /> :
+         <MinusCircle size={14} className="text-muted-foreground flex-shrink-0 mt-0.5" />}
         <div className="text-sm flex-1 line-clamp-2 theme-text"><MathText>{qa.question_text}</MathText></div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className={clsx('text-xs font-mono font-semibold',
-            qa.marks_awarded > 0 ? 'text-green-400' : qa.marks_awarded < 0 ? 'text-red-400' : 'text-slate-500 dark:text-slate-400')}>
+            qa.marks_awarded > 0 ? 'text-success-text' : qa.marks_awarded < 0 ? 'text-destructive' : 'text-muted-foreground')}>
             {qa.marks_awarded > 0 ? '+' : ''}{qa.marks_awarded}
           </span>
           <span className="text-xs flex items-center gap-1 theme-muted">
             <Clock size={10} /> {qa.time_spent_seconds}s
           </span>
           <button onClick={e => { e.stopPropagation(); onToggleBookmark(qa.question_id) }} aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
-            className={clsx('p-2 rounded transition-colors', isBookmarked ? 'text-sky-400' : 'text-slate-600 hover:text-sky-400')}>
+            className={clsx('p-2 rounded transition-colors', isBookmarked ? 'text-primary' : 'text-muted-foreground hover:text-primary')}>
             {isBookmarked ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
           </button>
           {open ? <ChevronUp size={13} className="theme-muted" /> : <ChevronDown size={13} className="theme-muted" />}
@@ -78,13 +78,13 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
                 const isTopperPick = qa.topper_answer?.includes(l)
                 return (
                   <div key={i} className={clsx('px-3 py-2 rounded text-xs',
-                    isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' :
-                    isSelected ? 'bg-red-500/10 border border-red-500/20 text-red-300' :
-                    'border text-slate-500 dark:text-slate-400 theme-border')}>
+                    isCorrect ? 'result-stat-correct text-success-text' :
+                    isSelected ? 'result-stat-incorrect text-destructive' :
+                    'border text-muted-foreground theme-border')}>
                     <span className="font-mono font-semibold mr-1">{l}.</span><MathText>{o}</MathText>
-                    {isCorrect && <span className="ml-1 text-green-400">✓</span>}
-                    {isSelected && !isCorrect && <span className="ml-1 text-red-400">✗</span>}
-                    {isTopperPick && !isSelected && <span className="ml-1 text-amber-400">★ Topper</span>}
+                    {isCorrect && <span className="ml-1 text-success-text">✓</span>}
+                    {isSelected && !isCorrect && <span className="ml-1 text-destructive">✗</span>}
+                    {isTopperPick && !isSelected && <span className="ml-1 text-warning-text">★ Topper</span>}
                   </div>
                 )
               })}
@@ -92,10 +92,10 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
           )}
           {qa.question_type === 'nat' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-xs">
-              <div className="px-3 py-2 rounded bg-green-500/10 border border-green-500/20 text-green-300">
+              <div className="px-3 py-2 rounded result-stat-correct text-success-text">
                 ✓ Correct: <span className="font-mono">{qa.correct_answer}</span>
               </div>
-              <div className="px-3 py-2 rounded border text-slate-500 dark:text-slate-400 theme-border">
+              <div className="px-3 py-2 rounded border text-muted-foreground theme-border">
                 You: <span className="font-mono">{qa.selected_answer || 'Skipped'}</span>
               </div>
             </div>
@@ -104,7 +104,7 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
           {qa.topper_time_seconds > 0 && (
             <div className="flex items-center gap-4 text-xs mt-1 theme-muted">
               <span>Your time: <strong>{qa.time_spent_seconds}s</strong></span>
-              <span>Topper time: <strong className="text-amber-400">{qa.topper_time_seconds}s</strong></span>
+              <span>Topper time: <strong className="text-warning-text">{qa.topper_time_seconds}s</strong></span>
             </div>
           )}
         </div>
@@ -119,7 +119,7 @@ function useResultSummary(result) {
   return useMemo(() => {
     const pct = Math.round(result.percentage)
     const grade = pct >= 75 ? 'Excellent' : pct >= 50 ? 'Good' : 'Needs Work'
-    const gradeColor = pct >= 75 ? 'text-green-400' : pct >= 50 ? 'text-amber-400' : 'text-red-400'
+    const gradeColor = pct >= 75 ? 'text-success-text' : pct >= 50 ? 'text-warning-text' : 'text-destructive'
     const rankText = result.rank
       ? result.counts_for_leaderboard
         ? ` · Rank #${result.rank}/${result.total_participants}`
@@ -139,11 +139,11 @@ const ResultHeader = memo(function ResultHeader({ result, onDownload }) {
       </Link>
       <div className="flex items-center gap-3">
         <button onClick={onDownload}
-          className="flex items-center gap-1.5 text-sm text-green-400 hover:text-green-300">
+          className="flex items-center gap-1.5 text-sm text-success-text hover:text-success-text">
           <Download size={13} /> Download
         </button>
         <Link to={`/tests/${result.test_id}/leaderboard`}
-          className="flex items-center gap-1.5 text-sm text-sky-400 hover:text-sky-300">
+          className="flex items-center gap-1.5 text-sm text-primary hover:text-primary">
           <Trophy size={13} /> Leaderboard
         </Link>
       </div>
@@ -168,7 +168,7 @@ const ScoreCard = memo(function ScoreCard({ result, summary }) {
   return (
     <div className="gate-card p-5">
       <h2 className="font-bold text-lg mb-4 theme-text">
-        <Trophy size={16} className="inline text-amber-400 mr-2" />{result.test_title}
+        <Trophy size={16} className="inline text-warning-text mr-2" />{result.test_title}
       </h2>
       <div className="flex flex-col sm:flex-row items-center gap-5">
         <ScoreRing pct={pct} />
@@ -179,9 +179,9 @@ const ScoreCard = memo(function ScoreCard({ result, summary }) {
           </p>
           <div className="grid grid-cols-3 gap-2 mt-3">
             {[
-              ['Correct', result.correct, 'text-green-400', 'result-stat-correct'],
-              ['Wrong', result.incorrect, 'text-red-400', 'result-stat-wrong'],
-              ['Skipped', result.skipped, 'text-slate-500 dark:text-slate-400', 'result-stat-skipped'],
+              ['Correct', result.correct, 'text-success-text', 'result-stat-correct'],
+              ['Wrong', result.incorrect, 'text-destructive', 'result-stat-wrong'],
+              ['Skipped', result.skipped, 'text-muted-foreground', 'result-stat-skipped'],
             ].map(([label, val, cls, statClass]) => (
               <div key={label} className={`rounded p-2 text-center ${statClass}`}>
                 <p className={`text-xl font-bold ${cls}`}>{val}</p>
@@ -199,7 +199,7 @@ const ComparisonStats = memo(function ComparisonStats({ result }) {
   return (
     <div className="gate-card p-4">
       <h3 className="font-semibold mb-3 flex items-center gap-2 theme-text">
-        <TrendingUp size={15} className="text-sky-400" /> Performance Comparison
+        <TrendingUp size={15} className="text-primary" /> Performance Comparison
       </h3>
       <div className="space-y-2">
         {[
@@ -237,7 +237,7 @@ const AttemptHistory = memo(function AttemptHistory({ attempts, currentAttemptId
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium theme-text">{a.score?.toFixed(1)}/{a.total_marks} ({a.percentage}%)</span>
               {a.attempt_id !== parseInt(currentAttemptId) && (
-                <Link to={`/results/${a.attempt_id}`} className="text-xs text-sky-400">View →</Link>
+                <Link to={`/results/${a.attempt_id}`} className="text-xs text-primary">View →</Link>
               )}
             </div>
           </div>
@@ -273,7 +273,7 @@ const QuestionReviewList = memo(function QuestionReviewList({ items, filter, set
           {['all', 'correct', 'incorrect', 'skipped'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={clsx('px-2.5 py-1 rounded text-xs font-medium capitalize transition-colors',
-                filter === f ? 'bg-sky-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200')}>
+                filter === f ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground')}>
               {f}
             </button>
           ))}

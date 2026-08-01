@@ -22,27 +22,28 @@ describe('Skeletons', () => {
 
     expect(block).toBeInTheDocument()
     expect(block).toHaveAttribute('aria-hidden', 'true')
-    expect(block).toHaveClass('block', 'animate-pulse', 'rounded', 'bg-slate-200/80', 'dark:bg-slate-800', 'h-4', 'w-full')
+    expect(block).toHaveClass('block', 'animate-pulse', 'rounded', 'bg-muted', 'h-4', 'w-full')
   })
 
   it('renders TestCardSkeleton with its card structure and pulse placeholders', () => {
     const { container } = render(<TestCardSkeleton />)
-    const card = container.querySelector('.gate-card')
+    const card = container.querySelector('[data-slot="card"]')
 
     expect(card).toBeInTheDocument()
-    expect(card).toHaveClass('p-5', 'flex', 'flex-col', 'gap-3')
+    const content = card.querySelector('[data-slot="card-content"]')
+    expect(content).toHaveClass('p-5', 'flex', 'flex-col', 'gap-3')
     expect(container.querySelectorAll('.animate-pulse')).not.toHaveLength(0)
   })
 
   it('renders the other shared skeleton variants without crashing', () => {
     const statResult = render(<StatCardSkeleton />)
-    expect(statResult.container.querySelector('.gate-card')).toBeInTheDocument()
+    expect(statResult.container.querySelector('[data-slot="card"]')).toBeInTheDocument()
 
     const leaderboardResult = render(<LeaderboardSkeleton />)
     expect(leaderboardResult.container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0)
 
     const resultCardResult = render(<ResultCardSkeleton />)
-    expect(resultCardResult.container.querySelector('.gate-card')).toBeInTheDocument()
+    expect(resultCardResult.container.querySelector('[data-slot="card"]')).toBeInTheDocument()
 
     const resultPageResult = render(<ResultSkeleton />)
     expect(resultPageResult.container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0)

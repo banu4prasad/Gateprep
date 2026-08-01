@@ -20,6 +20,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { BADGE_COLORS } from '@/utils/badgeStyles'
 
 function CreateTestModal({ onClose, onCreated }) {
   const [form, setForm] = useState({
@@ -90,8 +91,8 @@ function CreateTestModal({ onClose, onCreated }) {
                     onClick={() => setForm(f => ({ ...f, category: v, series_name: '', test_type: '', subject: '' }))}
                     className={`py-2.5 rounded border text-sm font-medium transition-all ${
                       form.category === v
-                        ? 'bg-sky-600/20 border-sky-500 text-sky-400'
-                        : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
+                        ? 'bg-primary/20 border-primary text-primary'
+                        : 'theme-border text-muted-foreground hover:border-muted-foreground'
                     }`}>
                     {l}
                   </button>
@@ -121,8 +122,8 @@ function CreateTestModal({ onClose, onCreated }) {
                         onClick={() => setForm(f => ({ ...f, series_name: value }))}
                         className={`py-2.5 rounded border text-sm font-medium transition-all ${
                           form.series_name === value
-                            ? 'bg-sky-600/20 border-sky-500 text-sky-400'
-                            : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
+                            ? 'bg-primary/20 border-primary text-primary'
+                            : 'theme-border text-muted-foreground hover:border-muted-foreground'
                         }`}>
                         {label}
                       </button>
@@ -137,8 +138,8 @@ function CreateTestModal({ onClose, onCreated }) {
                         onClick={() => setForm(f => ({ ...f, test_type: value, subject: '' }))}
                         className={`py-2.5 rounded border text-sm font-medium transition-all ${
                           form.test_type === value
-                            ? 'bg-sky-600/20 border-sky-500 text-sky-400'
-                            : 'border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-slate-500'
+                            ? 'bg-primary/20 border-primary text-primary'
+                            : 'theme-border text-muted-foreground hover:border-muted-foreground'
                         }`}>
                         {label}
                       </button>
@@ -179,7 +180,7 @@ function TestTag({ test }) {
   if (!test.category) return null
   if (test.category === 'weekly_quiz') {
     return (
-      <Badge variant="outline" className="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 text-xs">
+      <Badge variant="outline" className={`${BADGE_COLORS.sky} text-xs`}>
         Weekly Quiz{test.subject ? ` · ${test.subject.split(' ')[0]}` : ''}
       </Badge>
     )
@@ -190,7 +191,7 @@ function TestTag({ test }) {
       TYPE_LABELS[test.test_type],
       test.test_type === 'topic_wise' && test.subject ? test.subject.split(' ')[0] : null
     ].filter(Boolean)
-    return <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 text-xs">{parts.join(' · ')}</Badge>
+    return <Badge variant="outline" className={`${BADGE_COLORS.purple} text-xs`}>{parts.join(' · ')}</Badge>
   }
   return null
 }
@@ -235,7 +236,7 @@ export default function AdminTests() {
           {[['all','All'], ['weekly_quiz','Weekly Quiz'], ['test_series','Test Series']].map(([v, l]) => (
             <button key={v} onClick={() => setFilter(v)}
               className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-                filter === v ? 'bg-sky-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200'
+                filter === v ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
               }`}>{l}</button>
           ))}
         </div>
@@ -268,8 +269,8 @@ export default function AdminTests() {
                       {t.title}
                     </h3>
                     <Badge variant="outline" className={`flex-shrink-0 text-xs ${t.question_count > 0
-                      ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
-                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                      ? BADGE_COLORS.green
+                      : BADGE_COLORS.amber
                     }`}>
                       {t.question_count} Qs
                     </Badge>
@@ -290,7 +291,7 @@ export default function AdminTests() {
                     </Button>
                     <Button variant="ghost" size="icon"
                       onClick={() => deleteTest(t.id)} disabled={deleting[t.id]}
-                      aria-label="Delete test" className="text-red-400 hover:bg-red-500/10">
+                      aria-label="Delete test" className="text-destructive hover:bg-destructive/10">
                       {deleting[t.id] ? <Spinner size={12} /> : <Trash2 size={12} />}
                     </Button>
                   </div>

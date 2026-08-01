@@ -32,7 +32,7 @@ const QuestionCard = memo(function QuestionCard({
   return (
     <div className="gate-card overflow-hidden" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 80px' }}>
       <div
-        className="flex items-start gap-3 p-4 cursor-pointer focus-visible:ring-2 focus-visible:ring-sky-500 rounded outline-none"
+        className="flex items-start gap-3 p-4 cursor-pointer focus-visible:ring-2 focus-visible:ring-ring rounded outline-none"
         role="button"
         tabIndex={0}
         aria-expanded={open}
@@ -52,14 +52,14 @@ const QuestionCard = memo(function QuestionCard({
           <button
             onClick={event => { event.stopPropagation(); setOpen(true); setEditing(true) }}
             aria-label="Edit question"
-            className="p-1.5 rounded-lg theme-muted hover:text-sky-400 hover:bg-sky-500/10 transition-colors"
+            className="p-1.5 rounded-lg theme-muted hover:text-primary hover:bg-primary/10 transition-colors"
           >
             <Pencil size={13}/>
           </button>
           <button
             onClick={event => { event.stopPropagation(); onDelete(q.id) }}
             aria-label="Delete question"
-            className="p-1.5 rounded-lg theme-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="p-1.5 rounded-lg theme-muted hover:text-destructive hover:bg-destructive/10 transition-colors"
           >
             <Trash2 size={13}/>
           </button>
@@ -90,7 +90,7 @@ const QuestionCard = memo(function QuestionCard({
                         key={letter}
                         className={`px-3 py-2 rounded-lg text-xs space-y-2 border ${
                           isCorrect
-                            ? 'bg-green-500/10 border-green-500/20 text-green-300'
+                            ? 'result-stat-correct text-success-text'
                             : 'theme-panel-card'
                         }`}
                       >
@@ -120,7 +120,7 @@ const QuestionCard = memo(function QuestionCard({
 
               <div className="flex items-center gap-2 text-xs">
                 <span className="theme-muted">Answer:</span>
-                <span className="font-mono text-green-400 font-semibold">{q.correct_answer}</span>
+                <span className="font-mono text-success-text font-semibold">{q.correct_answer}</span>
                 <span className="theme-muted ml-2">&middot;</span>
                 <span className="theme-muted">+{q.marks}M</span>
                 {q.negative_marks > 0 && <span className="theme-muted">/ -{q.negative_marks}M</span>}

@@ -36,7 +36,7 @@ export default function TestHeader({
             <button
               onClick={onStartEdit}
               aria-label="Edit test details"
-              className="p-1.5 rounded-lg theme-muted hover:text-sky-400 hover:bg-sky-500/10 transition-colors"
+              className="p-1.5 rounded-lg theme-muted hover:text-primary hover:bg-primary/10 transition-colors"
             >
               <Pencil size={15}/>
             </button>
@@ -59,13 +59,13 @@ export default function TestHeader({
         </button>
         <button
           onClick={onToggleJson}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode === 'json' ? 'bg-amber-500/15 border-amber-500/30 text-amber-300' : 'btn-ghost'}`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode === 'json' ? 'bg-[var(--warning-text)]/15 border-[var(--warning-text)]/30 text-[var(--warning-text)]' : 'btn-ghost'}`}
         >
           <FileJson size={15}/> JSON
         </button>
         <button
           onClick={onToggleManual}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode === 'manual' ? 'bg-sky-500/15 border-brand-500/30 text-sky-300' : 'btn-primary'}`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode === 'manual' ? 'bg-primary/15 border-primary/30 text-primary' : 'btn-primary'}`}
         >
           <Plus size={15}/> Manual
         </button>

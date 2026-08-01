@@ -46,8 +46,8 @@ export default function AdminUsers() {
       <div className="flex flex-col gap-6 animate-fade-in">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Users</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">{totalUsers} registered · {pendingUsers} pending approval</p>
+            <h1 className="text-2xl font-bold text-foreground">Users</h1>
+            <p className="text-muted-foreground mt-1">{totalUsers} registered · {pendingUsers} pending approval</p>
           </div>
           <Button variant="ghost" size="sm" onClick={reload}>
             <RefreshCw size={15} /> Refresh
@@ -55,7 +55,7 @@ export default function AdminUsers() {
         </div>
 
         <div className="relative">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none" />
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -71,9 +71,9 @@ export default function AdminUsers() {
             <Card className="overflow-hidden hidden md:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-b border-slate-200 dark:border-slate-800 hover:bg-transparent">
+                  <TableRow className="border-b theme-border hover:bg-transparent">
                     {TABLE_HEADERS.map(h => (
-                      <TableHead key={h} className="px-5 py-3.5 text-xs uppercase tracking-wider font-medium text-slate-500 dark:text-slate-400">{h}</TableHead>
+                      <TableHead key={h} className="px-5 py-3.5 text-xs uppercase tracking-wider font-medium text-muted-foreground">{h}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>

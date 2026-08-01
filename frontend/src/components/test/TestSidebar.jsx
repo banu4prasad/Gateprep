@@ -18,8 +18,8 @@ export default function TestSidebar({
   return (
     <>
       <div className="p-3 border-b text-center theme-border">
-        <div className="w-9 h-9 rounded-full bg-sky-700 flex items-center justify-center mx-auto mb-1">
-          <span className="text-slate-900 dark:text-white font-bold text-sm">U</span>
+        <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center mx-auto mb-1">
+          <span className="text-foreground font-bold text-sm">U</span>
         </div>
       </div>
 

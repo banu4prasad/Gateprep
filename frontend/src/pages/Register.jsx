@@ -137,7 +137,7 @@ export default function RegisterPage() {
 
         <p className="text-center mt-4 text-sm" style={{ color: 'var(--text-muted)' }}>
           Already have an account?{' '}
-          <Link to="/login" className="text-sky-400 hover:text-sky-300 font-medium">Sign in</Link>
+          <Link to="/login" className="text-primary hover:text-primary font-medium">Sign in</Link>
         </p>
       </div>
     </div>

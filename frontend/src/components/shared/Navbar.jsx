@@ -68,18 +68,18 @@ export default function Navbar() {
           <button onClick={toggle}
             title="Toggle theme"
             aria-label="Toggle theme"
-            className="p-2 sm:p-1.5 rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            className="p-2 sm:p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
           {loading ? (
             <div className="hidden sm:flex flex-col gap-1.5 items-end mx-1">
-              <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" aria-hidden="true" />
-              <div className="h-2 w-14 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" aria-hidden="true" />
+              <div className="h-3 w-20 bg-muted rounded animate-pulse" aria-hidden="true" />
+              <div className="h-2 w-14 bg-muted rounded animate-pulse" aria-hidden="true" />
             </div>
           ) : (
             <div className="text-right hidden sm:block">
-              <p className="text-xs font-medium text-slate-900 dark:text-white leading-none">{user?.full_name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">{user?.role}</p>
+              <p className="text-xs font-medium text-foreground leading-none">{user?.full_name}</p>
+              <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
             </div>
           )}
           <button onClick={logout}

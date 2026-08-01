@@ -54,33 +54,33 @@ function BookmarkCard({ bm, onRemove }) {
       <CardContent className="px-(--card-spacing) py-(--card-spacing)">
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary rounded outline-none" role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} onClick={() => setOpen(o => !o)}>
-            <div className="text-slate-700 dark:text-slate-200 text-sm leading-snug line-clamp-2"><MathText>{bm.question_text}</MathText></div>
+            <div className="text-foreground text-sm leading-snug line-clamp-2"><MathText>{bm.question_text}</MathText></div>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <Badge variant={bm.question_type === 'nat' ? 'secondary' : bm.question_type === 'msq' ? 'outline' : 'default'} className="h-5 px-2 text-[10px] tracking-wide">
                 {bm.question_type?.toUpperCase()}
               </Badge>
-              <span className="text-slate-600 text-xs">{bm.marks}M</span>
-              {bm.subject && <span className="text-slate-600 text-xs">· {bm.subject}</span>}
-              <span className="text-slate-700 text-xs">· {bm.test_title}</span>
+              <span className="text-muted-foreground text-xs">{bm.marks}M</span>
+              {bm.subject && <span className="text-muted-foreground text-xs">· {bm.subject}</span>}
+              <span className="text-foreground text-xs">· {bm.test_title}</span>
             </div>
             {bm.note && !open && (
-              <p className="text-sky-400/70 text-xs mt-1.5 flex items-center gap-1">
+              <p className="text-primary/70 text-xs mt-1.5 flex items-center gap-1">
                 <StickyNote size={10} /> {bm.note}
               </p>
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <Button onClick={() => setOpen(o => !o)} aria-expanded={open} aria-label="Toggle details" variant="ghost" size="icon-sm" className="text-slate-500 hover:text-foreground">
+            <Button onClick={() => setOpen(o => !o)} aria-expanded={open} aria-label="Toggle details" variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
               {open ? <ChevronUp data-icon="inline-start" /> : <ChevronDown data-icon="inline-start" />}
             </Button>
-            <Button onClick={remove} disabled={removing} aria-label="Remove bookmark" variant="ghost" size="icon-sm" className="text-slate-500 hover:text-red-400 transition-colors">
+            <Button onClick={remove} disabled={removing} aria-label="Remove bookmark" variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive transition-colors">
               {removing ? <Spinner size={13} /> : <BookmarkX data-icon="inline-start" />}
             </Button>
           </div>
         </div>
 
         {open && (
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-3 mt-3 space-y-3">
+          <div className="border-t theme-border pt-3 mt-3 space-y-3">
           {/* Options */}
           {bm.options?.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -90,10 +90,10 @@ function BookmarkCard({ bm, onRemove }) {
                 return (
                   <div key={i} className={clsx(
                     'px-3 py-2 rounded-lg text-xs',
-                    isCorrect ? 'bg-green-500/10 border border-green-500/20 text-green-300' : 'bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400'
+                    isCorrect ? 'result-stat-correct text-success-text' : 'bg-muted text-muted-foreground'
                   )}>
                     <span className="font-mono font-semibold mr-1.5">{letter}.</span><MathText>{o}</MathText>
-                    {isCorrect && <span className="ml-1 text-green-400">✓</span>}
+                    {isCorrect && <span className="ml-1 text-success-text">✓</span>}
                   </div>
                 )
               })}
@@ -102,7 +102,7 @@ function BookmarkCard({ bm, onRemove }) {
 
           {/* NAT answer */}
           {bm.question_type === 'nat' && (
-            <div className="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-300 text-xs">
+            <div className="px-3 py-2 rounded-lg result-stat-correct text-success-text text-xs">
               Answer: <span className="font-mono font-semibold">{bm.correct_answer}</span>
             </div>
           )}
@@ -120,18 +120,18 @@ function BookmarkCard({ bm, onRemove }) {
                   autoFocus
                 />
                 <div className="flex gap-2">
-                  <Button onClick={saveNote} disabled={savingNote} variant="outline" size="sm" className="gap-1 rounded-md bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:text-green-300 border-green-500/20">
+                  <Button onClick={saveNote} disabled={savingNote} variant="outline" size="sm" className="gap-1 rounded-md bg-[var(--success-text)]/10 text-success-text hover:bg-green-500/20 hover:text-success-text border-[var(--success-text)]/20">
                     {savingNote ? <Spinner size={12} /> : <Check data-icon="inline-start" />} Save
                   </Button>
-                  <Button onClick={() => { setEditingNote(false); setNote(bm.note || '') }} variant="outline" size="sm" className="gap-1 rounded-md bg-slate-200 text-slate-500 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-400 dark:hover:bg-slate-600 border-transparent">
+                  <Button onClick={() => { setEditingNote(false); setNote(bm.note || '') }} variant="outline" size="sm" className="gap-1 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 text-muted-foreground border-transparent">
                     <X data-icon="inline-start" /> Cancel
                   </Button>
                 </div>
               </div>
             ) : (
-              <Button onClick={() => setEditingNote(true)} variant="ghost" size="sm" className="h-auto gap-1.5 px-0 text-xs text-slate-500 dark:text-slate-400 hover:text-sky-400">
+              <Button onClick={() => setEditingNote(true)} variant="ghost" size="sm" className="h-auto gap-1.5 px-0 text-xs text-muted-foreground hover:text-primary">
                 <StickyNote data-icon="inline-start" />
-                {bm.note ? <span className="text-sky-400/80">{bm.note}</span> : 'Add note'}
+                {bm.note ? <span className="text-primary/80">{bm.note}</span> : 'Add note'}
               </Button>
             )}
           </div>
@@ -172,16 +172,16 @@ export default function BookmarksPage() {
     <Layout>
       <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
-            <Bookmark size={26} className="text-sky-400" /> Bookmarks
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+            <Bookmark size={26} className="text-primary" /> Bookmarks
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">{bookmarks.length} saved question{bookmarks.length !== 1 ? 's' : ''}</p>
+          <p className="text-muted-foreground mt-1">{bookmarks.length} saved question{bookmarks.length !== 1 ? 's' : ''}</p>
         </div>
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search questions or notes..." className="h-9 pl-10 text-sm bg-[var(--bg-card)]" />
           </div>
           {subjects.length > 1 && (
@@ -192,14 +192,14 @@ export default function BookmarksPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Spinner size={28} className="text-sky-500" /></div>
+          <div className="flex justify-center py-16"><Spinner size={28} className="text-primary" /></div>
         ) : bookmarks.length === 0 ? (
           <Card className="border border-border/80 shadow-sm text-center" style={{ background: 'var(--bg-card)' }}>
             <CardContent className="p-12">
-            <Bookmark size={40} className="text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-500 dark:text-slate-400 font-medium">No bookmarks yet</p>
-            <p className="text-slate-600 text-sm mt-1">
-              Click the <span className="text-sky-400">Bookmark</span> button during a test to save questions here
+            <Bookmark size={40} className="text-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">No bookmarks yet</p>
+            <p className="text-muted-foreground text-sm mt-1">
+              Click the <span className="text-primary">Bookmark</span> button during a test to save questions here
             </p>
             <Button asChild className="mt-5 gap-2 text-sm rounded-md shadow-sm">
               <Link to="/tests">
@@ -209,7 +209,7 @@ export default function BookmarksPage() {
             </CardContent>
           </Card>
         ) : filtered.length === 0 ? (
-          <p className="text-center text-slate-500 dark:text-slate-400 py-8">No bookmarks match your search</p>
+          <p className="text-center text-muted-foreground py-8">No bookmarks match your search</p>
         ) : (
           <div className="space-y-2">
             {filtered.map(bm => (

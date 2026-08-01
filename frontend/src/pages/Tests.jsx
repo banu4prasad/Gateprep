@@ -27,7 +27,7 @@ function TestCard({ test, attempt }) {
       <CardHeader className="p-4 pb-2">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="font-medium text-sm leading-snug">{test.title}</CardTitle>
-          {done && <CheckCircle size={15} className="text-green-400 flex-shrink-0 mt-0.5" />}
+          {done && <CheckCircle size={15} className="text-success-text flex-shrink-0 mt-0.5" />}
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-0 flex-1 flex flex-col gap-3">
@@ -39,8 +39,8 @@ function TestCard({ test, attempt }) {
 
         {pct !== null && (
           <div className={clsx('text-xs px-2.5 py-1.5 rounded',
-            pct >= 75 ? 'bg-green-500/10 text-green-600 dark:text-green-400' :
-            pct >= 50 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'
+            pct >= 75 ? 'bg-[var(--success-text)]/10 text-success-text dark:text-success-text' :
+            pct >= 50 ? 'bg-[var(--warning-text)]/10 text-warning-text dark:text-warning-text' : 'bg-[var(--destructive)]/10 text-destructive dark:text-destructive'
           )}>
             Score: {attempt.score?.toFixed(1)}/{attempt.total_marks} ({pct}%)
           </div>
@@ -48,7 +48,7 @@ function TestCard({ test, attempt }) {
       </CardContent>
       <CardFooter className="p-4 pt-0">
         {done ? (
-          <Button asChild variant="outline" className="w-full border-sky-500/30 text-sky-600 hover:bg-sky-500/10 h-8 text-xs">
+          <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10 h-8 text-xs">
             <Link to={`/results/${attempt.id}`}>
               View Result <ArrowRight size={12} className="ml-1.5" />
             </Link>
@@ -72,7 +72,7 @@ function Breadcrumb({ steps, onBack }) {
       {steps.map((s, i) => (
         <div key={i} className="flex items-center gap-2">
           {i < steps.length - 1 ? (
-            <button onClick={() => onBack(i)} className="text-sky-400 hover:text-sky-300 transition-colors">{s}</button>
+            <button onClick={() => onBack(i)} className="text-primary hover:text-primary transition-colors">{s}</button>
           ) : (
             <span className="font-semibold" style={{ color: 'var(--text)' }}>{s}</span>
           )}

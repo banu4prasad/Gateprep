@@ -6,7 +6,7 @@ export default function UsersTableSkeleton() {
     <Card>
       <CardContent className="flex flex-col gap-4 p-4">
         {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 last:border-0 last:pb-0">
+          <div key={i} className="flex items-center gap-4 border-b theme-border pb-4 last:border-0 last:pb-0">
             <Skeleton className="size-8 rounded-full" />
             <div className="flex flex-col flex-1 gap-2">
               <Skeleton className="h-4 w-48" />

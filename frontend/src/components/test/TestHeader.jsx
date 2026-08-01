@@ -23,10 +23,10 @@ export default function TestHeader({
   return (
     <div className="app-header flex items-center px-2 sm:px-4 h-12 border-b flex-shrink-0 theme-header-surface">
       <div className="flex items-center gap-2 mr-3 flex-shrink-0">
-        <div className="w-6 h-6 rounded bg-sky-600 flex items-center justify-center">
-          <span className="text-slate-900 dark:text-white font-bold text-xs">G</span>
+        <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
+          <span className="text-foreground font-bold text-xs">G</span>
         </div>
-        <span className="text-slate-900 dark:text-white text-sm font-semibold hidden md:block truncate max-w-[160px]">
+        <span className="text-foreground text-sm font-semibold hidden md:block truncate max-w-[160px]">
           {test?.title}
         </span>
       </div>
@@ -60,7 +60,7 @@ export default function TestHeader({
         )}
 
         {totalViolations > 0 && (
-          <span className="text-xs font-medium text-red-400 hidden sm:block">
+          <span className="text-xs font-medium text-destructive hidden sm:block">
             {totalViolations}/3 Violations
           </span>
         )}
@@ -70,8 +70,8 @@ export default function TestHeader({
           className={clsx(
             'flex items-center gap-1 px-2 py-1 rounded text-xs border transition-colors',
             showCalc
-              ? 'bg-sky-600 border-sky-500 text-white'
-              : 'border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:border-slate-500'
+              ? 'bg-primary border-primary text-white'
+              : 'theme-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
           )}
         >
           <CalcIcon size={13} /> Calc
@@ -82,7 +82,7 @@ export default function TestHeader({
         <button
           onClick={onSubmitClick}
           disabled={submitting}
-          className="flex items-center gap-1 px-3 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white text-xs font-medium transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-1 rounded bg-primary hover:bg-primary text-white text-xs font-medium transition-colors disabled:opacity-50"
         >
           {submitting ? <Spinner size={12} /> : <Send size={12} />} Submit
         </button>

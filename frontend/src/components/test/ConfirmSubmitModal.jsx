@@ -19,7 +19,7 @@ export default function ConfirmSubmitModal({
         aria-labelledby="confirm-submit-title"
       >
         <div className="flex items-center gap-3 mb-4">
-          <AlertTriangle size={22} className="text-amber-400" />
+          <AlertTriangle size={22} className="text-warning-text" />
           <h3 id="confirm-submit-title" className="font-bold text-lg theme-text">Submit Test?</h3>
         </div>
         <div className="space-y-1.5 mb-5 text-sm">

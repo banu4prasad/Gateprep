@@ -33,17 +33,17 @@ export default function Dashboard() {
     <Layout>
       <div className="flex flex-col gap-8 animate-fade-in">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             Hello, {user?.full_name?.split(' ')[0]}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Ready to practice? Pick a test below.</p>
+          <p className="text-muted-foreground mt-1">Ready to practice? Pick a test below.</p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4">
           {[
-            { label: 'Tests Available', value: tests.length, isLoading: testsLoading, icon: BookOpen, color: 'text-sky-400', bg: 'bg-sky-500/10' },
-            { label: 'Completed', value: completedCount, isLoading: historyLoading, icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-500/10' },
+            { label: 'Tests Available', value: tests.length, isLoading: testsLoading, icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
+            { label: 'Completed', value: completedCount, isLoading: historyLoading, icon: CheckCircle, color: 'text-success-text', bg: 'bg-[var(--success-text)]/10' },
           ].map(({ label, value, isLoading, icon: Icon, color, bg }) => (
             <Card key={label} className="flex flex-col border-border">
               <CardContent className="p-5 flex flex-col gap-2">
@@ -63,7 +63,7 @@ export default function Dashboard() {
 
         {/* Tests */}
         <div>
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4">Available Tests</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Available Tests</h2>
           {isInitialDataLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Loading available tests">
               <TestCardSkeleton />
@@ -88,7 +88,7 @@ export default function Dashboard() {
                     <CardHeader className="p-5 pb-3">
                       <div className="flex items-start justify-between gap-2">
                         <CardTitle className="text-base leading-snug">{t.title}</CardTitle>
-                        {done && <Badge variant="outline" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 flex-shrink-0">Done</Badge>}
+                        {done && <Badge variant="outline" className={`${BADGE_COLORS.green} flex-shrink-0`}>Done</Badge>}
                       </div>
                       {t.description && <CardDescription className="line-clamp-2">{t.description}</CardDescription>}
                     </CardHeader>
@@ -100,8 +100,8 @@ export default function Dashboard() {
                       </div>
                       {pct !== null && (
                         <div className={clsx('px-3 py-2 rounded-lg border text-xs',
-                          pct >= 75 ? 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400' :
-                          pct >= 50 ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400'
+                          pct >= 75 ? 'bg-[var(--success-text)]/10 border-[var(--success-text)]/20 text-success-text dark:text-success-text' :
+                          pct >= 50 ? 'bg-[var(--warning-text)]/10 border-[var(--warning-text)]/20 text-warning-text dark:text-warning-text' : 'bg-[var(--destructive)]/10 border-[var(--destructive)]/20 text-destructive dark:text-destructive'
                         )}>
                           Score: {attempt.score?.toFixed(1)} / {attempt.total_marks} ({pct}%)
                         </div>
@@ -109,7 +109,7 @@ export default function Dashboard() {
                     </CardContent>
                     <CardFooter className="p-5 pt-0">
                       {done ? (
-                        <Button asChild variant="outline" className="w-full border-sky-500/30 text-sky-600 hover:bg-sky-500/10">
+                        <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10">
                           <Link to={`/results/${attempt.id}`}>
                             View Result <ArrowRight size={16} className="ml-2"/>
                           </Link>

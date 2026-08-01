@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 export function SkeletonBlock({ className = '' }) {
   return (
     <span
-      className={clsx('block animate-pulse rounded bg-slate-200/80 dark:bg-slate-800', className)}
+      className={clsx('block animate-pulse rounded bg-muted', className)}
       aria-hidden="true"
     />
   )
@@ -25,7 +25,7 @@ export function TestCardSkeleton() {
           <SkeletonBlock className="h-3 w-20" />
           <SkeletonBlock className="h-3 w-16" />
         </div>
-        <div className="pt-2 border-t border-slate-200 dark:border-slate-800 mt-2">
+        <div className="pt-2 border-t theme-border mt-2">
           <SkeletonBlock className="h-9 w-full rounded-xl" />
         </div>
       </CardContent>
@@ -49,17 +49,17 @@ export function LeaderboardSkeleton() {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <Card className="border border-slate-200 dark:border-slate-800 p-2.5 sm:p-4 flex flex-col items-center justify-end h-24 sm:h-28">
+        <Card className="border theme-border p-2.5 sm:p-4 flex flex-col items-center justify-end h-24 sm:h-28">
           <SkeletonBlock className="h-4 w-16 mb-2" />
           <SkeletonBlock className="h-3 w-10 mb-1" />
           <SkeletonBlock className="h-3 w-12" />
         </Card>
-        <Card className="border border-slate-200 dark:border-slate-800 p-2.5 sm:p-4 flex flex-col items-center justify-end h-28 sm:h-36">
+        <Card className="border theme-border p-2.5 sm:p-4 flex flex-col items-center justify-end h-28 sm:h-36">
           <SkeletonBlock className="h-4 w-20 mb-2" />
           <SkeletonBlock className="h-3 w-10 mb-1" />
           <SkeletonBlock className="h-3 w-12" />
         </Card>
-        <Card className="border border-slate-200 dark:border-slate-800 p-2.5 sm:p-4 flex flex-col items-center justify-end h-20 sm:h-24">
+        <Card className="border theme-border p-2.5 sm:p-4 flex flex-col items-center justify-end h-20 sm:h-24">
           <SkeletonBlock className="h-4 w-16 mb-2" />
           <SkeletonBlock className="h-3 w-10 mb-1" />
           <SkeletonBlock className="h-3 w-12" />
@@ -68,7 +68,7 @@ export function LeaderboardSkeleton() {
       <Card className="overflow-hidden">
         <div className="flex flex-col">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center gap-4 p-3.5 border-b border-slate-200 dark:border-slate-800 last:border-0">
+            <div key={i} className="flex items-center gap-4 p-3.5 border-b theme-border last:border-0">
               <SkeletonBlock className="h-6 w-6 rounded-full" />
               <div className="flex-1 flex gap-3 items-center">
                 <SkeletonBlock className="h-6 w-6 rounded-full flex-shrink-0" />
@@ -110,7 +110,7 @@ export function ResultSkeleton() {
           
           <div className="w-full max-w-sm grid grid-cols-3 gap-2">
             {[1,2,3].map(i => (
-              <div key={i} className="flex flex-col items-center gap-2 p-3 border rounded-xl border-slate-200 dark:border-slate-800">
+              <div key={i} className="flex flex-col items-center gap-2 p-3 border rounded-xl theme-border">
                 <SkeletonBlock className="h-6 w-10" />
                 <SkeletonBlock className="h-3 w-16" />
               </div>

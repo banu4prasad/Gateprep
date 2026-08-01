@@ -17,7 +17,7 @@ export default function UsersPagination({
   const controls = (
     <>
       <Button variant="ghost" size="sm" onClick={onPrev} disabled={pageIndex === 0}>Previous</Button>
-      <span className="text-sm text-slate-500">Showing {showingFrom} – {showingTo} of {totalUsers}</span>
+      <span className="text-sm text-muted-foreground">Showing {showingFrom} – {showingTo} of {totalUsers}</span>
       <Button variant="ghost" size="sm" onClick={onNext} disabled={!hasMore}>Next</Button>
     </>
   )
@@ -33,7 +33,7 @@ export default function UsersPagination({
   }
 
   return (
-    <div className="flex justify-between items-center px-5 py-4 border-t border-slate-200 dark:border-slate-800">
+    <div className="flex justify-between items-center px-5 py-4 border-t theme-border">
       {controls}
     </div>
   )

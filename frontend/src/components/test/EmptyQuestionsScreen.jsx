@@ -7,7 +7,7 @@ export default function EmptyQuestionsScreen({ navigate }) {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md text-center border-border">
         <CardContent className="p-6 pt-8">
-          <AlertTriangle size={36} className="text-amber-400 mx-auto mb-3" />
+          <AlertTriangle size={36} className="text-warning-text mx-auto mb-3" />
           <h1 className="text-xl font-bold mb-2 text-foreground">No Questions Available</h1>
           <p className="text-sm mb-5 text-muted-foreground">
             This test does not have any questions to display.
