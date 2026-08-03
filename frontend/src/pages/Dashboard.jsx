@@ -14,6 +14,7 @@ import { SkeletonBlock, TestCardSkeleton } from '../components/shared/Skeletons'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { BADGE_COLORS } from '@/utils/badgeStyles'
 
 export default function Dashboard() {
   const { user } = useAuth()
