@@ -1,15 +1,15 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
 import { useAdminTest } from '../hooks/useAdminTest'
+import { useTestFormEditor } from '../hooks/useTestFormEditor'
+import { useQuestionFormMode } from '../hooks/useQuestionFormMode'
 import JSONUploadForm from '../components/admin/JSONUploadForm'
-import QuestionCard from '../components/admin/QuestionCard'
 import QuestionForm from '../components/admin/QuestionForm'
 import Layout from '../components/shared/Layout'
 import AdminTestDetailSkeleton from '../components/admin/AdminTestDetailSkeleton'
 import TestHeader from '../components/admin/TestHeader'
-import EmptyQuestionsState from '../components/admin/EmptyQuestionsState'
+import QuestionsList from '../components/admin/QuestionsList'
 
 export default function AdminTestDetail() {
   const { testId } = useParams()
@@ -28,58 +28,15 @@ export default function AdminTestDetail() {
     deleteImage,
   } = useAdminTest(testId)
 
-  const [mode, setMode] = useState(null)
-  const [isEditingTest, setIsEditingTest] = useState(false)
-  const [testForm, setTestForm] = useState({ title: '', description: '', duration_minutes: 180 })
-  const [savingTest, setSavingTest] = useState(false)
+  const { isEditingTest, testForm, setTestForm, savingTest, startEditingTest, saveTest, cancelEditingTest } = useTestFormEditor(test, updateTestDetails)
+  const { mode, closeMode, openJsonMode, openManualMode, toggleJsonMode, toggleManualMode } = useQuestionFormMode()
 
-  const startEditingTest = useCallback(() => {
-    setTestForm({
-      title: test?.title || '',
-      description: test?.description || '',
-      duration_minutes: test?.duration_minutes || 180,
-    })
-    setIsEditingTest(true)
-  }, [test])
-
-  const saveTest = useCallback(async (event) => {
-    event.preventDefault()
-    if (!testForm.title.trim()) { toast.error('Title required'); return }
-
-    const durationMinutes = Number(testForm.duration_minutes)
-    if (!Number.isFinite(durationMinutes) || durationMinutes < 5 || durationMinutes > 360) {
-      toast.error('Duration must be between 5 and 360 minutes')
-      return
-    }
-
-    setSavingTest(true)
-    try {
-      const payload = {
-        title: testForm.title.trim(),
-        description: testForm.description.trim(),
-        duration_minutes: durationMinutes,
-      }
-      await updateTestDetails(payload)
-      setIsEditingTest(false)
-      toast.success('Test updated')
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to update test')
-    } finally {
-      setSavingTest(false)
-    }
-  }, [testForm, updateTestDetails])
-
-  const closeMode = useCallback(() => setMode(null), [])
-  const openJsonMode = useCallback(() => setMode('json'), [])
-  const openManualMode = useCallback(() => setMode('manual'), [])
-  const toggleJsonMode = useCallback(() => setMode(current => (current === 'json' ? null : 'json')), [])
-  const toggleManualMode = useCallback(() => setMode(current => (current === 'manual' ? null : 'manual')), [])
   const previewTest = useCallback(() => navigate(`/tests/${testId}?preview=true`), [navigate, testId])
 
   const handleAddQuestion = useCallback(async (question) => {
     await addQuestion(question)
-    setMode(null)
-  }, [addQuestion])
+    closeMode()
+  }, [addQuestion, closeMode])
 
   if (loading) return <AdminTestDetailSkeleton />
 
@@ -99,7 +56,7 @@ export default function AdminTestDetail() {
             savingTest={savingTest}
             onStartEdit={startEditingTest}
             onSaveTest={saveTest}
-            onCancelEdit={() => setIsEditingTest(false)}
+            onCancelEdit={cancelEditingTest}
             mode={mode}
             onPreview={previewTest}
             onToggleJson={toggleJsonMode}
@@ -113,21 +70,15 @@ export default function AdminTestDetail() {
         )}
 
         <div className="space-y-2">
-          {questions.length === 0 ? (
-            <EmptyQuestionsState onOpenJson={openJsonMode} onOpenManual={openManualMode} />
-          ) : (
-            questions.map((question, idx) => (
-              <QuestionCard
-                key={question.id}
-                q={question}
-                idx={idx}
-                onDelete={deleteQuestion}
-                onUpdate={updateQuestion}
-                onUploadImage={uploadImage}
-                onDeleteImage={deleteImage}
-              />
-            ))
-          )}
+          <QuestionsList
+            questions={questions}
+            onOpenJson={openJsonMode}
+            onOpenManual={openManualMode}
+            onDelete={deleteQuestion}
+            onUpdate={updateQuestion}
+            onUploadImage={uploadImage}
+            onDeleteImage={deleteImage}
+          />
         </div>
       </div>
     </Layout>

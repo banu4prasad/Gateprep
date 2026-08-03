@@ -33,8 +33,8 @@ export default function McqOptions({ question, selectedLetter, onSelect }) {
               {selected && <div className="w-2 h-2 rounded-full bg-white" />}
             </div>
             <div className="flex-1">
-              <span className="text-xs font-semibold mr-2 theme-muted">{letter}.</span>
-              <div className="text-sm theme-text"><MathText>{option}</MathText></div>
+              <span className="text-xs font-semibold mr-2 text-muted-foreground">{letter}.</span>
+              <div className="text-sm text-foreground"><MathText>{option}</MathText></div>
               <OptionImage src={question.option_images?.[letter]} letter={letter} />
             </div>
           </div>

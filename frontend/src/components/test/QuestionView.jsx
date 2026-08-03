@@ -25,7 +25,7 @@ export default function QuestionView({
       <QuestionMetaBar question={question} />
 
       <div className="flex-1 overflow-y-auto p-4">
-        <p className="text-sm font-semibold mb-3 theme-text">
+        <p className="text-sm font-semibold mb-3 text-foreground">
           Question No. {current + 1}
         </p>
 

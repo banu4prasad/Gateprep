@@ -1,14 +1,15 @@
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 export default function NatInput({ value, onChange, onCommit, savedValue }) {
   return (
     <div>
       <p className="text-xs text-success-text mb-3">Enter numerical answer. No negative marking.</p>
       <div className="flex gap-3 items-center max-w-xs">
-        <input
+        <Input
           type="number"
           step="any"
-          className="input font-mono text-lg flex-1"
+          className="font-mono text-lg flex-1"
           value={value}
           onChange={event => onChange(event.target.value)}
           onBlur={onCommit}

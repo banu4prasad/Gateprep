@@ -33,9 +33,9 @@ export default function MsqOptions({ question, selectedLetters, onToggle }) {
             )}>
               {selected && <span className="text-foreground text-xs font-bold">✓</span>}
             </div>
-            <span className="text-xs font-semibold mr-2 theme-muted">{letter}.</span>
+            <span className="text-xs font-semibold mr-2 text-muted-foreground">{letter}.</span>
             <div className="flex-1">
-              <div className="text-sm theme-text"><MathText>{option}</MathText></div>
+              <div className="text-sm text-foreground"><MathText>{option}</MathText></div>
               <OptionImage src={question.option_images?.[letter]} letter={letter} />
             </div>
           </div>

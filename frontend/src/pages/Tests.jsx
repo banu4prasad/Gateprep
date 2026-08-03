@@ -147,57 +147,44 @@ function WeeklyQuizSubjects({ tests, push, breadcrumbs, goBack }) {
   )
 }
 
-function TestSeriesPicker({ tests, push, breadcrumbs, goBack }) {
+// ── Generic Option Picker ─────────────────────────────────────────
+
+function OptionPicker({ items, getLabel, getCount, onSelect, breadcrumbs, goBack, gapClassName = 'gap-4' }) {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto animate-fade-in">
         <Breadcrumb steps={breadcrumbs} onBack={goBack} />
-        <div className="grid gap-4">
-          {['made_easy', 'go_classes'].map(sn => {
-            const count = tests.filter(t => t.category === 'test_series' && t.series_name === sn).length
+        <div className={`grid ${gapClassName}`}>
+          {items.map(item => {
+            const count = getCount(item)
             if (count === 0) return null
-            return <NavCard key={sn} label={SERIES_LABELS[sn]} count={count} onClick={() => push('series', sn)} />
+            return <NavCard key={item.value} label={getLabel(item)} count={count} onClick={() => onSelect(item.value)} />
           })}
         </div>
       </div>
     </Layout>
   )
+}
+
+function TestSeriesPicker({ tests, push, breadcrumbs, goBack }) {
+  const items = ['made_easy', 'go_classes'].map(value => ({ value }))
+  return <OptionPicker items={items} getLabel={i => SERIES_LABELS[i.value]} 
+    getCount={i => tests.filter(t => t.category === 'test_series' && t.series_name === i.value).length}
+    onSelect={val => push('series', val)} breadcrumbs={breadcrumbs} goBack={goBack} />
 }
 
 function TestTypePicker({ tests, nav, push, breadcrumbs, goBack }) {
-  return (
-    <Layout>
-      <div className="max-w-2xl mx-auto animate-fade-in">
-        <Breadcrumb steps={breadcrumbs} onBack={goBack} />
-        <div className="grid gap-4">
-          {['subject_wise', 'topic_wise', 'full_length'].map(tt => {
-            const count = tests.filter(t =>
-              t.category === 'test_series' && t.series_name === nav[1].value && t.test_type === tt
-            ).length
-            if (count === 0) return null
-            return <NavCard key={tt} label={TYPE_LABELS[tt]} count={count} onClick={() => push('type', tt)} />
-          })}
-        </div>
-      </div>
-    </Layout>
-  )
+  const items = ['subject_wise', 'topic_wise', 'full_length'].map(value => ({ value }))
+  return <OptionPicker items={items} getLabel={i => TYPE_LABELS[i.value]}
+    getCount={i => tests.filter(t => t.category === 'test_series' && t.series_name === nav[1].value && t.test_type === i.value).length}
+    onSelect={val => push('type', val)} breadcrumbs={breadcrumbs} goBack={goBack} />
 }
 
 function TopicWiseSubjects({ filteredTests, push, breadcrumbs, goBack }) {
-  return (
-    <Layout>
-      <div className="max-w-2xl mx-auto animate-fade-in">
-        <Breadcrumb steps={breadcrumbs} onBack={goBack} />
-        <div className="grid gap-3">
-          {SUBJECTS.map(sub => {
-            const count = filteredTests.filter(t => t.subject === sub).length
-            if (count === 0) return null
-            return <NavCard key={sub} label={sub} count={count} onClick={() => push('subject', sub)} />
-          })}
-        </div>
-      </div>
-    </Layout>
-  )
+  const items = SUBJECTS.map(value => ({ value }))
+  return <OptionPicker items={items} getLabel={i => i.value} gapClassName="gap-3"
+    getCount={i => filteredTests.filter(t => t.subject === i.value).length}
+    onSelect={val => push('subject', val)} breadcrumbs={breadcrumbs} goBack={goBack} />
 }
 
 function TestList({ filteredTests, history, breadcrumbs, goBack }) {
@@ -225,31 +212,27 @@ function TestList({ filteredTests, history, breadcrumbs, goBack }) {
 }
 
 // ── View resolver: table-driven dispatch ─────────────────────────
-function resolveView({ nav, currentNav, tests, filteredTests, history, push, goBack, breadcrumbs }) {
-  const props = { tests, filteredTests, history, push, goBack, breadcrumbs, nav }
 
-  // Root
-  if (nav.length === 0) return <CategoryPicker {...props} />
+const isRoot = (nav) => nav.length === 0
+const isWeeklyQuizCategory = (nav) => nav.length === 1 && nav[0].value === 'weekly_quiz'
+// Note: Originally this fell back to TestSeriesPicker for ANY non-'weekly_quiz' category.
+// Now it strictly requires 'test_series'. If new categories are added upstream, update ROUTES.
+const isTestSeriesCategory = (nav) => nav.length === 1 && nav[0].value === 'test_series'
+const isTestSeriesTypeLevel = (nav) => nav.length === 2 && nav[0].value === 'test_series'
+const isTopicWiseLevel = (currentNav) => currentNav?.type === 'type' && currentNav?.value === 'topic_wise'
 
-  // Level 1: by category
-  if (nav.length === 1) {
-    return nav[0].value === 'weekly_quiz'
-      ? <WeeklyQuizSubjects {...props} />
-      : <TestSeriesPicker {...props} />
-  }
+const ROUTES = [
+  { test: ({ nav }) => isRoot(nav), Component: CategoryPicker },
+  { test: ({ nav }) => isWeeklyQuizCategory(nav), Component: WeeklyQuizSubjects },
+  { test: ({ nav }) => isTestSeriesCategory(nav), Component: TestSeriesPicker },
+  { test: ({ nav }) => isTestSeriesTypeLevel(nav), Component: TestTypePicker },
+  { test: ({ currentNav }) => isTopicWiseLevel(currentNav), Component: TopicWiseSubjects },
+]
 
-  // Level 2: inside a series → test types
-  if (nav.length === 2 && nav[0].value === 'test_series') {
-    return <TestTypePicker {...props} />
-  }
-
-  // Topic wise → subjects
-  if (currentNav?.type === 'type' && currentNav?.value === 'topic_wise') {
-    return <TopicWiseSubjects {...props} />
-  }
-
-  // Default: final test list
-  return <TestList {...props} />
+function resolveView(props) {
+  const route = ROUTES.find(r => r.test(props))
+  const Component = route ? route.Component : TestList
+  return <Component {...props} />
 }
 
 export default function TestsPage() {

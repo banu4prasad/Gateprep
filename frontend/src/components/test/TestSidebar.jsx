@@ -18,13 +18,13 @@ export default function TestSidebar({
 }) {
   return (
     <>
-      <div className="p-3 border-b text-center theme-border">
+      <div className="p-3 border-b text-center border-border">
         <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center mx-auto mb-1">
           <span className="text-foreground font-bold text-sm">U</span>
         </div>
       </div>
 
-      <div className="p-2 border-b space-y-1.5 theme-border">
+      <div className="p-2 border-b space-y-1.5 border-border">
         {[
           ['q-dot-answered', `Answered (${answered})`],
           ['q-dot-not-answered', `Not Answered (${notAnswered})`],
@@ -33,14 +33,14 @@ export default function TestSidebar({
         ].map(([cls, label]) => (
           <div key={label} className="flex items-center gap-2">
             <div className={`q-dot w-6 h-6 text-[9px] ${cls}`} />
-            <span className="text-xs theme-muted">{label}</span>
+            <span className="text-xs text-muted-foreground">{label}</span>
           </div>
         ))}
       </div>
 
       {[...questionGroups.entries()].map(([subject, items]) => (
-        <div key={subject} className="p-2 border-b theme-border">
-          <p className="text-xs font-semibold mb-2 truncate theme-text">{subject}</p>
+        <div key={subject} className="p-2 border-b border-border">
+          <p className="text-xs font-semibold mb-2 truncate text-foreground">{subject}</p>
           <div className="grid grid-cols-5 gap-1">
             {items.map(({ question, index: questionIndex }) => {
               const isCurrent = question.id === currentQuestion?.id
