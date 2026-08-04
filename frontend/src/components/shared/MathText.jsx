@@ -16,15 +16,16 @@ function isTableBlock(text) {
   return lines.some(l => TABLE_LINE.test(l) && !SEPARATOR_ROW.test(l))
 }
 
-/** Split a row on unescaped | characters, respecting \| as a literal pipe. */
-function splitTableCells(row, expectedCols) {
-  const inner = row.slice(1, -1) // strip leading/trailing |
+function isEscapedPipeAt(str, i) {
+  return str[i] === '\\' && i + 1 < str.length && str[i + 1] === '|'
+}
+
+function tokenizeRowCells(inner) {
   const cells = []
   let current = ''
-
   for (let i = 0; i < inner.length; i++) {
-    if (inner[i] === '\\' && i + 1 < inner.length && inner[i + 1] === '|') {
-      current += '|' // escaped pipe → literal |
+    if (isEscapedPipeAt(inner, i)) {
+      current += '|'
       i++
     } else if (inner[i] === '|') {
       cells.push(current.trim())
@@ -34,20 +35,29 @@ function splitTableCells(row, expectedCols) {
     }
   }
   cells.push(current.trim())
+  return cells
+}
 
-  // If we got more cells than expected (unescaped | inside content),
-  // merge the extras back into the cell before the last column.
-  if (expectedCols && cells.length > expectedCols) {
-    const merged = []
-    const extraCount = cells.length - expectedCols
-    for (let i = 0; i < cells.length; i++) {
-      if (i > 0 && i <= extraCount) {
-        merged[merged.length - 1] += ' | ' + cells[i]
-      } else {
-        merged.push(cells[i])
-      }
+function mergeExcessCells(cells, expectedCols) {
+  const extraCount = cells.length - expectedCols
+  const merged = []
+  for (let i = 0; i < cells.length; i++) {
+    if (i > 0 && i <= extraCount) {
+      merged[merged.length - 1] += ' | ' + cells[i]
+    } else {
+      merged.push(cells[i])
     }
-    return merged
+  }
+  return merged
+}
+
+/** Split a row on unescaped | characters, respecting \| as a literal pipe. */
+function splitTableCells(row, expectedCols) {
+  const inner = row.slice(1, -1) // strip leading/trailing |
+  const cells = tokenizeRowCells(inner)
+
+  if (expectedCols && cells.length > expectedCols) {
+    return mergeExcessCells(cells, expectedCols)
   }
 
   return cells
@@ -193,85 +203,71 @@ function splitLegacyMath(text) {
   return parts
 }
 
-function SafeInlineMath({ math }) {
+function useKatexRender(math, displayMode) {
   const containerRef = useRef(null)
   const ariaLabel = mathAriaLabel(math)
 
   useEffect(() => {
-    if (containerRef.current) {
-      Promise.all([import('katex'), import('katex/dist/katex.min.css')])
-        .then(([katexModule]) => {
-          if (containerRef.current) {
-            katexModule.default.render(normalizeMath(math), containerRef.current, {
-              displayMode: false,
-              throwOnError: false,
-              errorColor: '#cc0000',
-            })
-          }
-        })
-        .catch(err => {
-          console.error("KaTeX load/render error:", err, "Original:", math)
-          if (containerRef.current) containerRef.current.innerText = math
-        })
-    }
-  }, [math])
+    if (!containerRef.current) return
+    Promise.all([import('katex'), import('katex/dist/katex.min.css')])
+      .then(([katexModule]) => {
+        if (containerRef.current) {
+          katexModule.default.render(normalizeMath(math), containerRef.current, {
+            displayMode,
+            throwOnError: false,
+            errorColor: '#cc0000',
+          })
+        }
+      })
+      .catch(err => {
+        console.error("KaTeX load/render error:", err, "Original:", math)
+        if (containerRef.current) containerRef.current.innerText = math
+      })
+  }, [math, displayMode])
 
+  return { containerRef, ariaLabel }
+}
+
+function SafeInlineMath({ math }) {
+  const { containerRef, ariaLabel } = useKatexRender(math, false)
   return <span ref={containerRef} role="math" aria-label={ariaLabel} className="inline-math" />
 }
 
 function SafeBlockMath({ math }) {
-  const containerRef = useRef(null)
-  const ariaLabel = mathAriaLabel(math)
-
-  useEffect(() => {
-    if (containerRef.current) {
-      Promise.all([import('katex'), import('katex/dist/katex.min.css')])
-        .then(([katexModule]) => {
-          if (containerRef.current) {
-            katexModule.default.render(normalizeMath(math), containerRef.current, {
-              displayMode: true,
-              throwOnError: false,
-              errorColor: '#cc0000',
-            })
-          }
-        })
-        .catch(err => {
-          console.error("KaTeX load/render error:", err, "Original:", math)
-          if (containerRef.current) containerRef.current.innerText = math
-        })
-    }
-  }, [math])
-
+  const { containerRef, ariaLabel } = useKatexRender(math, true)
   return <div ref={containerRef} role="math" aria-label={ariaLabel} className="block-math my-4 flex justify-center" />
 }
 
-function renderMathSegment(text, keyPrefix = '') {
-  const hasExplicitMath = text.search(MATH_PATTERN) !== -1
+function getMathPartKind(part) {
+  if (part.startsWith('$$') || part.startsWith('\\[')) return 'block'
+  if (part.startsWith('$') || part.startsWith('\\(')) return 'inline'
+  return 'text'
+}
 
-  if (!hasExplicitMath && isStandaloneMath(text)) {
+function renderLegacyMathText(text, keyPrefix) {
+  if (isStandaloneMath(text)) {
     return <SafeInlineMath math={text} />
   }
 
-  if (!hasExplicitMath) {
-    const legacyParts = splitLegacyMath(text)
-    const hasLegacyMath = legacyParts.some(part => part.type === 'math')
+  const legacyParts = splitLegacyMath(text)
+  const hasLegacyMath = legacyParts.some(part => part.type === 'math')
 
-    if (hasLegacyMath) {
-      return (
-        <>
-          {legacyParts.map((part, index) => {
-            if (part.type === 'math') {
-              return <SafeInlineMath key={`${keyPrefix}l${index}`} math={part.value} />
-            }
-            return <Fragment key={`${keyPrefix}l${index}`}>{part.value}</Fragment>
-          })}
-        </>
-      )
-    }
-
+  if (!hasLegacyMath) {
     return <>{text}</>
   }
 
+  return (
+    <>
+      {legacyParts.map((part, index) =>
+        part.type === 'math'
+          ? <SafeInlineMath key={`${keyPrefix}l${index}`} math={part.value} />
+          : <Fragment key={`${keyPrefix}l${index}`}>{part.value}</Fragment>
+      )}
+    </>
+  )
+}
+
+function renderExplicitMathParts(text, keyPrefix) {
   const parts = text.split(MATH_PATTERN)
 
   return (
@@ -279,26 +275,24 @@ function renderMathSegment(text, keyPrefix = '') {
       {parts.map((part, index) => {
         if (!part) return null
 
-        const isBlock =
-          part.startsWith('$$') ||
-          part.startsWith('\\[')
-
-        const isInline =
-          part.startsWith('$') ||
-          part.startsWith('\\(')
-
-        if (isBlock) {
-          return <SafeBlockMath key={`${keyPrefix}m${index}`} math={part} />
+        switch (getMathPartKind(part)) {
+          case 'block':
+            return <SafeBlockMath key={`${keyPrefix}m${index}`} math={part} />
+          case 'inline':
+            return <SafeInlineMath key={`${keyPrefix}m${index}`} math={part} />
+          default:
+            return <Fragment key={`${keyPrefix}m${index}`}>{part}</Fragment>
         }
-
-        if (isInline) {
-          return <SafeInlineMath key={`${keyPrefix}m${index}`} math={part} />
-        }
-
-        return <Fragment key={`${keyPrefix}m${index}`}>{part}</Fragment>
       })}
     </>
   )
+}
+
+function renderMathSegment(text, keyPrefix = '') {
+  const hasExplicitMath = text.search(MATH_PATTERN) !== -1
+  return hasExplicitMath
+    ? renderExplicitMathParts(text, keyPrefix)
+    : renderLegacyMathText(text, keyPrefix)
 }
 
 const MathText = memo(function MathText({ children }) {

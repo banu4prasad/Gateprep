@@ -25,66 +25,85 @@ const applyOperator = (op, left, right) => {
   }
 }
 
-export const evaluateExpression = (expression) => {
-  const output = []
-  const operators = []
+function shouldPopOperator(operators, token) {
+  const top = operators.at(-1)
+  return (
+    operators.length > 0 &&
+    isOperatorToken(top) &&
+    OPERATOR_PRECEDENCE[top] >= OPERATOR_PRECEDENCE[token]
+  )
+}
 
-  tokenizeExpression(expression).forEach((token) => {
-    if (!Number.isNaN(Number(token))) {
-      output.push(Number(token))
-      return
-    }
+function handleOperatorToken(token, operators, output) {
+  while (shouldPopOperator(operators, token)) {
+    output.push(operators.pop())
+  }
+  operators.push(token)
+}
 
-    if (isOperatorToken(token)) {
-      while (
-        operators.length > 0 &&
-        isOperatorToken(operators.at(-1)) &&
-        OPERATOR_PRECEDENCE[operators.at(-1)] >= OPERATOR_PRECEDENCE[token]
-      ) {
-        output.push(operators.pop())
-      }
-      operators.push(token)
-      return
-    }
+function handleCloseParen(operators, output) {
+  while (operators.length > 0 && operators.at(-1) !== '(') {
+    output.push(operators.pop())
+  }
+  if (operators.at(-1) !== '(') throw new Error('Mismatched parentheses')
+  operators.pop()
+}
 
-    if (token === '(') {
-      operators.push(token)
-      return
-    }
-
-    if (token === ')') {
-      while (operators.length > 0 && operators.at(-1) !== '(') {
-        output.push(operators.pop())
-      }
-      if (operators.at(-1) !== '(') throw new Error('Mismatched parentheses')
-      operators.pop()
-      return
-    }
-
-    throw new Error('Invalid token')
-  })
-
+function drainRemainingOperators(operators, output) {
   while (operators.length > 0) {
     const op = operators.pop()
     if (op === '(' || op === ')') throw new Error('Mismatched parentheses')
     output.push(op)
   }
+}
 
+function toRPN(tokens) {
+  const output = []
+  const operators = []
+
+  tokens.forEach((token) => {
+    if (!Number.isNaN(Number(token))) {
+      output.push(Number(token))
+      return
+    }
+    if (isOperatorToken(token)) {
+      handleOperatorToken(token, operators, output)
+      return
+    }
+    if (token === '(') {
+      operators.push(token)
+      return
+    }
+    if (token === ')') {
+      handleCloseParen(operators, output)
+      return
+    }
+    throw new Error('Invalid token')
+  })
+
+  drainRemainingOperators(operators, output)
+  return output
+}
+
+function evaluateRPN(rpn) {
   const stack = []
-  output.forEach((token) => {
+  rpn.forEach((token) => {
     if (typeof token === 'number') {
       stack.push(token)
       return
     }
-
     const right = stack.pop()
     const left = stack.pop()
     if (left === undefined || right === undefined) throw new Error('Invalid expression')
     stack.push(applyOperator(token, left, right))
   })
-
   if (stack.length !== 1) throw new Error('Invalid expression')
   return stack[0]
+}
+
+export const evaluateExpression = (expression) => {
+  const rpn = toRPN(tokenizeExpression(expression))
+  return evaluateRPN(rpn)
 }
 
 const factorial = (n) => {

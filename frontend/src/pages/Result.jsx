@@ -56,6 +56,22 @@ function getOptionState(qa, letter) {
   return { isCorrect, isSelected, isTopperPick }
 }
 
+function getOptionClassName(isCorrect, isSelected) {
+  if (isCorrect) return 'result-stat-correct text-success-text'
+  if (isSelected) return 'result-stat-incorrect text-destructive'
+  return 'border text-muted-foreground border-border'
+}
+
+function OptionMarkers({ isCorrect, isSelected, isTopperPick }) {
+  return (
+    <>
+      {isCorrect && <span className="ml-1 text-success-text">✓</span>}
+      {isSelected && !isCorrect && <span className="ml-1 text-destructive">✗</span>}
+      {isTopperPick && !isSelected && <span className="ml-1 text-warning-text">★ Topper</span>}
+    </>
+  )
+}
+
 function McqOptionsGrid({ qa }) {
   if (!(qa.options?.length > 0)) return null
   return (
@@ -64,14 +80,9 @@ function McqOptionsGrid({ qa }) {
         const letter = 'ABCD'[i]
         const { isCorrect, isSelected, isTopperPick } = getOptionState(qa, letter)
         return (
-          <div key={i} className={clsx('px-3 py-2 rounded text-xs',
-            isCorrect ? 'result-stat-correct text-success-text' :
-            isSelected ? 'result-stat-incorrect text-destructive' :
-            'border text-muted-foreground border-border')}>
+          <div key={i} className={clsx('px-3 py-2 rounded text-xs', getOptionClassName(isCorrect, isSelected))}>
             <span className="font-mono font-semibold mr-1">{letter}.</span><MathText>{o}</MathText>
-            {isCorrect && <span className="ml-1 text-success-text">✓</span>}
-            {isSelected && !isCorrect && <span className="ml-1 text-destructive">✗</span>}
-            {isTopperPick && !isSelected && <span className="ml-1 text-warning-text">★ Topper</span>}
+            <OptionMarkers isCorrect={isCorrect} isSelected={isSelected} isTopperPick={isTopperPick} />
           </div>
         )
       })}
