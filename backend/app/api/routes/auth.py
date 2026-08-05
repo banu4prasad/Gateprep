@@ -137,15 +137,15 @@ def create_token_for_user(
 # ── Register ──────────────────────────────────────────────────────
 
 
-@router.post("/register", response_model=AuthUserResponse)
-@limiter.limit("3/minute")
-def register(
-    request: Request,
-    payload: RegisterRequest,
-    response: Response,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-):
+class RegisterServices:
+    def __init__(
+        self, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+    ):
+        self.background_tasks = background_tasks
+        self.db = db
+
+
+def _create_registered_user(db: Session, payload: RegisterRequest) -> User:
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(
             status_code=400,
@@ -155,7 +155,6 @@ def register(
         raise HTTPException(
             status_code=400, detail="Password must be at least 8 characters"
         )
-
     is_first = db.query(User).count() == 0
     user = User(
         email=payload.email,
@@ -166,13 +165,35 @@ def register(
     db.add(user)
     db.commit()
     db.refresh(user)
+    return user
 
-    background_tasks.add_task(FastAPICache.clear, namespace=ADMIN_USERS_CACHE_NAMESPACE)
-    _set_auth_cookie(response, create_token_for_user(user, db, request))
+
+@router.post("/register", response_model=AuthUserResponse)
+@limiter.limit("3/minute")
+def register(
+    request: Request,
+    payload: RegisterRequest,
+    response: Response,
+    services: RegisterServices = Depends(),
+):
+    user = _create_registered_user(services.db, payload)
+    services.background_tasks.add_task(
+        FastAPICache.clear, namespace=ADMIN_USERS_CACHE_NAMESPACE
+    )
+    _set_auth_cookie(response, create_token_for_user(user, services.db, request))
     return _auth_user_response(user)
 
 
 # ── Login ─────────────────────────────────────────────────────────
+
+
+def _is_valid_credentials(user: Optional[User], password: str) -> bool:
+    """True if the user exists, has a password set, and it matches."""
+    return (
+        bool(user)
+        and bool(user.hashed_password)
+        and verify_password(password, user.hashed_password)
+    )
 
 
 @router.post("/login", response_model=AuthUserResponse)
@@ -184,11 +205,7 @@ def login(
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == payload.email).first()
-    if (
-        not user
-        or not user.hashed_password
-        or not verify_password(payload.password, user.hashed_password)
-    ):
+    if not _is_valid_credentials(user, payload.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account disabled. Contact admin.")
@@ -231,6 +248,28 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 # ── Refresh Token ─────────────────────────────────────────────────
 
 
+def _is_valid_cookie_auth_payload(payload: Optional[dict]) -> bool:
+    """True if the decoded token payload exists and was issued for cookie auth."""
+    return bool(payload) and payload.get("auth") == "cookie"
+
+
+def _extract_user_id(payload: dict) -> int:
+    """Parse the `sub` claim to an int; raises 401 if missing or malformed."""
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    try:
+        return int(user_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
+def _is_session_still_valid(user: Optional[User], session_id: Optional[str]) -> bool:
+    """True if the user exists, a session id was presented, and it matches
+    the user's current (live) session id."""
+    return bool(user) and bool(session_id) and user.current_session_id == session_id
+
+
 @router.post("/refresh", response_model=AuthUserResponse)
 @limiter.limit("10/minute")
 def refresh_token(request: Request, response: Response, db: Session = Depends(get_db)):
@@ -240,21 +279,14 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     payload = decode_token(token)
-    if not payload or payload.get("auth") != "cookie":
+    if not _is_valid_cookie_auth_payload(payload):
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-    user_id = payload.get("sub")
+    user_id = _extract_user_id(payload)
     session_id = payload.get("sid")
-    if user_id is None:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    try:
-        user_id = int(user_id)
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=401, detail="Invalid token")
 
     user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
-    if not user or not session_id or user.current_session_id != session_id:
+    if not _is_session_still_valid(user, session_id):
         raise HTTPException(status_code=401, detail="Session expired")
 
     _set_auth_cookie(response, create_token_for_session(user, session_id))
@@ -276,6 +308,17 @@ def _validate_reset_input(payload: ResetPasswordRequest) -> str:
     return token
 
 
+def _is_usable_reset_token(
+    reset_token: Optional[PasswordResetToken], now: datetime
+) -> bool:
+    """True if the token exists, hasn't been consumed, and hasn't expired."""
+    return (
+        bool(reset_token)
+        and reset_token.used_at is None
+        and _as_utc(reset_token.expires_at) >= now
+    )
+
+
 def _lookup_valid_reset_token(db: Session, token: str) -> PasswordResetToken:
     """Find a reset token by hash, raising if missing, used, or expired."""
     reset_token = (
@@ -284,11 +327,7 @@ def _lookup_valid_reset_token(db: Session, token: str) -> PasswordResetToken:
         .first()
     )
     now = _utcnow()
-    if (
-        not reset_token
-        or reset_token.used_at is not None
-        or _as_utc(reset_token.expires_at) < now
-    ):
+    if not _is_usable_reset_token(reset_token, now):
         raise HTTPException(status_code=400, detail="Invalid or expired reset link")
     return reset_token
 
