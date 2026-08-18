@@ -93,7 +93,13 @@ export default function useAdminUsers() {
     try {
       const res = await adminAPI.createPasswordReset(userId)
       setResetLink(res.data)
-      toast.success('Reset link created')
+
+      try {
+        await navigator.clipboard.writeText(res.data.reset_url)
+        toast.success('Reset link created & copied to clipboard')
+      } catch {
+        toast.success('Reset link created — copy it from the dialog')
+      }
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to create reset link')
     } finally {

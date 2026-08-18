@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 import os
 from urllib.parse import urlencode
 
@@ -11,11 +12,27 @@ from app.services.cloudinary_service import (
     optimize_delivery_image_urls,
 )
 
+logger = logging.getLogger(__name__)
+
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
-def _password_reset_url(token: str) -> str:
-    return f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?{urlencode({'token': token})}"
+def _password_reset_url(token: str) -> tuple[str, bool]:
+    """Build a password-reset URL and return (url, is_local).
+
+    is_local is True when FRONTEND_URL points to localhost, meaning
+    the generated link won't work for external users.
+    """
+    base = settings.FRONTEND_URL.rstrip("/")
+    url = f"{base}/reset-password?{urlencode({'token': token})}"
+    is_local = "localhost" in base or "127.0.0.1" in base
+    if is_local:
+        logger.warning(
+            "Password-reset link generated with localhost FRONTEND_URL (%s). "
+            "This link will not work for external users.",
+            base,
+        )
+    return url, is_local
 
 def _normalize_cursor_datetime(value: datetime) -> datetime:
     if value.tzinfo is None:

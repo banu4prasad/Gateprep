@@ -207,10 +207,13 @@ def create_password_reset_link(
     token, expires_at = _create_reset_token(db, user.id, current.id)
     db.commit()
 
+    reset_url, is_local = _password_reset_url(token)
+
     return {
         "user_id": user.id,
         "email": user.email,
         "full_name": user.full_name,
-        "reset_url": _password_reset_url(token),
+        "reset_url": reset_url,
+        "is_local_url": is_local,
         "expires_at": expires_at,
     }
