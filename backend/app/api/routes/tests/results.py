@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+import re
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.deps import get_current_user
@@ -10,16 +11,12 @@ from app.api.routes.tests.helpers import (
     _submitted_attempts_query,
 )
 from app.api.routes.tests.result_builder import _attempt_answer_details, _result_payload
+from app.services.html_report_service import generate_result_html
 
 router = APIRouter()
 
 
-@router.get("/attempt/{attempt_id}/result")
-def get_result(
-    attempt_id: int,
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
+def _load_attempt_result(attempt_id: int, current_user, db: Session) -> dict:
     attempt = (
         db.query(TestAttempt)
         .options(
@@ -61,4 +58,31 @@ def get_result(
         answer_details=_attempt_answer_details(test, attempt.answers),
         current_user=current_user,
         db=db,
+    )
+
+
+@router.get("/attempt/{attempt_id}/result")
+def get_result(
+    attempt_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return _load_attempt_result(attempt_id, current_user, db)
+
+
+@router.get("/attempt/{attempt_id}/result.html")
+def get_result_html(
+    attempt_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    payload = _load_attempt_result(attempt_id, current_user, db)
+    html = generate_result_html(payload)
+    test_title = payload.get("test_title") or "result"
+    slug = re.sub(r"[^a-z0-9]+", "-", test_title.lower()).strip("-")
+    filename = f"{slug or 'test'}-result.html"
+    return Response(
+        content=html,
+        media_type="text/html",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

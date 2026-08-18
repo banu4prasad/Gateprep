@@ -41,6 +41,7 @@ export const testAPI = {
   submitTest:         (testId, attemptId, ans)  => api.post(`/tests/${testId}/attempt/${attemptId}/submit`, { answers: ans }),
   updateViolations:   (testId, attemptId, data) => api.patch(`/tests/${testId}/attempt/${attemptId}/violations`, data),
   getResult:          (attemptId)               => api.get(`/tests/attempt/${attemptId}/result`),
+  downloadResultHtml: (attemptId)               => api.get(`/tests/attempt/${attemptId}/result.html`, { responseType: 'blob' }),
   getHistory:         ()                        => api.get('/tests/my/history'),
   getLeaderboard:     (testId)                  => api.get(`/tests/${testId}/leaderboard`),
   getMyAttempts:      (testId)                  => api.get(`/tests/${testId}/my-attempts`),

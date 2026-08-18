@@ -1,3 +1,5 @@
+import { testAPI } from '../api/api'
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({
     '&': '&amp;',
@@ -63,7 +65,7 @@ export function buildResultHtml(result) {
 <body>
   <header>
     <h1>${escapeHtml(result.test_title)}</h1>
-    <div>Attempt ${escapeHtml(result.attempt_number)} · ${result.counts_for_leaderboard ? 'Saved first attempt' : 'Practice attempt'} · ${escapeHtml(formatDate(result.submitted_at))}</div>
+    <div>Attempt ${escapeHtml(result.attempt_number)} · Practice attempt · ${escapeHtml(formatDate(result.submitted_at))}</div>
     <div class="summary">
       <div class="metric"><span>Score</span><strong>${escapeHtml(result.score?.toFixed?.(2) ?? result.score)} / ${escapeHtml(result.total_marks)}</strong></div>
       <div class="metric"><span>Percentage</span><strong>${escapeHtml(Math.round(result.percentage))}%</strong></div>
@@ -77,10 +79,28 @@ export function buildResultHtml(result) {
 </html>`
 }
 
-export function downloadResultReport(result) {
+export function downloadPracticeResultHtml(result) {
   const slug = (result.test_title || 'result').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-  const suffix = result.counts_for_leaderboard ? 'result' : 'practice-result'
+  const suffix = 'practice-result'
   const blob = new Blob([buildResultHtml(result)], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${slug || 'test'}-${suffix}.html`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+export async function downloadResultReport(result) {
+  if (!result || result.attempt_id == null || String(result.attempt_id).startsWith('practice-')) {
+    return downloadPracticeResultHtml(result || {})
+  }
+  const res = await testAPI.downloadResultHtml(result.attempt_id)
+  const slug = (result.test_title || 'result').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const suffix = 'result'
+  const blob = res.data instanceof Blob ? res.data : new Blob([res.data], { type: 'text/html' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url

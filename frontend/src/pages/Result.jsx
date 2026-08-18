@@ -368,9 +368,13 @@ export default function ResultPage() {
     navigate(`/tests/${result.test_id}`)
   }, [result, navigate])
 
-  const handleDownload = useCallback(() => {
-    downloadResultReport(result)
-    toast.success('Result downloaded')
+  const handleDownload = useCallback(async () => {
+    try {
+      await downloadResultReport(result)
+      toast.success('Result downloaded')
+    } catch {
+      toast.error('Failed to download result')
+    }
   }, [result])
 
   const summary = useResultSummary(result || {})
