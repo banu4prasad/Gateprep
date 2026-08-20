@@ -24,17 +24,17 @@ function scoreBadgeClass(pct) {
 
 function TestCardFooter({ done, attempt, test }) {
   return (
-    <CardFooter className="p-4 pt-0">
+    <CardFooter className="mt-auto p-4 pt-0">
       {done ? (
-        <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10 h-8 text-xs">
+        <Button asChild variant="outline" className="group w-full border-primary/30 text-primary transition-all hover:border-primary/60 hover:bg-primary/10 active:translate-y-px focus-visible:ring-2 focus-visible:ring-primary/60">
           <Link to={`/results/${attempt.id}`}>
-            View Result <ArrowRight size={12} className="ml-1.5" />
+            View Result <ArrowRight data-icon="inline-end" className="transition-transform group-hover:translate-x-1" />
           </Link>
         </Button>
       ) : (
-        <Button asChild className="w-full h-8 text-xs">
+        <Button asChild className="group w-full bg-primary text-primary-foreground transition-all hover:bg-primary/85 hover:shadow-[0_0_18px_color-mix(in_oklab,var(--primary),transparent_62%)] active:translate-y-px focus-visible:ring-2 focus-visible:ring-primary/70">
           <Link to={`/tests/${test.id}`}>
-            Start Test <ArrowRight size={12} className="ml-1.5" />
+            Start Test <ArrowRight data-icon="inline-end" className="transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
         </Button>
       )}
@@ -42,27 +42,30 @@ function TestCardFooter({ done, attempt, test }) {
   )
 }
 
-function TestCard({ test, attempt }) {
+function TestCard({ title, subtitle, duration, questions, marks, test, attempt }) {
   const done = attempt?.status === 'submitted'
   const pct = done && attempt?.total_marks
     ? Math.round(attempt.score / attempt.total_marks * 100) : null
 
   return (
-    <Card className="flex flex-col hover:border-primary/50 transition-colors border-border">
-      <CardHeader className="p-4 pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="font-medium text-sm leading-snug">{test.title}</CardTitle>
-          {done && <CheckCircle size={15} className="text-success-text flex-shrink-0 mt-0.5" />}
+    <Card className="group flex min-h-[360px] flex-col border-border bg-card transition-all duration-300 hover:border-primary/50 hover:bg-card/80 hover:shadow-[0_0_24px_color-mix(in_oklab,var(--primary),transparent_84%)]">
+      <CardHeader className="p-5 pb-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="text-lg font-semibold leading-tight text-foreground md:text-xl">{title}</CardTitle>
+            <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">{subtitle || 'Practice the key concepts in this test.'}</p>
+          </div>
+          {done && <CheckCircle size={17} className="mt-0.5 flex-shrink-0 text-success-text" />}
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-0 flex-1 flex flex-col gap-3">
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><Clock size={11} />{test.duration_minutes}m</span>
-          <span className="flex items-center gap-1"><BookOpen size={11} />{test.question_count} Qs</span>
-          <span className="flex items-center gap-1"><Target size={11} />{test.total_marks}M</span>
+      <CardContent className="flex flex-1 flex-col gap-4 p-5 pt-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs leading-none text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Clock aria-hidden="true" />{duration} min</span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><BookOpen aria-hidden="true" />{questions} questions</span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Target aria-hidden="true" />{marks} marks</span>
         </div>
         {pct !== null && (
-          <div className={clsx('text-xs px-2.5 py-1.5 rounded', scoreBadgeClass(pct))}>
+          <div className={clsx('rounded px-2.5 py-1.5 text-xs', scoreBadgeClass(pct))}>
             Score: {attempt.score?.toFixed(1)}/{attempt.total_marks} ({pct}%)
           </div>
         )}
@@ -202,7 +205,16 @@ function TestList({ filteredTests, history, breadcrumbs, goBack }) {
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
             {filteredTests.map(t => (
-              <TestCard key={t.id} test={t} attempt={history[t.id]} />
+              <TestCard
+                key={t.id}
+                title={t.title}
+                subtitle={t.description}
+                duration={t.duration_minutes}
+                questions={t.question_count}
+                marks={t.total_marks}
+                test={t}
+                attempt={history[t.id]}
+              />
             ))}
           </div>
         )}
