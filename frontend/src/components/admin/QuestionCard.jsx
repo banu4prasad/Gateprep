@@ -8,7 +8,6 @@ import QuestionEditForm from './QuestionEditForm'
 import { OPTION_LETTERS } from './questionUtils'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 
 const typeColor = {
   mcq: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
@@ -149,11 +148,6 @@ const QuestionCard = memo(function QuestionCard({
                   deleteTarget={q.id}
                   deleteExtraArg={'question'}
                 />
-                <div className="mt-3">
-                  <Button variant="ghost" onClick={() => setEditing(true)} className="inline-flex items-center gap-2 text-sm">
-                    <Pencil size={13}/> Edit Question
-                  </Button>
-                </div>
               </div>
             </>
           )}

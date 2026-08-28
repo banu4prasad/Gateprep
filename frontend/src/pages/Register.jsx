@@ -65,6 +65,7 @@ export default function RegisterPage() {
                 <Input
                   id="full_name"
                   type="text"
+                  autoComplete="name"
                   required
                   value={form.full_name}
                   onChange={handle('full_name')}
@@ -79,6 +80,7 @@ export default function RegisterPage() {
                 <Input
                   id="email"
                   type="email"
+                  autoComplete="email"
                   required
                   value={form.email}
                   onChange={handle('email')}
@@ -93,6 +95,7 @@ export default function RegisterPage() {
                   <Input
                     id="password"
                     type={show ? 'text' : 'password'}
+                    autoComplete="new-password"
                     required
                     value={form.password}
                     onChange={handle('password')}
@@ -115,6 +118,7 @@ export default function RegisterPage() {
                 <Input
                   id="confirm"
                   type="password"
+                  autoComplete="new-password"
                   required
                   value={form.confirm}
                   onChange={handle('confirm')}

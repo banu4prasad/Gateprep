@@ -107,6 +107,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
+                    autoComplete="email"
                     required
                     value={form.email}
                     onChange={handle('email')}
@@ -127,6 +128,7 @@ export default function LoginPage() {
                     <Input
                       id="password"
                       type={show ? 'text' : 'password'}
+                      autoComplete="current-password"
                       required
                       value={form.password}
                       onChange={handle('password')}

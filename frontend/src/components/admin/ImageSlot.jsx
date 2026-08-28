@@ -31,13 +31,15 @@ export default function ImageSlot({
       <img
         src={imageUrl}
         alt={imgAlt}
+        width={320}
+        height={180}
         role="button"
         tabIndex={0}
         aria-label={ariaLabel}
         loading="lazy"
         decoding="async"
         onKeyDown={imageKeyHandler(imageUrl)}
-        className={`${maxHeight} rounded border theme-border cursor-pointer focus-visible:ring-2 focus-visible:ring-ring outline-none ${imgExtraClass}`}
+        className={`${maxHeight} object-contain rounded border theme-border cursor-pointer focus-visible:ring-2 focus-visible:ring-ring outline-none ${imgExtraClass}`}
         onClick={() => openImage(imageUrl)}
       />
       <button onClick={() => onDeleteImage(deleteTarget, deleteExtraArg)} className="text-xs text-destructive hover:opacity-80 mt-1">
@@ -46,7 +48,7 @@ export default function ImageSlot({
     </div>
   ) : (
     <label className="flex items-center gap-2 cursor-pointer w-fit">
-      <div className={`flex items-center gap-1.5 ${uploadPadX} py-1.5 rounded border border-dashed theme-border text-xs theme-muted hover:border-ring hover:text-ring transition-colors`}>
+      <div className={`flex items-center gap-1.5 ${uploadPadX} py-1.5 rounded border border-dashed border-muted-foreground/60 text-xs theme-muted hover:border-ring hover:text-ring transition-colors`}>
         <Upload size={uploadIconSize}/> {uploadLabel}
       </div>
       <input

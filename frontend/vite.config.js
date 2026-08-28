@@ -14,7 +14,7 @@ export default defineConfig({
   },
   plugins: [
     tailwindcss(),
-    react(),
+    react({ exclude: /\/src\/main\.jsx$/ }),
     visualizer({
       filename: 'stats.html',
       gzipSize: true,

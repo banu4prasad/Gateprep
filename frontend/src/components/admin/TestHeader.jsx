@@ -53,14 +53,14 @@ export default function TestHeader({
 
       <div className="flex flex-wrap gap-2 sm:flex-shrink-0">
         <Button
-          variant="ghost"
+          variant="outline"
           onClick={onPreview}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all"
         >
           <Eye size={15}/> Preview Test
         </Button>
         <Button
-          variant="ghost"
+          variant="outline"
           onClick={onToggleJson}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-all ${mode === 'json' ? 'bg-[var(--warning-text)]/15 border-[var(--warning-text)]/30 text-[var(--warning-text)]' : ''}`}
         >

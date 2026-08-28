@@ -1,3 +1,4 @@
+import * as React from "react"
 import { XIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -14,27 +15,28 @@ function ModalPortal({
   return <Primitive.Portal data-slot={slot} {...props} />
 }
 
-function ModalOverlay({
+const ModalOverlay = React.forwardRef(function ModalOverlay({
   primitive: Primitive,
   slot,
   className,
   ...props
-}) {
+}, ref) {
   return (
     <Primitive.Overlay
       data-slot={slot}
       className={cn(modalOverlayClassName, className)}
+      ref={ref}
       {...props} />
   )
-}
+})
 
-function ModalContent({
+const ModalContent = React.forwardRef(function ModalContent({
   primitive: Primitive,
   slot,
   ...props
-}) {
-  return <Primitive.Content data-slot={slot} {...props} />
-}
+}, ref) {
+  return <Primitive.Content data-slot={slot} ref={ref} {...props} />
+})
 
 function ModalCloseButton({
   primitive: Primitive,

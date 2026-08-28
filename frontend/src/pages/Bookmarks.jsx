@@ -23,14 +23,15 @@ import clsx from 'clsx'
 
 // --- Helpers (pure, no complexity cost) ---
 
-const QUESTION_TYPE_VARIANT = {
-  nat: 'secondary',
-  msq: 'outline',
-  default: 'default',
+const QUESTION_TYPE_CLASS = {
+  mcq: 'bg-sky-500/10 text-sky-600 border-sky-500/20 dark:text-sky-400',
+  msq: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400',
+  nat: 'bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400',
+  default: 'bg-muted text-muted-foreground border-border',
 }
 
-function typeVariant(questionType) {
-  return QUESTION_TYPE_VARIANT[questionType] ?? QUESTION_TYPE_VARIANT.default
+function typeClass(questionType) {
+  return QUESTION_TYPE_CLASS[questionType] ?? QUESTION_TYPE_CLASS.default
 }
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D']
@@ -47,7 +48,7 @@ function BookmarkOptions({ options, correctAnswer }) {
         return (
           <div key={i} className={clsx(
             'px-3 py-2 rounded-lg text-xs',
-            isCorrect ? 'result-stat-correct text-success-text' : 'bg-muted text-muted-foreground'
+            isCorrect ? 'result-stat-correct text-success-text' : 'bg-card text-foreground border border-border'
           )}>
             <span className="font-mono font-semibold mr-1.5">{letter}.</span>
             <MathText>{o}</MathText>
@@ -97,7 +98,7 @@ function BookmarkNoteEditor({ bm }) {
   if (editing) {
     return (
       <div className="space-y-2">
-        <Textarea className="min-h-20 resize-none text-xs bg-transparent" rows={2}
+        <Textarea id={`bookmark-note-${bm.question_id}`} name={`bookmark-note-${bm.question_id}`} className="min-h-20 resize-none text-xs bg-transparent" rows={2}
           value={note} onChange={e => setNote(e.target.value)}
           placeholder="Add a personal note..." autoFocus />
         <div className="flex gap-2">
@@ -134,7 +135,7 @@ function BookmarkHeader({ bm, open, onToggle, onRemove, removing }) {
         onClick={onToggle}>
         <div className="text-foreground text-sm leading-snug line-clamp-2"><MathText>{bm.question_text}</MathText></div>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
-          <Badge variant={typeVariant(bm.question_type)} className="h-5 px-2 text-[10px] tracking-wide">
+          <Badge variant="outline" className={`h-5 px-2 text-[10px] tracking-wide ${typeClass(bm.question_type)}`}>
             {bm.question_type?.toUpperCase()}
           </Badge>
           <span className="text-muted-foreground text-xs">{bm.marks}M</span>
@@ -298,12 +299,12 @@ export default function BookmarksPage() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)}
+            <Input id="bookmarks-search" name="bookmarksSearch" value={search} onChange={e => setSearch(e.target.value)} autoComplete="off"
               placeholder="Search questions or notes..."
               className="h-9 pl-10 text-sm bg-[var(--bg-card)]" />
           </div>
           {subjects.length > 1 && (
-            <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)}
+            <select id="bookmarks-subject" name="bookmarksSubject" value={filterSubject} onChange={e => setFilterSubject(e.target.value)}
               className="h-9 w-full sm:w-40 min-w-0 rounded-lg border border-input bg-[var(--bg-card)] px-2.5 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
               {subjects.map(s => <option key={s} value={s}>{s === 'all' ? 'All subjects' : s}</option>)}
             </select>

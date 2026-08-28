@@ -22,6 +22,7 @@ export default function Dashboard() {
   const { data: tests = [], isLoading: testsLoading } = useSWR('/tests', fetcher)
   const { data: history = [], isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
   const isInitialDataLoading = testsLoading || historyLoading
+  const recentTests = tests.slice(0, 9)
 
   const { submitted, completedCount, attemptMap } = useMemo(() => {
     const submitted = history.filter(h => h.status === 'submitted')
@@ -46,17 +47,19 @@ export default function Dashboard() {
             { label: 'Tests Available', value: tests.length, isLoading: testsLoading, icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
             { label: 'Completed', value: completedCount, isLoading: historyLoading, icon: CheckCircle, color: 'text-success-text', bg: 'bg-[var(--success-text)]/10' },
           ].map(({ label, value, isLoading, icon: Icon, color, bg }) => (
-            <Card key={label} className="flex flex-col border-border">
-              <CardContent className="p-5 flex flex-col gap-2">
-                <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}>
-                  <Icon size={18} className={color} />
+            <Card key={label} className="border-border">
+              <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+                <div className={`w-8 h-8 shrink-0 rounded-lg ${bg} flex items-center justify-center`}>
+                  <Icon size={16} className={color} />
                 </div>
-                {isLoading ? (
-                  <SkeletonBlock className="mt-1 h-8 w-14" />
-                ) : (
-                  <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
-                )}
-                <p className="text-muted-foreground text-sm">{label}</p>
+                <div className="min-w-0">
+                  {isLoading ? (
+                    <SkeletonBlock className="h-5 w-12" />
+                  ) : (
+                    <p className="text-xl font-bold text-foreground leading-none">{value}</p>
+                  )}
+                  <p className="text-muted-foreground text-xs mt-1 truncate">{label}</p>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -64,9 +67,16 @@ export default function Dashboard() {
 
         {/* Tests */}
         <div>
-          <h2 className="text-xl font-semibold text-foreground mb-4">Available Tests</h2>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="text-xl font-semibold text-foreground">Recent Tests</h2>
+            {tests.length > 9 && (
+              <Link to="/tests" className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline">
+                View all tests <ArrowRight size={14} />
+              </Link>
+            )}
+          </div>
           {isInitialDataLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" aria-label="Loading available tests">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5" aria-label="Loading available tests">
               <TestCardSkeleton />
               <TestCardSkeleton />
               <TestCardSkeleton />
@@ -79,28 +89,28 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tests.map(t => {
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {recentTests.map(t => {
                 const attempt = attemptMap[t.id]
                 const done = attempt?.status === 'submitted'
                 const pct = done && attempt?.total_marks ? Math.round(attempt.score / attempt.total_marks * 100) : null
                 return (
                   <Card key={t.id} data-testid="test-card" className="flex flex-col hover:border-primary/50 transition-colors border-border">
-                    <CardHeader className="p-5 pb-3">
+                    <CardHeader className="p-3 pb-1.5">
                       <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-base leading-snug">{t.title}</CardTitle>
+                        <CardTitle className="text-sm leading-snug">{t.title}</CardTitle>
                         {done && <Badge variant="outline" className={`${BADGE_COLORS.green} flex-shrink-0`}>Done</Badge>}
                       </div>
-                      {t.description && <CardDescription className="line-clamp-2">{t.description}</CardDescription>}
+                      {t.description && <CardDescription className="text-xs line-clamp-2">{t.description}</CardDescription>}
                     </CardHeader>
-                    <CardContent className="p-5 pt-0 flex-1 flex flex-col gap-3">
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <CardContent className="p-3 pt-0 flex-1 flex flex-col gap-2">
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1.5"><Clock size={12}/>{t.duration_minutes} min</span>
                         <span className="flex items-center gap-1.5"><BookOpen size={12}/>{t.question_count} questions</span>
                         <span className="flex items-center gap-1.5"><Target size={12}/>{t.total_marks} marks</span>
                       </div>
                       {pct !== null && (
-                        <div className={clsx('px-3 py-2 rounded-lg border text-xs',
+                        <div className={clsx('px-2.5 py-1.5 rounded-md border text-xs',
                           pct >= 75 ? 'bg-[var(--success-text)]/10 border-[var(--success-text)]/20 text-success-text dark:text-success-text' :
                           pct >= 50 ? 'bg-[var(--warning-text)]/10 border-[var(--warning-text)]/20 text-warning-text dark:text-warning-text' : 'bg-[var(--destructive)]/10 border-[var(--destructive)]/20 text-destructive dark:text-destructive'
                         )}>
@@ -108,7 +118,7 @@ export default function Dashboard() {
                         </div>
                       )}
                     </CardContent>
-                    <CardFooter className="p-5 pt-0">
+                    <CardFooter className="border-t-0 bg-transparent p-3 pt-1">
                       {done ? (
                         <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10">
                           <Link to={`/results/${attempt.id}`}>

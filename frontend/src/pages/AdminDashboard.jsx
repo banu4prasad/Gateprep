@@ -52,12 +52,14 @@ export default function AdminDashboard() {
           ) : (
             stats.map(({ label, value, icon: Icon, color, bg }) => (
               <Card key={label}>
-                <CardContent className="p-5 flex flex-col gap-2">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: bg }}>
-                    <Icon size={18} className={color} />
+                <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+                  <div className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center" style={{ background: bg }}>
+                    <Icon size={16} className={color} />
                   </div>
-                  <p className="text-2xl font-bold" style={{ color: 'var(--text)' }}>{value}</p>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                  <div className="min-w-0">
+                    <p className="text-xl font-bold leading-none" style={{ color: 'var(--text)' }}>{value}</p>
+                    <p className="text-xs mt-1 truncate" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                  </div>
                 </CardContent>
               </Card>
             ))

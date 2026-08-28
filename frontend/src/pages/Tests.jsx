@@ -24,9 +24,9 @@ function scoreBadgeClass(pct) {
 
 function TestCardFooter({ done, attempt, test }) {
   return (
-    <CardFooter className="p-4 pt-0">
+    <CardFooter className="border-t-0 bg-transparent p-4 pt-0">
       {done ? (
-        <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10 h-8 text-xs">
+        <Button asChild className="w-full h-8 text-xs">
           <Link to={`/results/${attempt.id}`}>
             View Result <ArrowRight size={12} className="ml-1.5" />
           </Link>

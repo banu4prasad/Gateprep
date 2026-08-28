@@ -6,8 +6,11 @@ export default function UsersSearchBar({ searchInput, setSearchInput }) {
     <div className="relative">
       <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
       <Input
+        id="admin-users-search"
+        name="userSearch"
         value={searchInput}
         onChange={(e) => setSearchInput(e.target.value)}
+        autoComplete="off"
         placeholder="Search all users by name or email..."
         className="pl-10 h-10"
       />

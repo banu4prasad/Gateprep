@@ -36,10 +36,12 @@ export function TestCardSkeleton() {
 export function StatCardSkeleton() {
   return (
     <Card>
-      <CardContent className="p-5 flex flex-col gap-2">
-        <SkeletonBlock className="w-9 h-9 rounded-xl" />
-        <SkeletonBlock className="h-8 w-14 mt-1" />
-        <SkeletonBlock className="h-4 w-24" />
+      <CardContent className="p-3 sm:p-4 flex items-center gap-3">
+        <SkeletonBlock className="w-8 h-8 shrink-0 rounded-lg" />
+        <div className="space-y-1.5">
+          <SkeletonBlock className="h-5 w-12" />
+          <SkeletonBlock className="h-3 w-20" />
+        </div>
       </CardContent>
     </Card>
   )

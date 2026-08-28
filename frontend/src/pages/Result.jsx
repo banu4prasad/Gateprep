@@ -129,6 +129,17 @@ function marksBadgeClass(marksAwarded) {
   return 'text-muted-foreground'
 }
 
+const QUESTION_TYPE_CLASS = {
+  mcq: 'bg-sky-500/10 text-sky-600 border-sky-500/20 dark:text-sky-400',
+  msq: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400',
+  nat: 'bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400',
+  default: 'bg-muted text-muted-foreground border-border',
+}
+
+function questionTypeClass(questionType) {
+  return QUESTION_TYPE_CLASS[questionType] ?? QUESTION_TYPE_CLASS.default
+}
+
 const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onToggleBookmark }) {
   const [open, setOpen] = useState(false)
 
@@ -137,7 +148,12 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
       <div className="flex items-start gap-3 p-3 cursor-pointer focus-visible:ring-2 focus-visible:ring-ring rounded outline-none" role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} onClick={() => setOpen(o => !o)}>
         <span className="text-xs font-mono mt-0.5 w-5 flex-shrink-0 text-muted-foreground">Q{idx + 1}</span>
         <AnswerStatusIcon qa={qa} />
-        <div className="text-sm flex-1 line-clamp-2 text-card-foreground"><MathText>{qa.question_text}</MathText></div>
+        <Badge variant="outline" className={`mt-0.5 h-5 shrink-0 px-2 text-[10px] tracking-wide ${questionTypeClass(qa.question_type)}`}>
+          {qa.question_type?.toUpperCase() || 'UNKNOWN'}
+        </Badge>
+        <div className="text-sm flex-1 min-w-0 text-card-foreground">
+          <div className="break-words"><MathText>{qa.question_text}</MathText></div>
+        </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className={clsx('text-xs font-mono font-semibold', marksBadgeClass(qa.marks_awarded))}>
             {qa.marks_awarded > 0 ? '+' : ''}{qa.marks_awarded}
@@ -187,7 +203,7 @@ const ResultHeader = memo(function ResultHeader({ result, onDownload }) {
       </Link>
       <div className="flex items-center gap-3">
         <button onClick={onDownload}
-          className="flex items-center gap-1.5 text-sm text-success-text hover:text-success-text">
+          className="flex items-center gap-1.5 text-sm text-success-text hover:text-success-text cursor-pointer">
           <Download size={13} /> Download
         </button>
         <Link to={`/tests/${result.test_id}/leaderboard`}
