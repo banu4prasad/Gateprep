@@ -7,7 +7,6 @@ import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
 import Medal from 'lucide-react/dist/esm/icons/medal'
 import Crown from 'lucide-react/dist/esm/icons/crown'
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw'
-import Spinner from '../components/shared/Spinner'
 import clsx from 'clsx'
 import { LeaderboardSkeleton } from '../components/shared/Skeletons'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,9 +16,21 @@ import {
 } from '@/components/ui/table'
 
 const MEDAL_COLORS = {
-  1: { bg: 'bg-[var(--warning-text)]/20 border-[var(--warning-text)]/40', text: 'text-warning-text', icon: <Crown size={16} className="text-warning-text"/> },
-  2: { bg: 'bg-muted border-border', text: 'text-muted-foreground', icon: <Medal size={16} className="text-muted-foreground"/> },
-  3: { bg: 'bg-[#ea580c]/10 border-[#ea580c]/30', text: 'text-[#fb923c]', icon: <Medal size={16} className="text-[#f97316]"/> },
+  1: {
+    bg: 'bg-amber-500/10 border-amber-500/30 dark:bg-amber-500/15 dark:border-amber-500/40',
+    text: 'text-amber-600 dark:text-amber-400',
+    icon: <Crown size={18} className="text-amber-500" />,
+  },
+  2: {
+    bg: 'bg-slate-500/10 border-slate-400/30 dark:bg-slate-400/10 dark:border-slate-400/30',
+    text: 'text-slate-600 dark:text-slate-300',
+    icon: <Medal size={18} className="text-slate-400" />,
+  },
+  3: {
+    bg: 'bg-amber-700/10 border-amber-700/30 dark:bg-amber-700/15 dark:border-amber-700/40',
+    text: 'text-amber-700 dark:text-amber-500',
+    icon: <Medal size={18} className="text-amber-700 dark:text-amber-500" />,
+  },
 }
 
 export default function LeaderboardPage() {
@@ -67,7 +78,7 @@ export default function LeaderboardPage() {
             <Trophy size={26} className="text-warning-text"/>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{data.test_title}</h1>
-          <p className="text-muted-foreground mt-1">{data.total_participants} participant{data.total_participants !== 1 ? 's' : ''} · First attempt only</p>
+          <p className="text-muted-foreground mt-1">{data.total_participants} participant{data.total_participants !== 1 ? 's' : ''}</p>
           {data.current_user_rank && (
             <div className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-primary/10 border border-brand-500/20">
               <span className="text-primary text-sm font-medium">Your rank: #{data.current_user_rank}</span>
@@ -88,28 +99,56 @@ export default function LeaderboardPage() {
           </Card>
         ) : (
           <>
-            {/* Top 3 podium */}
-            {top3.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                {/* Reorder: 2nd, 1st, 3rd for podium effect */}
+            {/* Top 3 podium (only displayed when there are 3 or more participants) */}
+            {data.leaderboard.length >= 3 && (
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end pt-3">
+                {/* Podium display order: 2nd (Silver), 1st (Gold - prominent), 3rd (Bronze) */}
                 {[top3[1], top3[0], top3[2]].map((entry, podiumIdx) => {
-                  if (!entry) return <div key={`podium-empty-${podiumIdx}`}/>
+                  if (!entry) return null
                   const actualRank = entry.rank
                   const m = MEDAL_COLORS[actualRank] || {}
-                  const heights = ['h-24 sm:h-28', 'h-28 sm:h-36', 'h-20 sm:h-24']
+                  const isWinner = actualRank === 1
                   return (
-                    <Card key={`podium-${podiumIdx}-user-${entry.user_id}`} className={clsx(
-                      'border p-2.5 sm:p-4 flex flex-col items-center justify-end text-center',
-                      m.bg, heights[podiumIdx],
-                      entry.is_current_user && 'ring-2 ring-brand-500/50'
-                    )}>
-                      <div className="mb-1">{m.icon}</div>
-                      <p className={`font-bold text-sm ${m.text} truncate w-full`}>
-                        {entry.full_name.split(' ')[0]}
-                        {entry.is_current_user && ' (You)'}
-                      </p>
-                      <p className="text-muted-foreground text-xs">{entry.percentage}%</p>
-                      <p className="text-muted-foreground text-xs">{entry.score}/{entry.total_marks}</p>
+                    <Card
+                      key={`podium-${actualRank}-user-${entry.user_id}`}
+                      className={clsx(
+                        'border p-3 sm:p-4 flex flex-col items-center justify-between text-center transition-all',
+                        m.bg,
+                        isWinner ? 'min-h-[190px] sm:min-h-[220px] shadow-sm sm:-translate-y-2' : 'min-h-[170px] sm:min-h-[195px]',
+                        entry.is_current_user && 'ring-2 ring-primary/60'
+                      )}
+                    >
+                      {/* Top Stack: Rank icon + Avatar Initial + Participant Name */}
+                      <div className="flex flex-col items-center gap-1.5 w-full">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-background/80 shadow-xs">
+                          {m.icon}
+                        </div>
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 font-semibold text-xs text-foreground">
+                          {entry.full_name?.[0]?.toUpperCase() || '—'}
+                        </div>
+                        <p
+                          className="font-bold text-xs sm:text-sm text-foreground truncate w-full px-1"
+                          title={entry.full_name}
+                        >
+                          {entry.full_name || '—'}
+                          {entry.is_current_user && (
+                            <span className="text-primary text-xs ml-1 font-normal">(You)</span>
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Bottom Stack: Percentage + Score + Date */}
+                      <div className="mt-2 w-full pt-2 border-t border-border/40 flex flex-col items-center gap-0.5">
+                        <span className="font-bold text-sm sm:text-base text-foreground font-mono">
+                          {entry.percentage != null ? `${entry.percentage}%` : '—'}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {entry.score != null ? `${entry.score}/${entry.total_marks}` : '—'}
+                        </span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
+                          {entry.submitted_at ? new Date(entry.submitted_at).toLocaleDateString('en-IN') : '—'}
+                        </span>
+                      </div>
                     </Card>
                   )
                 })}

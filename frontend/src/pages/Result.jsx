@@ -200,13 +200,11 @@ const ResultHeader = memo(function ResultHeader({ result, onDownload }) {
 })
 
 const AttemptBadge = memo(function AttemptBadge({ result }) {
+  if (result.counts_for_leaderboard) return null
   return (
-    <div className={clsx('flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm rounded border',
-      result.counts_for_leaderboard ? 'result-attempt-leaderboard' : 'result-attempt-practice')}>
+    <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm rounded border result-attempt-practice">
       <Medal size={14} />
-      {result.counts_for_leaderboard
-        ? `Attempt ${result.attempt_number} · ✓ Counts for leaderboard`
-        : `Attempt ${result.attempt_number} · Practice result (download to keep)`}
+      Attempt {result.attempt_number} · Practice result (download to keep)
     </div>
   )
 })
@@ -255,7 +253,7 @@ const ComparisonStats = memo(function ComparisonStats({ result }) {
         <div className="space-y-2">
           {[
             { label: 'Your Score', val: result.score?.toFixed(1), pct: Math.round(result.percentage), color: 'var(--info-text)' },
-            ...(result.topper ? [{ label: `Topper (${result.topper.full_name})`, val: result.topper.score?.toFixed(1), pct: Math.round(result.topper.percentage), color: 'var(--success-text)' }] : []),
+            ...(result.topper ? [{ label: 'Topper', val: result.topper.score?.toFixed(1), pct: Math.round(result.topper.percentage), color: 'var(--success-text)' }] : []),
           ].map(({ label, val, pct: p, color }) => (
             <div key={label}>
               <div className="flex justify-between text-xs mb-1">
@@ -305,13 +303,8 @@ const AttemptHistory = memo(function AttemptHistory({ attempts, currentAttemptId
 
 const ResultActions = memo(function ResultActions({ result, onReattempt }) {
   return (
-    <div className="flex gap-3">
-      <Button asChild variant="ghost" className="flex-1">
-        <Link to={`/tests/${result.test_id}/leaderboard`} className="flex items-center justify-center gap-2 text-sm">
-          <Trophy size={14} /> Leaderboard
-        </Link>
-      </Button>
-      <Button onClick={onReattempt} disabled={result.attempts_remaining <= 0} className="flex-1 flex items-center justify-center gap-2 text-sm">
+    <div>
+      <Button onClick={onReattempt} disabled={result.attempts_remaining <= 0} className="w-full flex items-center justify-center gap-2 text-sm">
         <RotateCcw size={14} />
         Reattempt {result.attempts_remaining > 0 ? `(${result.attempts_remaining} left)` : '(max reached)'}
       </Button>

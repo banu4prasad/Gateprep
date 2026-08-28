@@ -107,7 +107,10 @@ def _result_payload(
     topper_data = None
     topper_answers_map = {}
     if topper:
-        topper_answers_map = {ua.question_id: ua for ua in topper.answers}
+        topper_answers = (
+            db.query(UserAnswer).filter(UserAnswer.attempt_id == topper.id).all()
+        )
+        topper_answers_map = {ua.question_id: ua for ua in topper_answers}
         topper_data = {
             "user_id": topper.user_id,
             "full_name": topper.user.full_name,
