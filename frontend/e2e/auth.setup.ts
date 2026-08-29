@@ -44,7 +44,7 @@ setup('authenticate', async ({ page }) => {
   await page.screenshot({ path: 'debug.png' });
   
   // Wait for the Dashboard title to be visible to ensure state is fully loaded
-  await expect(page.getByRole('heading', { name: 'Available Tests' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Hello,/ })).toBeVisible();
 
   // Save signed-in state
   await page.context().storageState({ path: authFile });

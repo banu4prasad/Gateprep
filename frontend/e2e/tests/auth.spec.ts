@@ -14,7 +14,7 @@ test.describe('Authentication Flow', () => {
     
     // Expect redirection to dashboard
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByRole('heading', { name: 'Available Tests' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^Hello,/ })).toBeVisible();
   });
 
   test('Invalid credentials show error toast', async ({ loginPage, page }) => {

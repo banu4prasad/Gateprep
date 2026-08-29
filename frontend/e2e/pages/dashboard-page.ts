@@ -6,7 +6,7 @@ export class DashboardPage {
 
   constructor(private page: Page) {
     this.heading = page.getByRole('heading', { name: /^Hello,/ });
-    this.availableTestsHeading = page.getByRole('heading', { name: 'Available Tests' });
+    this.availableTestsHeading = page.getByRole('heading', { name: 'Recent Tests' });
   }
 
   async goto() {
