@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
+import Logo from './Logo'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import LogOut from 'lucide-react/dist/esm/icons/log-out'
@@ -41,9 +42,7 @@ export default function Navbar() {
       {/* ── Desktop/Tablet Top Bar ────────────────────────────────── */}
       <nav aria-label="Main Navigation" className="app-header fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-4 border-b bg-background/80 border-border backdrop-blur-md">
         <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 mr-2 sm:mr-4 flex-shrink-0">
-          <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center text-primary-foreground">
-            <span className="font-bold text-sm">G</span>
-          </div>
+          <Logo size="sm" className="rounded-md" />
           <span className="font-bold text-foreground text-sm">GATEPrep</span>
         </Link>
 

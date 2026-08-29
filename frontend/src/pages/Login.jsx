@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
 import toast from 'react-hot-toast'
 import Spinner from '../components/shared/Spinner'
+import Logo from '../components/shared/Logo'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
@@ -48,9 +49,7 @@ export default function LoginPage() {
       <div className="hidden lg:flex flex-col justify-between w-5/12 p-12"
            style={{ background: 'var(--header-bg)', borderRight: '1px solid var(--border)' }}>
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded bg-primary flex items-center justify-center">
-            <span className="font-bold text-text-base text-lg">G</span>
-          </div>
+          <Logo size="lg" />
           <span className="font-bold text-text-base text-xl">GATEPrep</span>
         </div>
         <div>
@@ -59,8 +58,6 @@ export default function LoginPage() {
             <span className="text-primary">precision practice.</span>
           </h1>
           <p className="text-text-muted dark:text-text-muted leading-relaxed">
-            MCQ · MSQ · NAT · GATE-accurate scoring<br />
-            Timed tests · Leaderboards · Analytics
           </p>
         </div>
         <div className="grid grid-cols-3 gap-3">
@@ -83,9 +80,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md animate-slide-up">
           <div className="lg:hidden mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <div className="size-8 rounded bg-primary flex items-center justify-center">
-                <span className="font-bold text-text-base">G</span>
-              </div>
+              <Logo size="md" />
               <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>GATEPrep</span>
             </div>
             <h1 className="text-2xl font-bold leading-tight" style={{ color: 'var(--text)' }}>

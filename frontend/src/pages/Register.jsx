@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
 import toast from 'react-hot-toast'
 import Spinner from '../components/shared/Spinner'
+import Logo from '../components/shared/Logo'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
@@ -45,9 +46,7 @@ export default function RegisterPage() {
     <div className="theme-light-surface min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-md animate-slide-up">
         <div className="flex items-center gap-2 mb-8">
-          <div className="size-8 rounded bg-primary flex items-center justify-center">
-            <span className="font-bold text-text-base">G</span>
-          </div>
+          <Logo size="md" />
           <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>GATEPrep</span>
         </div>
 

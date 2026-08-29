@@ -1,6 +1,7 @@
 import CalcIcon from 'lucide-react/dist/esm/icons/calculator'
 import Send from 'lucide-react/dist/esm/icons/send'
 import clsx from 'clsx'
+import Logo from '../shared/Logo'
 import Spinner from '../shared/Spinner'
 import TimerDisplay from './TimerDisplay'
 
@@ -23,9 +24,7 @@ export default function TestHeader({
   return (
     <div className="app-header flex items-center px-2 sm:px-4 h-12 border-b flex-shrink-0 theme-header-surface">
       <div className="flex items-center gap-2 mr-3 flex-shrink-0">
-        <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-          <span className="text-foreground font-bold text-xs">G</span>
-        </div>
+        <Logo size="xs" />
         <span className="text-foreground text-sm font-semibold hidden md:block truncate max-w-[160px]">
           {test?.title}
         </span>

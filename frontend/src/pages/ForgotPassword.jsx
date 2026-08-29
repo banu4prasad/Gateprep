@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Logo from '../components/shared/Logo'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
@@ -9,15 +10,12 @@ export default function ForgotPasswordPage() {
     <div className="theme-light-surface min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-md animate-slide-up">
         <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
-            <span className="font-bold text-foreground">G</span>
-          </div>
+          <Logo size="md" />
           <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>GATEPrep</span>
         </div>
 
         <h2 className="text-2xl font-bold mb-1" style={{ color: 'var(--text)' }}>Account recovery</h2>
         <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-          Contact your administrator to receive a secure reset link.
         </p>
 
         <Card
@@ -32,7 +30,7 @@ export default function ForgotPasswordPage() {
             <div>
               <h3 className="font-semibold text-base" style={{ color: 'var(--text)' }}>Admin-assisted reset</h3>
               <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                An administrator can generate a one-time link from the Users page.
+                Contact administrator to receive a secure reset link.
               </p>
             </div>
           </div>
