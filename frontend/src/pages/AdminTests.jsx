@@ -263,7 +263,7 @@ export default function AdminTests() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map(t => (
               <Card key={t.id}>
-                <CardContent className="p-4 flex flex-col gap-3">
+                <CardContent className="p-3 flex flex-col gap-2">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-sm leading-snug line-clamp-2" style={{ color: 'var(--text)' }}>
                       {t.title}
@@ -283,7 +283,7 @@ export default function AdminTests() {
                     <span>{t.total_marks} marks</span>
                   </div>
 
-                  <div className="flex gap-1.5 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <div className="flex gap-1.5 pt-1.5 border-t" style={{ borderColor: 'var(--border)' }}>
                     <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/tests/${t.id}`)}
                       className="flex-1 flex items-center justify-center gap-1 text-xs"
                       style={{ background: 'var(--bg-panel)', color: 'var(--text)' }}>

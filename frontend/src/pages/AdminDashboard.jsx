@@ -66,21 +66,21 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-3 gap-4">
           <Card>
-            <CardContent className="p-5">
-              <h2 className="font-semibold mb-1 text-lg" style={{ color: 'var(--text)' }}>Pending Approvals</h2>
+            <CardContent className="p-3  sm:p-4">
+              <h2 className="font-semibold mb-0.5 text-lg" style={{ color: 'var(--text)' }}>Pending Approvals</h2>
               {usersLoading || pendingUsersLoading ? (
                 <div className="py-8 flex justify-center"><Spinner /></div>
               ) : (
                 <>
-                  <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+                  <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
                     {pending} user{pending !== 1 ? 's' : ''} waiting
                   </p>
                   {pending > 0 ? (
-                    <div className="flex flex-col gap-2 mb-4">
+                    <div className="flex flex-col gap-2 mb-2">
                       {pendingUsers.map(u => (
-                        <div key={u.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                        <div key={u.id} className="flex items-center justify-between py-1.5 border-b" style={{ borderColor: 'var(--border)' }}>
                           <div>
                             <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>{u.full_name}</p>
                             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{u.email}</p>
@@ -90,7 +90,7 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-success-text text-sm mb-4">✓ All users approved</p>
+                    <p className="text-success-text text-sm mb-3">✓ All users approved</p>
                   )}
                   <Link to="/admin/users" className="flex items-center gap-1.5 text-primary hover:text-primary text-sm font-medium">
                     Manage Users <ArrowRight size={14} />
@@ -101,26 +101,26 @@ export default function AdminDashboard() {
           </Card>
 
           <Card>
-            <CardContent className="p-5">
+            <CardContent className="p-3 sm:p-4">
               <h2 className="font-semibold mb-1 text-lg" style={{ color: 'var(--text)' }}>Recent Tests</h2>
               {testsLoading ? (
                 <div className="py-8 flex justify-center"><Spinner /></div>
               ) : (
                 <>
-                  <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+                  <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
                     {tests.length} test{tests.length !== 1 ? 's' : ''} · {totalQ} questions total
                   </p>
                   {tests.length > 0 ? (
-                    <div className="flex flex-col gap-2 mb-4">
+                    <div className="flex flex-col gap-2 mb-3">
                       {tests.slice(0, 3).map(t => (
-                        <div key={t.id} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                        <div key={t.id} className="flex items-center justify-between py-1.5 border-b" style={{ borderColor: 'var(--border)' }}>
                           <p className="text-sm font-medium truncate max-w-[60%]" style={{ color: 'var(--text)' }}>{t.title}</p>
                           <Badge variant="outline" className={BADGE_COLORS.sky}>{t.question_count} Qs</Badge>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No tests yet.</p>
+                    <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>No tests yet.</p>
                   )}
                   <Link to="/admin/tests" className="flex items-center gap-1.5 text-primary hover:text-primary text-sm font-medium">
                     Manage Tests <ArrowRight size={14} />

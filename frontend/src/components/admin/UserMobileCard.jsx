@@ -11,8 +11,8 @@ import { ROLE_STYLE, ROLE_ACTION_STYLE, USER_STATUS_STYLE } from './roleStyles'
 export default memo(function UserMobileCard({ user: u, updating, onChangeRole, onToggleStatus, onCreateResetLink }) {
   return (
     <Card>
-      <CardContent className="flex flex-col gap-3 p-4">
-        <div className="flex items-center gap-3">
+      <CardContent className="flex flex-col gap-1.5 py-2 px-3">
+        <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/20 flex items-center justify-center flex-shrink-0">
             <span className="text-primary text-sm font-semibold">{u.full_name[0]?.toUpperCase()}</span>
           </div>
@@ -32,7 +32,7 @@ export default memo(function UserMobileCard({ user: u, updating, onChangeRole, o
           </span>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap pt-2 border-t theme-border">
+        <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t theme-border">
           {updating[u.id] ? <Spinner size={14} className="text-primary" /> : (
             <>
               {u.role === 'user' && (
