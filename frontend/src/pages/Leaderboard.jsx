@@ -33,32 +33,215 @@ const MEDAL_COLORS = {
   },
 }
 
+export function getPodiumOrder(entries = []) {
+  if (entries.length < 3) {
+    return [...entries]
+  }
+
+  return [entries[1], entries[0], entries[2]]
+}
+
+export function formatLeaderboardDate(value) {
+  if (!value) return '—'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '—'
+  }
+
+  return date.toLocaleDateString('en-IN')
+}
+
+export function getPercentageTone(percentage) {
+  if (percentage >= 75) return 'text-success-text'
+  if (percentage >= 50) return 'text-warning-text'
+  return 'text-destructive'
+}
+
+function LeaderboardLoadingState() {
+  return (
+    <Layout>
+      <div className="max-w-2xl mx-auto flex flex-col gap-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <Link to="/tests" className="flex items-center gap-1.5 text-muted-foreground hover:text-muted-foreground text-sm">
+            <ArrowLeft size={15}/> Back to Tests
+          </Link>
+        </div>
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--warning-text)]/10 border-[var(--warning-text)]/20 flex items-center justify-center mx-auto mb-4 animate-pulse" />
+          <div className="h-8 w-64 bg-muted rounded animate-pulse mx-auto mb-2" />
+          <div className="h-4 w-40 bg-muted rounded animate-pulse mx-auto" />
+        </div>
+        <LeaderboardSkeleton />
+      </div>
+    </Layout>
+  )
+}
+
+function LeaderboardNotFoundState() {
+  return (
+    <Layout>
+      <p className="text-muted-foreground text-center py-16">Leaderboard not found.</p>
+    </Layout>
+  )
+}
+
+function LeaderboardHeader({ testTitle, totalParticipants, currentUserRank }) {
+  return (
+    <div className="text-center">
+      <div className="w-14 h-14 rounded-2xl bg-[var(--warning-text)]/10 border-[var(--warning-text)]/20 flex items-center justify-center mx-auto mb-4">
+        <Trophy size={26} className="text-warning-text"/>
+      </div>
+      <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{testTitle}</h1>
+      <p className="text-muted-foreground mt-1">{totalParticipants} participant{totalParticipants !== 1 ? 's' : ''}</p>
+      {currentUserRank && (
+        <div className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-primary/10 border border-brand-500/20">
+          <span className="text-primary text-sm font-medium">Your rank: #{currentUserRank}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PodiumCard({ entry }) {
+  const medal = MEDAL_COLORS[entry.rank] || {}
+  const isWinner = entry.rank === 1
+
+  return (
+    <Card
+      className={clsx(
+        'border p-3 sm:p-4 flex flex-col items-center justify-between text-center transition-all',
+        medal.bg,
+        isWinner ? 'min-h-[190px] sm:min-h-[220px] shadow-sm sm:-translate-y-2' : 'min-h-[170px] sm:min-h-[195px]',
+        entry.is_current_user && 'ring-2 ring-primary/60'
+      )}
+    >
+      <div className="flex flex-col items-center gap-1.5 w-full">
+        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-background/80 shadow-xs">
+          {medal.icon}
+        </div>
+        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 font-semibold text-xs text-foreground">
+          {entry.full_name?.[0]?.toUpperCase() || '—'}
+        </div>
+        <p className="font-bold text-xs sm:text-sm text-foreground truncate w-full px-1" title={entry.full_name}>
+          {entry.full_name || '—'}
+          {entry.is_current_user && <span className="text-primary text-xs ml-1 font-normal">(You)</span>}
+        </p>
+      </div>
+
+      <div className="mt-2 w-full pt-2 border-t border-border/40 flex flex-col items-center gap-0.5">
+        <span className="font-bold text-sm sm:text-base text-foreground font-mono">
+          {entry.percentage != null ? `${entry.percentage}%` : '—'}
+        </span>
+        <span className="text-xs text-muted-foreground font-mono">
+          {entry.score != null ? `${entry.score}/${entry.total_marks}` : '—'}
+        </span>
+        <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
+          {formatLeaderboardDate(entry.submitted_at)}
+        </span>
+      </div>
+    </Card>
+  )
+}
+
+function LeaderboardPodium({ entries }) {
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end pt-3">
+      {getPodiumOrder(entries).map((entry) => {
+        if (!entry) return null
+        return <PodiumCard key={`podium-${entry.rank}-user-${entry.user_id}`} entry={entry} />
+      })}
+    </div>
+  )
+}
+
+function EmptyLeaderboardState({ testId }) {
+  return (
+    <Card>
+      <CardContent className="p-12 text-center">
+        <p className="text-muted-foreground">No submissions yet. Be the first!</p>
+        <Button asChild className="mt-4 inline-flex items-center gap-2 text-sm">
+          <Link to={`/tests/${testId}`}>
+            Take Test
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function LeaderboardTable({ entries }) {
+  return (
+    <Card className="overflow-hidden overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow className="border-b theme-border hover:bg-transparent">
+            <TableHead className="text-left px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider w-12">Rank</TableHead>
+            <TableHead className="text-left px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider">Name</TableHead>
+            <TableHead className="text-right px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider">Score</TableHead>
+            <TableHead className="text-right px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider">%</TableHead>
+            <TableHead className="text-right px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider hidden sm:table-cell">Date</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody className="divide-y divide-slate-800/60">
+          {entries.map((entry) => {
+            const medal = MEDAL_COLORS[entry.rank]
+
+            return (
+              <TableRow
+                key={`leaderboard-rank-${entry.rank}-user-${entry.user_id}`}
+                className={clsx('transition-colors', entry.is_current_user ? 'bg-primary/5' : 'hover:bg-muted')}
+                style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 53px' }}
+              >
+                <TableCell className="px-3 sm:px-5 py-3.5">
+                  <div className="flex items-center justify-center w-7 h-7">
+                    {medal ? medal.icon : <span className="text-muted-foreground font-mono text-sm">#{entry.rank}</span>}
+                  </div>
+                </TableCell>
+                <TableCell className="px-3 sm:px-5 py-3.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-semibold text-muted-foreground">{entry.full_name?.[0]?.toUpperCase() || '—'}</span>
+                    </div>
+                    <span className={clsx('font-medium', entry.is_current_user ? 'text-primary' : 'text-foreground')}>
+                      {entry.full_name || '—'}
+                      {entry.is_current_user && <span className="text-primary text-xs ml-1">(You)</span>}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell className="px-3 sm:px-5 py-3.5 text-right font-mono text-muted-foreground">
+                  {entry.score}/{entry.total_marks}
+                </TableCell>
+                <TableCell className="px-3 sm:px-5 py-3.5 text-right">
+                  <span className={clsx('font-semibold', getPercentageTone(entry.percentage))}>
+                    {entry.percentage}%
+                  </span>
+                </TableCell>
+                <TableCell className="px-3 sm:px-5 py-3.5 text-right text-muted-foreground text-xs hidden sm:table-cell">
+                  {formatLeaderboardDate(entry.submitted_at)}
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </Card>
+  )
+}
+
 export default function LeaderboardPage() {
   const { testId } = useParams()
   const { data, isLoading: loading } = useSWR(`/tests/${testId}/leaderboard`, fetcher)
 
   if (loading) {
-    return (
-      <Layout>
-        <div className="max-w-2xl mx-auto flex flex-col gap-6 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <Link to="/tests" className="flex items-center gap-1.5 text-muted-foreground hover:text-muted-foreground text-sm">
-              <ArrowLeft size={15}/> Back to Tests
-            </Link>
-          </div>
-          <div className="text-center mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-[var(--warning-text)]/10 border-[var(--warning-text)]/20 flex items-center justify-center mx-auto mb-4 animate-pulse" />
-            <div className="h-8 w-64 bg-muted rounded animate-pulse mx-auto mb-2" />
-            <div className="h-4 w-40 bg-muted rounded animate-pulse mx-auto" />
-          </div>
-          <LeaderboardSkeleton />
-        </div>
-      </Layout>
-    )
+    return <LeaderboardLoadingState />
   }
-  if (!data) return <Layout><p className="text-muted-foreground text-center py-16">Leaderboard not found.</p></Layout>
 
-  const top3 = data.leaderboard.slice(0, 3)
+  if (!data) {
+    return <LeaderboardNotFoundState />
+  }
+
+  const hasEntries = data.leaderboard.length > 0
 
   return (
     <Layout>
@@ -72,143 +255,18 @@ export default function LeaderboardPage() {
           </Link>
         </div>
 
-        {/* Header */}
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl bg-[var(--warning-text)]/10 border-[var(--warning-text)]/20 flex items-center justify-center mx-auto mb-4">
-            <Trophy size={26} className="text-warning-text"/>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{data.test_title}</h1>
-          <p className="text-muted-foreground mt-1">{data.total_participants} participant{data.total_participants !== 1 ? 's' : ''}</p>
-          {data.current_user_rank && (
-            <div className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full bg-primary/10 border border-brand-500/20">
-              <span className="text-primary text-sm font-medium">Your rank: #{data.current_user_rank}</span>
-            </div>
-          )}
-        </div>
+        <LeaderboardHeader
+          testTitle={data.test_title}
+          totalParticipants={data.total_participants}
+          currentUserRank={data.current_user_rank}
+        />
 
-        {data.leaderboard.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <p className="text-muted-foreground">No submissions yet. Be the first!</p>
-              <Button asChild className="mt-4 inline-flex items-center gap-2 text-sm">
-                <Link to={`/tests/${testId}`}>
-                  Take Test
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+        {!hasEntries ? (
+          <EmptyLeaderboardState testId={testId} />
         ) : (
           <>
-            {/* Top 3 podium (only displayed when there are 3 or more participants) */}
-            {data.leaderboard.length >= 3 && (
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end pt-3">
-                {/* Podium display order: 2nd (Silver), 1st (Gold - prominent), 3rd (Bronze) */}
-                {[top3[1], top3[0], top3[2]].map((entry, podiumIdx) => {
-                  if (!entry) return null
-                  const actualRank = entry.rank
-                  const m = MEDAL_COLORS[actualRank] || {}
-                  const isWinner = actualRank === 1
-                  return (
-                    <Card
-                      key={`podium-${actualRank}-user-${entry.user_id}`}
-                      className={clsx(
-                        'border p-3 sm:p-4 flex flex-col items-center justify-between text-center transition-all',
-                        m.bg,
-                        isWinner ? 'min-h-[190px] sm:min-h-[220px] shadow-sm sm:-translate-y-2' : 'min-h-[170px] sm:min-h-[195px]',
-                        entry.is_current_user && 'ring-2 ring-primary/60'
-                      )}
-                    >
-                      {/* Top Stack: Rank icon + Avatar Initial + Participant Name */}
-                      <div className="flex flex-col items-center gap-1.5 w-full">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-background/80 shadow-xs">
-                          {m.icon}
-                        </div>
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 font-semibold text-xs text-foreground">
-                          {entry.full_name?.[0]?.toUpperCase() || '—'}
-                        </div>
-                        <p
-                          className="font-bold text-xs sm:text-sm text-foreground truncate w-full px-1"
-                          title={entry.full_name}
-                        >
-                          {entry.full_name || '—'}
-                          {entry.is_current_user && (
-                            <span className="text-primary text-xs ml-1 font-normal">(You)</span>
-                          )}
-                        </p>
-                      </div>
-
-                      {/* Bottom Stack: Percentage + Score + Date */}
-                      <div className="mt-2 w-full pt-2 border-t border-border/40 flex flex-col items-center gap-0.5">
-                        <span className="font-bold text-sm sm:text-base text-foreground font-mono">
-                          {entry.percentage != null ? `${entry.percentage}%` : '—'}
-                        </span>
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {entry.score != null ? `${entry.score}/${entry.total_marks}` : '—'}
-                        </span>
-                        <span className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
-                          {entry.submitted_at ? new Date(entry.submitted_at).toLocaleDateString('en-IN') : '—'}
-                        </span>
-                      </div>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Full table */}
-            <Card className="overflow-hidden overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b theme-border hover:bg-transparent">
-                    <TableHead className="text-left px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider w-12">Rank</TableHead>
-                    <TableHead className="text-left px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider">Name</TableHead>
-                    <TableHead className="text-right px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider">Score</TableHead>
-                    <TableHead className="text-right px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider">%</TableHead>
-                    <TableHead className="text-right px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider hidden sm:table-cell">Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-slate-800/60">
-                  {data.leaderboard.map(entry => {
-                    const m = MEDAL_COLORS[entry.rank]
-                    return (
-                      <TableRow key={`leaderboard-rank-${entry.rank}-user-${entry.user_id}`} className={clsx(
-                        'transition-colors',
-                        entry.is_current_user ? 'bg-primary/5' : 'hover:bg-muted'
-                      )} style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 53px' }}>
-                        <TableCell className="px-3 sm:px-5 py-3.5">
-                          <div className="flex items-center justify-center w-7 h-7">
-                            {m ? m.icon : <span className="text-muted-foreground font-mono text-sm">#{entry.rank}</span>}
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-3 sm:px-5 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs font-semibold text-muted-foreground">{entry.full_name[0]?.toUpperCase()}</span>
-                            </div>
-                            <span className={clsx('font-medium', entry.is_current_user ? 'text-primary' : 'text-foreground')}>
-                              {entry.full_name}
-                              {entry.is_current_user && <span className="text-primary text-xs ml-1">(You)</span>}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-3 sm:px-5 py-3.5 text-right font-mono text-muted-foreground">
-                          {entry.score}/{entry.total_marks}
-                        </TableCell>
-                        <TableCell className="px-3 sm:px-5 py-3.5 text-right">
-                          <span className={clsx('font-semibold', entry.percentage >= 75 ? 'text-success-text' : entry.percentage >= 50 ? 'text-warning-text' : 'text-destructive')}>
-                            {entry.percentage}%
-                          </span>
-                        </TableCell>
-                        <TableCell className="px-3 sm:px-5 py-3.5 text-right text-muted-foreground text-xs hidden sm:table-cell">
-                          {entry.submitted_at ? new Date(entry.submitted_at).toLocaleDateString('en-IN') : '-'}
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </Card>
-
+            {data.leaderboard.length >= 3 && <LeaderboardPodium entries={data.leaderboard} />}
+            <LeaderboardTable entries={data.leaderboard} />
             <p className="text-center text-muted-foreground text-xs">
               Only first attempts count toward rankings. Reattempts are for practice only.
             </p>
