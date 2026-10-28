@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
@@ -70,6 +70,7 @@ def _fetch_user_bookmarks(db: Session, user_id: int) -> List[Bookmark]:
     """Helper function to fetch all bookmarks for a specific user."""
     return (
         db.query(Bookmark)
+        .options(joinedload(Bookmark.question).joinedload(Question.test))
         .filter(Bookmark.user_id == user_id)
         .order_by(Bookmark.created_at.desc())
         .all()
