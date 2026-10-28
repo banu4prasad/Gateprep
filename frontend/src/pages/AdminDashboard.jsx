@@ -66,7 +66,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           <Card>
             <CardContent className="p-3  sm:p-4">
               <h2 className="font-semibold mb-0.5 text-lg" style={{ color: 'var(--text)' }}>Pending Approvals</h2>

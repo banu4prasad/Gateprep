@@ -4,7 +4,7 @@ import OptionImage from './OptionImage'
 
 export default function McqOptions({ question, selectedLetter, onSelect }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" role="radiogroup" aria-label="Answer options">
       {question.options.map((option, i) => {
         const letter = 'ABCD'[i]
         const selected = selectedLetter === letter
@@ -12,12 +12,23 @@ export default function McqOptions({ question, selectedLetter, onSelect }) {
           <div
             key={i}
             onClick={() => onSelect(letter)}
-            role="button"
-            tabIndex={0}
+            role="radio"
+            aria-checked={selected}
+            tabIndex={selected || (!selectedLetter && i === 0) ? 0 : -1}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault()
                 onSelect(letter)
+                return
+              }
+
+              if (event.key === 'ArrowRight' || event.key === 'ArrowDown' || event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                event.preventDefault()
+                const options = Array.from(event.currentTarget.parentElement.querySelectorAll('[role="radio"]'))
+                const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1
+                const nextIndex = (i + direction + options.length) % options.length
+                options[nextIndex].focus()
+                onSelect('ABCD'[nextIndex])
               }
             }}
             className={clsx(

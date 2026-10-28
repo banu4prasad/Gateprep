@@ -18,7 +18,7 @@ export default function ConfirmSubmitModal({
   submitting,
 }) {
   return (
-    <Dialog open={true} onOpenChange={open => { if (!open) setShowConfirm(false) }}>
+    <Dialog open={true} onOpenChange={open => { if (!open && !submitting) setShowConfirm(false) }}>
       <DialogContent showCloseButton={false} className="p-6 sm:max-w-sm">
         <div className="flex items-center gap-3">
           <AlertTriangle size={22} className="text-warning-text" />
@@ -43,16 +43,15 @@ export default function ConfirmSubmitModal({
           This cannot be undone. Your answers will be evaluated.
         </p>
         <div className="flex gap-3">
-          <Button variant="ghost" onClick={() => setShowConfirm(false)} className="flex-1">Go Back</Button>
+          <Button variant="ghost" onClick={() => setShowConfirm(false)} disabled={submitting} className="flex-1">Go Back</Button>
           <Button
-            onClick={() => {
-              setShowConfirm(false)
-              doSubmit(false)
-            }}
+            onClick={() => doSubmit(false)}
             disabled={submitting}
+            aria-busy={submitting}
             className="flex-1 flex items-center justify-center gap-2"
           >
-            {submitting && <Spinner size={13} />} Submit
+            {submitting && <Spinner size={13} />}
+            {submitting ? 'Submitting…' : 'Submit'}
           </Button>
         </div>
       </DialogContent>

@@ -59,6 +59,7 @@ export default function QuestionView({
 
       <QuestionFooter
         current={current}
+        isLastQuestion={current === questions.length - 1}
         setCurrent={setCurrent}
         markAndNext={markAndNext}
         clearResponse={clearResponse}

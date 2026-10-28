@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
 import { useAdminTest } from '../hooks/useAdminTest'
@@ -10,6 +10,7 @@ import Layout from '../components/shared/Layout'
 import AdminTestDetailSkeleton from '../components/admin/AdminTestDetailSkeleton'
 import TestHeader from '../components/admin/TestHeader'
 import QuestionsList from '../components/admin/QuestionsList'
+import ConfirmDialog from '../components/admin/ConfirmDialog'
 
 export default function AdminTestDetail() {
   const { testId } = useParams()
@@ -30,6 +31,7 @@ export default function AdminTestDetail() {
 
   const { isEditingTest, testForm, setTestForm, savingTest, startEditingTest, saveTest, cancelEditingTest } = useTestFormEditor(test, updateTestDetails)
   const { mode, closeMode, openJsonMode, openManualMode, toggleJsonMode, toggleManualMode } = useQuestionFormMode()
+  const [questionToDelete, setQuestionToDelete] = useState(null)
 
   const previewTest = useCallback(() => navigate(`/tests/${testId}?preview=true`), [navigate, testId])
 
@@ -37,6 +39,11 @@ export default function AdminTestDetail() {
     await addQuestion(question)
     closeMode()
   }, [addQuestion, closeMode])
+
+  const confirmDeleteQuestion = useCallback(async () => {
+    await deleteQuestion(questionToDelete)
+    setQuestionToDelete(null)
+  }, [deleteQuestion, questionToDelete])
 
   if (loading) return <AdminTestDetailSkeleton />
 
@@ -74,13 +81,20 @@ export default function AdminTestDetail() {
             questions={questions}
             onOpenJson={openJsonMode}
             onOpenManual={openManualMode}
-            onDelete={deleteQuestion}
+            onDelete={questionId => setQuestionToDelete(questionId)}
             onUpdate={updateQuestion}
             onUploadImage={uploadImage}
             onDeleteImage={deleteImage}
           />
         </div>
       </div>
+      <ConfirmDialog
+        open={Boolean(questionToDelete)}
+        title="Delete question?"
+        description="This question will be permanently removed from the test."
+        onCancel={() => setQuestionToDelete(null)}
+        onConfirm={confirmDeleteQuestion}
+      />
     </Layout>
   )
 }

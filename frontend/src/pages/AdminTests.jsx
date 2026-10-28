@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { adminAPI, fetcher } from '../api/api'
@@ -21,8 +21,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { BADGE_COLORS } from '@/utils/badgeStyles'
+import ConfirmDialog from '../components/admin/ConfirmDialog'
 
 function CreateTestModal({ onClose, onCreated }) {
+  const modalRef = useRef(null)
+  const previousFocusRef = useRef(null)
   const [form, setForm] = useState({
     title: '', description: '', duration_minutes: 180,
     category: '', series_name: '', test_type: '', subject: ''
@@ -33,6 +36,51 @@ function CreateTestModal({ onClose, onCreated }) {
   const isTestSeries  = form.category === 'test_series'
   const isTopicWise   = form.test_type === 'topic_wise'
   const needsSubject  = isWeeklyQuiz || isTopicWise
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement
+    const modal = modalRef.current
+    if (!modal) return undefined
+
+    const focusableSelector = [
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[href]',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(', ')
+    const focusable = modal.querySelectorAll(focusableSelector)
+    focusable[0]?.focus()
+
+    const handleKeyDown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const currentFocusable = modal.querySelectorAll(focusableSelector)
+      if (!currentFocusable.length) return
+      const first = currentFocusable[0]
+      const last = currentFocusable[currentFocusable.length - 1]
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    modal.addEventListener('keydown', handleKeyDown)
+    return () => {
+      modal.removeEventListener('keydown', handleKeyDown)
+      previousFocusRef.current?.focus()
+    }
+  }, [onClose])
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
 
@@ -57,11 +105,17 @@ function CreateTestModal({ onClose, onCreated }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}>
-      <Card className="w-full max-w-lg animate-slide-up my-4">
+      <Card
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-test-title"
+        className="w-full max-w-lg animate-slide-up my-4"
+      >
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>Create New Test</h3>
-            <button onClick={onClose} aria-label="Close" style={{ color: 'var(--text-muted)' }}><X size={18} /></button>
+            <h3 id="create-test-title" className="text-lg font-bold" style={{ color: 'var(--text)' }}>Create New Test</h3>
+            <button type="button" onClick={onClose} aria-label="Close" style={{ color: 'var(--text-muted)' }}><X size={18} /></button>
           </div>
 
           <form onSubmit={submit} className="flex flex-col gap-4">
@@ -202,11 +256,11 @@ export default function AdminTests() {
   
   const [showCreate, setShowCreate] = useState(false)
   const [deleting, setDeleting] = useState({})
+  const [testToDelete, setTestToDelete] = useState(null)
   const [filter, setFilter] = useState('all') // all | weekly_quiz | test_series
   const navigate = useNavigate()
 
   const deleteTest = async (id) => {
-    if (!confirm('Delete this test and all its questions?')) return
     setDeleting(d => ({ ...d, [id]: true }))
     try {
       await adminAPI.deleteTest(id)
@@ -214,6 +268,11 @@ export default function AdminTests() {
       toast.success('Deleted')
     } catch { toast.error('Failed') }
     finally { setDeleting(d => ({ ...d, [id]: false })) }
+  }
+
+  const confirmDeleteTest = async () => {
+    await deleteTest(testToDelete)
+    setTestToDelete(null)
   }
 
   const filtered = tests.filter(t => filter === 'all' || t.category === filter)
@@ -290,7 +349,7 @@ export default function AdminTests() {
                       <Eye size={12} /> Manage
                     </Button>
                     <Button variant="ghost" size="icon"
-                      onClick={() => deleteTest(t.id)} disabled={deleting[t.id]}
+                      onClick={() => setTestToDelete(t.id)} disabled={deleting[t.id]}
                       aria-label="Delete test" className="text-destructive hover:bg-destructive/10">
                       {deleting[t.id] ? <Spinner size={12} /> : <Trash2 size={12} />}
                     </Button>
@@ -308,6 +367,14 @@ export default function AdminTests() {
           onCreated={t => { mutate([t, ...tests], false); setShowCreate(false) }}
         />
       )}
+      <ConfirmDialog
+        open={testToDelete !== null}
+        title="Delete test?"
+        description="This test and all of its questions will be permanently removed."
+        onCancel={() => setTestToDelete(null)}
+        onConfirm={confirmDeleteTest}
+        loading={testToDelete !== null && deleting[testToDelete]}
+      />
     </Layout>
   )
 }

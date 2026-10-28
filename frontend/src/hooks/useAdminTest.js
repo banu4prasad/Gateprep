@@ -54,8 +54,6 @@ export function useAdminTest(testId) {
   }, [load, testId])
 
   const deleteQuestion = useCallback(async (questionId) => {
-    if (!confirm('Delete this question?')) return
-
     try {
       await adminAPI.deleteQuestion(testId, questionId)
       setQuestions(current => current.filter(question => question.id !== questionId))

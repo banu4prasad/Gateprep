@@ -4,7 +4,7 @@ import OptionImage from './OptionImage'
 
 export default function MsqOptions({ question, selectedLetters, onToggle }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" role="group" aria-label="Answer options; select all that apply">
       <p className="text-xs text-warning-text mb-2">One or more correct answers. No negative marking.</p>
       {question.options.map((option, i) => {
         const letter = 'ABCD'[i]
@@ -13,7 +13,8 @@ export default function MsqOptions({ question, selectedLetters, onToggle }) {
           <div
             key={i}
             onClick={() => onToggle(letter)}
-            role="button"
+            role="checkbox"
+            aria-checked={selected}
             tabIndex={0}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {

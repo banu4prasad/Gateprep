@@ -13,7 +13,7 @@ export default function TestEngine() {
     commitNAT, current, currentQuestion, doSubmit, endTimeMs, fsViolations,
     handleTimerExpire, loading, markAndNext, marked, maxAttempts, natInput,
     navigate, notAnswered, questionGroups, questions, saveAndNext, setAccepted,
-    setCurrent, setMCQ, setNatInput, setShowCalc, setShowConfirm, setShowFsWarning,
+    setCurrent, setMCQ, updateNatInput, setShowCalc, setShowConfirm, setShowFsWarning,
     setShowPalette, showCalc, showConfirm, showFsWarning, showPalette, started,
     starting, subjects, submitting, test, toggleMSQ, totalViolations, visited,
   } = engine
@@ -96,7 +96,7 @@ export default function TestEngine() {
             saveAndNext={saveAndNext}
             setCurrent={setCurrent}
             setMCQ={setMCQ}
-            setNatInput={setNatInput}
+            setNatInput={updateNatInput}
             toggleMSQ={toggleMSQ}
           />
 

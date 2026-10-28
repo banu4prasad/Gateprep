@@ -175,8 +175,7 @@ export default function Calculator({ onClose }) {
           { l: 'M+', fn: () => setMemory(m => m + parseFloat(display)) },
           { l: 'M-', fn: () => setMemory(m => m - parseFloat(display)) },
         ].map(({ l, fn }) => (
-          <button key={l} onClick={fn}
-            className="calc-btn text-xs h-7" style={{ background: '#1a3060', color: '#93c5fd' }}>{l}</button>
+          <button key={l} onClick={fn} className="calc-btn text-xs h-7">{l}</button>
         ))}
       </div>
 

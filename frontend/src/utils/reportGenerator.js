@@ -1,4 +1,7 @@
 import { testAPI } from '../api/api'
+import katexCss from 'katex/dist/katex.min.css?raw'
+import katexJs from 'katex/dist/katex.min.js?raw'
+import katexAutoRenderJs from 'katex/dist/contrib/auto-render.min.js?raw'
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -46,6 +49,7 @@ export function buildResultHtml(result) {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(result.test_title)} result</title>
+  <style>${katexCss}</style>
   <style>
     body { font-family: Arial, sans-serif; margin: 32px; color: #111827; line-height: 1.45; }
     header { border-bottom: 1px solid #d1d5db; margin-bottom: 20px; padding-bottom: 16px; }
@@ -75,6 +79,19 @@ export function buildResultHtml(result) {
     </div>
   </header>
   ${rows}
+  <script>${katexJs}</script>
+  <script>${katexAutoRenderJs}</script>
+  <script>
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '\\\\[', right: '\\\\]', display: true },
+        { left: '$', right: '$', display: false },
+        { left: '\\\\(', right: '\\\\)', display: false }
+      ],
+      throwOnError: false
+    })
+  </script>
 </body>
 </html>`
 }

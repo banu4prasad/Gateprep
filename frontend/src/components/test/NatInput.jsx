@@ -9,8 +9,8 @@ export default function NatInput({ value, onChange, onCommit, savedValue }) {
         <Input
           id="nat-answer"
           name="natAnswer"
-          type="number"
-          step="any"
+          type="text"
+          inputMode="decimal"
           className="font-mono text-lg flex-1"
           value={value}
           onChange={event => onChange(event.target.value)}

@@ -55,6 +55,8 @@ describe('reportGenerator', () => {
       expect(html).toContain('Practice attempt')
       expect(html).toContain('What is 1+1?')
       expect(html).toContain('NAT Question?')
+      expect(html).toContain('.katex')
+      expect(html).toContain('renderMathInElement')
 
       // Status text
       expect(html).toContain('Correct</span>')

@@ -3,7 +3,7 @@ import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right'
 import Flag from 'lucide-react/dist/esm/icons/flag'
 import { Button } from '@/components/ui/button'
 
-export default function QuestionFooter({ current, setCurrent, markAndNext, clearResponse, saveAndNext }) {
+export default function QuestionFooter({ current, isLastQuestion, setCurrent, markAndNext, clearResponse, saveAndNext }) {
   return (
     <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 border-t border-border flex-shrink-0 gap-1 bg-card text-card-foreground">
       <div className="flex items-center gap-1 sm:gap-2">
@@ -25,7 +25,8 @@ export default function QuestionFooter({ current, setCurrent, markAndNext, clear
           <ChevronLeft size={13} /> <span className="hidden sm:inline">Prev</span>
         </Button>
         <Button onClick={saveAndNext} size="sm" className="flex items-center gap-1 px-3 sm:px-4 text-xs font-semibold">
-          Save & Next <ChevronRight size={13} />
+          {isLastQuestion ? 'Save' : 'Save & Next'}
+          {!isLastQuestion && <ChevronRight size={13} />}
         </Button>
       </div>
     </div>
