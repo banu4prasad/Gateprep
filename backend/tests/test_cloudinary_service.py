@@ -3,11 +3,31 @@ from unittest.mock import patch
 import pytest
 
 from app.services.cloudinary_service import (
+    cloudinary_public_id_from_url,
     delete_image,
     optimize_delivery_image_url,
     optimize_delivery_image_urls,
     upload_image,
 )
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        (
+            "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v123/gate-prep/questions/q1.png",
+            "gate-prep/questions/q1",
+        ),
+        (
+            "https://res.cloudinary.com/demo/image/upload/v123/gate-prep/options/a.jpg",
+            "gate-prep/options/a",
+        ),
+        ("/uploads/local-image.jpg", None),
+        ("https://example.com/image/upload/v123/image.jpg", None),
+    ],
+)
+def test_cloudinary_public_id_from_url(url, expected):
+    assert cloudinary_public_id_from_url(url) == expected
 
 
 @pytest.fixture

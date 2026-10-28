@@ -200,6 +200,47 @@ class AdminQuestionFileUploadTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_delete_question_recalculates_test_total_marks(self):
+        db = self.SessionLocal()
+        try:
+            questions = [
+                Question(
+                    test_id=self.test_id,
+                    question_type=QuestionType.mcq,
+                    question_text=f"Question {marks}",
+                    options=["A", "B", "C", "D"],
+                    correct_answer="A",
+                    marks=marks,
+                    negative_marks=0.0,
+                    order_index=index,
+                )
+                for index, marks in enumerate((2.0, 3.0))
+            ]
+            test = db.query(Test).filter(Test.id == self.test_id).one()
+            test.total_marks = 5.0
+            db.add_all(questions)
+            db.commit()
+            db.refresh(questions[0])
+            deleted_question_id = questions[0].id
+        finally:
+            db.close()
+
+        response = self.client.delete(
+            f"/admin/tests/{self.test_id}/questions/{deleted_question_id}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        db = self.SessionLocal()
+        try:
+            test = db.query(Test).filter(Test.id == self.test_id).one()
+            self.assertEqual(test.total_marks, 3.0)
+            self.assertEqual(
+                db.query(Question).filter(Question.test_id == self.test_id).count(),
+                1,
+            )
+        finally:
+            db.close()
+
     def test_update_question_rejects_invalid_answer(self):
         db = self.SessionLocal()
         try:
