@@ -15,7 +15,7 @@ import { BADGE_COLORS } from '@/utils/badgeStyles'
 
 export default function AdminDashboard() {
   const { data: usersData, isLoading: usersLoading } = useSWR('/admin/users?limit=1', fetcher)
-  const { data: pendingUsersData, isLoading: pendingUsersLoading } = useSWR('/admin/users?role=user&limit=3', fetcher)
+  const { data: pendingUsersData, isLoading: pendingUsersLoading } = useSWR('/admin/users?role=user&is_active=true&limit=3', fetcher)
   const { data: testsData, isLoading: testsLoading } = useSWR('/admin/tests', fetcher)
   
   const pendingUsers = pendingUsersData?.items || []

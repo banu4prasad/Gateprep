@@ -27,7 +27,9 @@ from .schemas import RoleUpdate
 
 router = APIRouter()
 
-def _build_users_filter_query(db: Session, search: str, role: Optional[UserRole]):
+def _build_users_filter_query(
+    db: Session, search: str, role: Optional[UserRole], is_active: Optional[bool]
+):
     """Build the base query for filtering users by search term and role."""
     query = db.query(User)
     if search:
@@ -37,19 +39,30 @@ def _build_users_filter_query(db: Session, search: str, role: Optional[UserRole]
         )
     if role is not None:
         query = query.filter(User.role == role)
+    if is_active is not None:
+        query = query.filter(User.is_active == is_active)
     return query
 
 def _get_user_counts(
-    db: Session, query, search: str, role: Optional[UserRole]
+    db: Session,
+    query,
+    search: str,
+    role: Optional[UserRole],
+    is_active: Optional[bool],
 ) -> tuple[int, int, int]:
     """Calculate total matching users, along with global role counts."""
     role_counts_raw = db.query(User.role, func.count(User.id)).group_by(User.role).all()
     role_counts = {r: c for r, c in role_counts_raw}
 
     aspirants_count = role_counts.get(UserRole.aspirant, 0)
-    pending_count = role_counts.get(UserRole.user, 0)
+    pending_count = (
+        db.query(func.count(User.id))
+        .filter(User.role == UserRole.user, User.is_active.is_(True))
+        .scalar()
+        or 0
+    )
 
-    if search or role is not None:
+    if search or role is not None or is_active is not None:
         total = query.count()
     else:
         total = sum(role_counts.values())
@@ -103,14 +116,15 @@ def list_users(
     cursor: str | None = Query(None, max_length=128),
     q: str = Query("", max_length=255),
     role: Optional[UserRole] = Query(None),
+    is_active: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
     _=Depends(require_admin),
 ):
     search = q.strip()
-    users_query = _build_users_filter_query(db, search, role)
+    users_query = _build_users_filter_query(db, search, role, is_active)
 
     total, aspirants_count, pending_count = _get_user_counts(
-        db, users_query, search, role
+        db, users_query, search, role, is_active
     )
     users, next_cursor, has_more = _get_paginated_users(users_query, cursor, limit)
 

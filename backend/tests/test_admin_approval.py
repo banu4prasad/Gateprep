@@ -95,6 +95,42 @@ def test_admin_user_list_supports_pagination_search_and_role_filter(client, db_s
     assert {user["role"] for user in pending.json()["items"]} == {"user"}
 
 
+def test_disabled_user_is_excluded_from_pending_approvals(
+    client, db_session, admin_user
+):
+    active_pending = User(
+        email="active-pending@example.com",
+        full_name="Active Pending",
+        hashed_password=hash_password("pass"),
+        role=UserRole.user,
+        is_active=True,
+    )
+    disabled_pending = User(
+        email="disabled-pending@example.com",
+        full_name="Disabled Pending",
+        hashed_password=hash_password("pass"),
+        role=UserRole.user,
+        is_active=False,
+    )
+    db_session.add_all([active_pending, disabled_pending])
+    db_session.commit()
+
+    cookies = _auth_cookie(admin_user, db_session)
+
+    dashboard_summary = client.get("/admin/users?limit=1", cookies=cookies)
+    assert dashboard_summary.status_code == 200
+    assert dashboard_summary.json()["pending_count"] == 1
+
+    pending = client.get(
+        "/admin/users?role=user&is_active=true&limit=10", cookies=cookies
+    )
+    assert pending.status_code == 200
+    assert pending.json()["total"] == 1
+    assert [user["email"] for user in pending.json()["items"]] == [
+        "active-pending@example.com"
+    ]
+
+
 def test_admin_user_list_rejects_invalid_cursor(client, db_session, admin_user):
     response = client.get(
         "/admin/users?cursor=not-a-cursor",
