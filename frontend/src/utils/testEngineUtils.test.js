@@ -48,14 +48,28 @@ describe('getEndTimeMs', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.restoreAllMocks()
   })
 
-  it('falls back to Date.now() when provided with an invalid date string', () => {
-    // "invalid-date-format" triggers the catch block
+  it('falls back to a full duration when provided with an invalid date string', () => {
     const durationMinutes = 30
-    const expectedFallbackMs = Date.now() + durationMinutes * 60 * 1000
+    vi.spyOn(performance, 'now').mockReturnValue(5000)
+    const expectedFallbackMs = 5000 + durationMinutes * 60 * 1000
     
     expect(getEndTimeMs('invalid-date-format', durationMinutes)).toBe(expectedFallbackMs)
+  })
+
+  it('uses server time and a monotonic client clock for the deadline', () => {
+    vi.spyOn(performance, 'now').mockReturnValue(5000)
+    vi.setSystemTime(new Date('2026-01-01T12:00:00Z'))
+
+    expect(
+      getEndTimeMs(
+        '2026-01-01T10:00:00Z',
+        180,
+        '2026-01-01T12:30:00Z'
+      )
+    ).toBe(5000 + 30 * 60 * 1000)
   })
 
   it('returns null if startedAt or durationMinutes is not provided', () => {
