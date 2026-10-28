@@ -85,26 +85,22 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={value}>
       {children}
       {sessionExpired && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
-          role="presentation"
-        >
-          <Card
-            className="w-full max-w-sm"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="session-expired-title"
-            aria-describedby="session-expired-description"
-          >
-            <CardContent className="p-5">
-              <h2 id="session-expired-title" className="text-lg font-bold text-slate-900 dark:text-white">
-                Session expired
-              </h2>
-              <p id="session-expired-description" className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Sign in again to continue.
-              </p>
-              <div className="mt-5 flex justify-end">
-                <Button onClick={confirmSessionExpired} autoFocus>
+        <div className="fixed inset-x-0 top-0 z-[100] p-4" role="alert">
+          <Card className="mx-auto max-w-xl border-amber-500/40 bg-[var(--bg-card)] shadow-lg">
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+              <div>
+                <h2 id="session-expired-title" className="font-bold text-slate-900 dark:text-white">
+                  Session expired
+                </h2>
+                <p id="session-expired-description" className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Your latest changes may not have been saved. Sign in again when you’re ready.
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button variant="outline" onClick={() => setSessionExpired(false)}>
+                  Continue
+                </Button>
+                <Button onClick={confirmSessionExpired}>
                   Sign in
                 </Button>
               </div>

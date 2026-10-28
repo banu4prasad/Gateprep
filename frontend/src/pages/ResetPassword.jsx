@@ -18,7 +18,8 @@ export default function ResetPasswordPage() {
   const navigate = useNavigate()
   const token = searchParams.get('token') || ''
   const [form, setForm] = useState({ password: '', confirm: '' })
-  const [show, setShow] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handle = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
@@ -73,10 +74,11 @@ export default function ResetPasswordPage() {
           ) : (
             <form onSubmit={submit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <Label style={{ color: 'var(--text-muted)' }}>New Password</Label>
+                <Label htmlFor="password" style={{ color: 'var(--text-muted)' }}>New Password</Label>
                 <div className="relative">
                   <Input
-                    type={show ? 'text' : 'password'}
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={form.password}
                     onChange={handle('password')}
@@ -87,24 +89,36 @@ export default function ResetPasswordPage() {
                   />
                   <button
                     type="button"
-                    onClick={() => setShow(s => !s)}
+                    onClick={() => setShowPassword(s => !s)}
+                    aria-label="Toggle new password visibility"
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
                   >
-                    {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <Label style={{ color: 'var(--text-muted)' }}>Confirm Password</Label>
-                <Input
-                  type={show ? 'text' : 'password'}
-                  required
-                  value={form.confirm}
-                  onChange={handle('confirm')}
-                  placeholder="Re-enter password"
-                  className="h-11 rounded-md bg-[var(--bg-card)] px-4 text-sm shadow-sm"
-                  autoComplete="new-password"
-                />
+                <Label htmlFor="confirm" style={{ color: 'var(--text-muted)' }}>Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirm"
+                    type={showConfirm ? 'text' : 'password'}
+                    required
+                    value={form.confirm}
+                    onChange={handle('confirm')}
+                    placeholder="Re-enter password"
+                    className="h-11 rounded-md bg-[var(--bg-card)] px-4 pr-11 text-sm shadow-sm"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(s => !s)}
+                    aria-label="Toggle confirm password visibility"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                  >
+                    {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
               <Button
                 type="submit"

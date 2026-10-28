@@ -176,7 +176,7 @@ function TestSeriesPicker({ tests, push, breadcrumbs, goBack }) {
 function TestTypePicker({ tests, nav, push, breadcrumbs, goBack }) {
   const items = ['subject_wise', 'topic_wise', 'full_length'].map(value => ({ value }))
   return <OptionPicker items={items} getLabel={i => TYPE_LABELS[i.value]}
-    getCount={i => tests.filter(t => t.category === 'test_series' && t.series_name === nav[1].value && t.test_type === i.value).length}
+    getCount={i => tests.filter(t => t.category === 'test_series' && t.series_name === nav[1]?.value && t.test_type === i.value).length}
     onSelect={val => push('type', val)} breadcrumbs={breadcrumbs} goBack={goBack} />
 }
 

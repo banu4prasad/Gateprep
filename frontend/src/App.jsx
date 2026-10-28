@@ -45,7 +45,7 @@ export default function App() {
             <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
             <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/pending"  element={<PendingPage />} />
+            <Route path="/pending"  element={<ProtectedRoute><PendingPage /></ProtectedRoute>} />
 
             {/* Admin */}
             <Route path="/admin"                   element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
