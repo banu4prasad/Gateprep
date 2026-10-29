@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -23,6 +23,8 @@ from app.api.routes.tests.schemas import BulkAnswerSubmit, ViolationUpdate
 from app.api.routes.tests.result_builder import _evaluate_submission, _result_payload
 
 router = APIRouter()
+
+SUBMISSION_GRACE_PERIOD = timedelta(seconds=5)
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +60,33 @@ def _require_active_attempt(
     return attempt
 
 
+def _enforce_submission_time_limit(
+    attempt: TestAttempt, test: Test, submitted_at: datetime
+) -> None:
+    """Reject submissions that arrive after the server-side deadline.
+
+    The short grace period accounts for request transit after the client's
+    timer reaches zero; it is not enough to permit a materially late attempt.
+    """
+    if attempt.started_at is None:
+        raise HTTPException(status_code=400, detail="Attempt start time is unavailable")
+
+    started_at = attempt.started_at
+    if started_at.tzinfo is None:
+        # SQLite may return timezone-aware columns as naive datetimes.
+        started_at = started_at.replace(tzinfo=timezone.utc)
+    else:
+        started_at = started_at.astimezone(timezone.utc)
+
+    deadline = (
+        started_at
+        + timedelta(minutes=test.duration_minutes)
+        + SUBMISSION_GRACE_PERIOD
+    )
+    if submitted_at > deadline:
+        raise HTTPException(status_code=400, detail="Test time limit has expired")
+
+
 def _enforce_reattempt_limit(progress: dict) -> None:
     """Raise if the user has exhausted their allowed attempts."""
     if progress["total_used"] >= MAX_REATTEMPTS + 1:
@@ -65,34 +94,6 @@ def _enforce_reattempt_limit(progress: dict) -> None:
             status_code=400,
             detail=f"Maximum attempts ({MAX_REATTEMPTS + 1}) reached for this test.",
         )
-
-
-def _delete_leftover_attempts(db: Session, user_id: int, test_id: int) -> None:
-    """Delete any in-progress attempts and their child answers.
-
-    Bulk-delete child UserAnswers first because the ORM cascade is
-    "delete-orphan" but the DB FK on user_answers.attempt_id has no
-    ON DELETE CASCADE — skipping the child delete would orphan
-    user_answers rows and break FK integrity.
-    """
-    leftover_attempt_ids = (
-        db.query(TestAttempt.id)
-        .filter(
-            TestAttempt.user_id == user_id,
-            TestAttempt.test_id == test_id,
-            TestAttempt.status == TestStatus.in_progress,
-        )
-        .scalar_subquery()
-    )
-    db.query(UserAnswer).filter(UserAnswer.attempt_id.in_(leftover_attempt_ids)).delete(
-        synchronize_session=False
-    )
-    db.query(TestAttempt).filter(
-        TestAttempt.user_id == user_id,
-        TestAttempt.test_id == test_id,
-        TestAttempt.status == TestStatus.in_progress,
-    ).delete(synchronize_session=False)
-    db.commit()
 
 
 def _create_fresh_attempt(db: Session, user_id: int, test_id: int) -> TestAttempt:
@@ -109,8 +110,16 @@ def _create_fresh_attempt(db: Session, user_id: int, test_id: int) -> TestAttemp
     return attempt
 
 
-def _upsert_answers(attempt: TestAttempt, answers: list) -> List[UserAnswer]:
-    """Update existing UserAnswers in place; return list of new ones to add."""
+def _upsert_answers(
+    db: Session, attempt: TestAttempt, answers: list
+) -> List[UserAnswer]:
+    """Reconcile a complete answer snapshot and return newly created rows."""
+    question_ids = {answer.question_id for answer in answers}
+    stale_answers = db.query(UserAnswer).filter(UserAnswer.attempt_id == attempt.id)
+    if question_ids:
+        stale_answers = stale_answers.filter(UserAnswer.question_id.notin_(question_ids))
+    stale_answers.delete(synchronize_session=False)
+
     existing = {a.question_id: a for a in attempt.answers}
     new_answers = []
     for ans in answers:
@@ -222,15 +231,41 @@ def start_test(
         raise HTTPException(status_code=404, detail="Test not found")
 
     progress = _attempt_progress(db, current_user.id, test_id)
-    _enforce_reattempt_limit(progress)
-    _delete_leftover_attempts(db, current_user.id, test_id)
-    attempt = _create_fresh_attempt(db, current_user.id, test_id)
+    attempt = (
+        db.query(TestAttempt)
+        .filter(
+            TestAttempt.user_id == current_user.id,
+            TestAttempt.test_id == test_id,
+            TestAttempt.status == TestStatus.in_progress,
+        )
+        .order_by(TestAttempt.id.desc())
+        .first()
+    )
+    if attempt is None:
+        _enforce_reattempt_limit(progress)
+        attempt = _create_fresh_attempt(db, current_user.id, test_id)
+
+    saved_answers = (
+        db.query(UserAnswer)
+        .filter(UserAnswer.attempt_id == attempt.id)
+        .order_by(UserAnswer.question_id)
+        .all()
+    )
 
     attempt_number = progress["total_used"] + 1
     max_attempts = MAX_REATTEMPTS + 1
 
     return {
         **_attempt_out(attempt),
+        "server_time": datetime.now(timezone.utc),
+        "answers": [
+            {
+                "question_id": answer.question_id,
+                "selected_answer": answer.selected_answer,
+                "time_spent_seconds": answer.time_spent_seconds,
+            }
+            for answer in saved_answers
+        ],
         "attempt_number": attempt_number,
         "max_attempts": max_attempts,
     }
@@ -303,7 +338,7 @@ def save_answers(
     if _has_previous_submission(db, current_user.id, test_id, attempt_id):
         return {"message": "Practice answers are kept in browser until submit"}
 
-    new_answers = _upsert_answers(attempt, payload.answers)
+    new_answers = _upsert_answers(db, attempt, payload.answers)
     if new_answers:
         db.add_all(new_answers)
     db.commit()
@@ -326,6 +361,9 @@ def submit_test(
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
+    submitted_at = datetime.now(timezone.utc)
+    _enforce_submission_time_limit(attempt, test, submitted_at)
+
     db.query(UserAnswer).filter(UserAnswer.attempt_id == attempt_id).delete()
 
     score, total_marks, answer_details = _evaluate_submission(test, payload.answers)
@@ -333,8 +371,6 @@ def submit_test(
         db, current_user.id, test_id
     ).count()
     is_first = previous_submission_count == 0
-    submitted_at = datetime.now(timezone.utc)
-
     if is_first:
         return _persist_first_submission(
             db, attempt, answer_details, score, total_marks, submitted_at

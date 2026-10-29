@@ -167,11 +167,13 @@ def toggle_status(
     user_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    _=Depends(require_admin),
+    current=Depends(require_admin),
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if user.id == current.id:
+        raise HTTPException(status_code=400, detail="Cannot change your own status")
     user.is_active = not user.is_active
     db.commit()
     clear_admin_users_cache(background_tasks)

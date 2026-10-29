@@ -11,6 +11,7 @@ from fastapi import (
 )
 from fastapi_cache import FastAPICache
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -30,6 +31,7 @@ from app.models.models import PasswordResetToken, User, UserRole
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 ADMIN_USERS_CACHE_NAMESPACE = "admin-users"
+REGISTRATION_BOOTSTRAP_LOCK_ID = 0x4741544550524550
 
 
 class RegisterRequest(BaseModel):
@@ -145,21 +147,37 @@ class RegisterServices:
         self.db = db
 
 
+def _lock_registration_bootstrap(db: Session) -> None:
+    dialect = db.get_bind().dialect.name
+    if dialect == "postgresql":
+        db.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_id)"),
+            {"lock_id": REGISTRATION_BOOTSTRAP_LOCK_ID},
+        )
+    elif dialect == "sqlite":
+        db.connection().exec_driver_sql("BEGIN IMMEDIATE")
+
+
 def _create_registered_user(db: Session, payload: RegisterRequest) -> User:
+    if len(payload.password) < 8:
+        raise HTTPException(
+            status_code=400, detail="Password must be at least 8 characters"
+        )
+
+    hashed_password = hash_password(payload.password)
+    _lock_registration_bootstrap(db)
+
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(
             status_code=400,
             detail="Unable to create account. Please try a different email.",
         )
-    if len(payload.password) < 8:
-        raise HTTPException(
-            status_code=400, detail="Password must be at least 8 characters"
-        )
+
     is_first = db.query(User).count() == 0
     user = User(
         email=payload.email,
         full_name=payload.full_name,
-        hashed_password=hash_password(payload.password),
+        hashed_password=hashed_password,
         role=UserRole.admin if is_first else UserRole.user,
     )
     db.add(user)

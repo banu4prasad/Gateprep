@@ -8,6 +8,10 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.models import Bookmark, Question
+from app.services.cloudinary_service import (
+    optimize_delivery_image_url,
+    optimize_delivery_image_urls,
+)
 
 router = APIRouter(prefix="/bookmarks", tags=["Bookmarks"])
 
@@ -21,7 +25,9 @@ class BookmarkOut(BaseModel):
     question_id: int
     question_text: str
     question_type: str
+    question_image_url: Optional[str] = None
     options: List[str]
+    option_images: Optional[dict] = None
     correct_answer: str
     marks: float
     subject: Optional[str]
@@ -85,7 +91,9 @@ def _format_bookmark(bookmark: Bookmark) -> BookmarkOut:
         question_id=q.id,
         question_text=q.question_text,
         question_type=q.question_type,
+        question_image_url=optimize_delivery_image_url(q.question_image_url),
         options=q.options or [],
+        option_images=optimize_delivery_image_urls(q.option_images),
         correct_answer=q.correct_answer,
         marks=q.marks,
         subject=q.subject,

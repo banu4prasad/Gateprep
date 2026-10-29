@@ -1,12 +1,12 @@
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AnswerSubmit(BaseModel):
     question_id: int
     selected_answer: Optional[str] = None
-    time_spent_seconds: int = 0
+    time_spent_seconds: int = Field(default=0, ge=0)
 
 
 class BulkAnswerSubmit(BaseModel):

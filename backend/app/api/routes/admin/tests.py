@@ -5,6 +5,10 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_admin
 from app.core.database import get_db
 from app.models.models import Question, Test
+from app.services.cloudinary_service import (
+    cloudinary_public_id_from_url,
+    delete_image,
+)
 from .schemas import TestCreate, TestPatch
 
 router = APIRouter()
@@ -114,6 +118,21 @@ def delete_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_a
     test = db.query(Test).filter(Test.id == test_id).first()
     if not test:
         raise HTTPException(status_code=404, detail="Not found")
+
+    questions = db.query(Question).filter(Question.test_id == test_id).all()
+    image_public_ids = []
+    for question in questions:
+        if question.question_image_id:
+            image_public_ids.append(question.question_image_id)
+        for image_url in (question.option_images or {}).values():
+            public_id = cloudinary_public_id_from_url(image_url)
+            if public_id and public_id not in image_public_ids:
+                image_public_ids.append(public_id)
+
     db.delete(test)
     db.commit()
+
+    for public_id in image_public_ids:
+        delete_image(public_id)
+
     return {"message": "Deleted"}

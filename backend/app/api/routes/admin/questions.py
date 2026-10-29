@@ -5,12 +5,17 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from pydantic import ValidationError
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
 from app.core.database import get_db
-from app.models.models import Question, QuestionType, Test
-from app.services.cloudinary_service import delete_image, upload_image
+from app.models.models import Question, QuestionType, Test, UserAnswer
+from app.services.cloudinary_service import (
+    cloudinary_public_id_from_url,
+    delete_image,
+    upload_image,
+)
 from .helpers import _question_out, read_upload_bytes
 from .schemas import QuestionFileImport, QuestionIn, QuestionsBulk
 
@@ -343,8 +348,48 @@ def delete_question(
     )
     if not q:
         raise HTTPException(status_code=404, detail="Not found")
+
+    has_answers = (
+        db.query(UserAnswer.id)
+        .filter(UserAnswer.question_id == question_id)
+        .first()
+        is not None
+    )
+    if has_answers:
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete a question that has been answered in an attempt",
+        )
+
+    test = db.query(Test).filter(Test.id == test_id).first()
+    if not test:
+        raise HTTPException(status_code=404, detail="Test not found")
+
+    image_public_ids = []
     if q.question_image_id:
-        delete_image(q.question_image_id)
+        image_public_ids.append(q.question_image_id)
+    for image_url in (q.option_images or {}).values():
+        public_id = cloudinary_public_id_from_url(image_url)
+        if public_id and public_id not in image_public_ids:
+            image_public_ids.append(public_id)
+
     db.delete(q)
-    db.commit()
+    try:
+        db.flush()
+        test.total_marks = (
+            db.query(func.coalesce(func.sum(Question.marks), 0.0))
+            .filter(Question.test_id == test_id)
+            .scalar()
+            or 0.0
+        )
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete a question that is referenced by an attempt",
+        ) from exc
+
+    for public_id in image_public_ids:
+        delete_image(public_id)
     return {"message": "Deleted"}

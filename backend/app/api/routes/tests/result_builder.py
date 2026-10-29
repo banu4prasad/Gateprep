@@ -64,7 +64,7 @@ def _evaluate_submission(test: Test, answers: List[AnswerSubmit]):
         )
 
     total_marks = sum(q.marks for q in test.questions)
-    return max(0.0, round(earned, 2)), total_marks, details
+    return round(earned, 2), total_marks, details
 
 
 def _attempt_answer_details(test: Test, answers: list[UserAnswer]):

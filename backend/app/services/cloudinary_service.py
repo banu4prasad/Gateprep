@@ -1,5 +1,6 @@
 import logging
-from urllib.parse import urlsplit, urlunsplit
+import re
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 import cloudinary
 import cloudinary.uploader
@@ -11,6 +12,49 @@ logger = logging.getLogger(__name__)
 AUTO_IMAGE_TRANSFORMATION = "f_auto,q_auto"
 AUTO_IMAGE_TRANSFORMATION_PARAMS = {"fetch_format": "auto", "quality": "auto"}
 CLOUDINARY_IMAGE_UPLOAD_SEGMENT = "/image/upload/"
+_CLOUDINARY_VERSION = re.compile(r"^v\d+$")
+_IMAGE_FORMAT = re.compile(
+    r"\.(?:avif|bmp|gif|jpe?g|png|svg|tiff?|webp)$", re.IGNORECASE
+)
+
+
+def cloudinary_public_id_from_url(url: str | None) -> str | None:
+    """Extract an image public ID from a standard Cloudinary delivery URL."""
+    if not isinstance(url, str) or not url:
+        return None
+
+    parsed = urlsplit(url)
+    if parsed.hostname != "res.cloudinary.com":
+        return None
+
+    _, separator, uploaded_path = parsed.path.partition(CLOUDINARY_IMAGE_UPLOAD_SEGMENT)
+    if not separator:
+        return None
+
+    parts = [unquote(part) for part in uploaded_path.split("/") if part]
+    version_index = next(
+        (
+            index
+            for index, part in enumerate(parts)
+            if _CLOUDINARY_VERSION.fullmatch(part)
+        ),
+        None,
+    )
+    if version_index is not None:
+        parts = parts[version_index + 1 :]
+    else:
+        while parts and (
+            "," in parts[0]
+            or parts[0].startswith(("f_", "q_", "c_", "w_", "h_"))
+        ):
+            parts.pop(0)
+
+    if not parts:
+        return None
+
+    parts[-1] = _IMAGE_FORMAT.sub("", parts[-1])
+    public_id = "/".join(parts)
+    return public_id or None
 
 
 def init_cloudinary():
