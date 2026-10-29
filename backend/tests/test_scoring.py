@@ -70,13 +70,48 @@ def test_evaluate_answer_nat_range():
 
 def test_evaluate_answer_nat_exact():
     q = make_question("nat", "42.5", marks=1.0, negative_marks=0.0)
-    
-    # Exact match
+
+    # Decimal answers accept the inclusive one-mark range.
     assert evaluate_answer(q, "42.5") == (True, 1.0)
     assert evaluate_answer(q, "42.50") == (True, 1.0)
-    
-    # Outside
-    assert evaluate_answer(q, "42.6") == (False, 0.0)
+    assert evaluate_answer(q, "43.5") == (True, 1.0)
+
+    # Values outside the range are rejected.
+    assert evaluate_answer(q, "43.51") == (False, 0.0)
+
+
+def test_evaluate_answer_nat_integer_requires_exact_match():
+    q = make_question("nat", "10", marks=1.0, negative_marks=0.0)
+
+    assert evaluate_answer(q, "10") == (True, 1.0)
+    assert evaluate_answer(q, "10.00") == (True, 1.0)
+    assert evaluate_answer(q, "10.01") == (False, 0.0)
+
+
+def test_evaluate_answer_nat_accepts_at_most_two_decimal_places():
+    q = make_question("nat", "43.6", marks=1.0, negative_marks=0.0)
+
+    assert evaluate_answer(q, "43.60") == (True, 1.0)
+    assert evaluate_answer(q, "44.60") == (True, 1.0)
+    assert evaluate_answer(q, "44.601") == (False, 0.0)
+
+
+def test_evaluate_answer_nat_small_exact_value_does_not_use_fixed_tolerance():
+    q = make_question("nat", "0.01", marks=1.0, negative_marks=0.0)
+
+    assert evaluate_answer(q, "0") == (False, 0.0)
+    assert evaluate_answer(q, "0.01") == (True, 1.0)
+    assert evaluate_answer(q, "0.02") == (True, 1.0)
+    assert evaluate_answer(q, "1.02") == (False, 0.0)
+
+
+def test_evaluate_answer_nat_explicit_range_remains_inclusive():
+    q = make_question("nat", "43.6:44.6", marks=1.0, negative_marks=0.0)
+
+    assert evaluate_answer(q, "43.6") == (True, 1.0)
+    assert evaluate_answer(q, "44.6") == (True, 1.0)
+    assert evaluate_answer(q, "43.59") == (False, 0.0)
+
 
 def test_evaluate_answer_nat_multiple_options():
     # NAT with multiple correct ranges/options separated by comma
@@ -94,3 +129,9 @@ def test_evaluate_answer_invalid_question_type():
     
     # Should safely return False, 0.0
     assert evaluate_answer(q, "A") == (False, 0.0)
+
+
+def test_evaluate_answer_does_not_reward_negative_penalty():
+    q = make_question("mcq", "A", marks=1.0, negative_marks=-1.0)
+
+    assert evaluate_answer(q, "B") == (False, 0.0)

@@ -97,6 +97,62 @@ class AdminBulkQuestionsTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_bulk_question_insert_continues_after_deleted_order_gap(self):
+        db = self.SessionLocal()
+        try:
+            questions = [
+                Question(
+                    test_id=self.test_id,
+                    question_type="mcq",
+                    question_text=f"Existing question {order_index}",
+                    options=["A", "B", "C", "D"],
+                    correct_answer="A",
+                    marks=1.0,
+                    negative_marks=0.33,
+                    order_index=order_index,
+                )
+                for order_index in (0, 2)
+            ]
+            db.add_all(questions)
+            db.commit()
+            deleted_question_id = questions[0].id
+        finally:
+            db.close()
+
+        response = self.client.delete(
+            f"/admin/tests/{self.test_id}/questions/{deleted_question_id}"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            f"/admin/tests/{self.test_id}/questions",
+            json={
+                "questions": [
+                    {
+                        "question_type": "mcq",
+                        "question_text": "New question",
+                        "options": ["A", "B", "C", "D"],
+                        "correct_answer": "A",
+                    }
+                ]
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        db = self.SessionLocal()
+        try:
+            inserted = (
+                db.query(Question)
+                .filter(
+                    Question.test_id == self.test_id,
+                    Question.question_text == "New question",
+                )
+                .one()
+            )
+            self.assertEqual(inserted.order_index, 3)
+        finally:
+            db.close()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -155,6 +155,8 @@ def _lock_registration_bootstrap(db: Session) -> None:
             {"lock_id": REGISTRATION_BOOTSTRAP_LOCK_ID},
         )
     elif dialect == "sqlite":
+        if db.in_transaction():
+            db.commit()
         db.connection().exec_driver_sql("BEGIN IMMEDIATE")
 
 

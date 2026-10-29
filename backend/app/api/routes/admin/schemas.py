@@ -15,7 +15,7 @@ class RoleUpdate(BaseModel):
 class TestCreate(BaseModel):
     title: str = Field(...)
     description: Optional[str] = None
-    duration_minutes: int = 180
+    duration_minutes: int = Field(180, gt=0)
     series_id: Optional[int] = None
     series_order: int = 0
     category: Optional[str] = None
@@ -28,7 +28,7 @@ class TestPatch(BaseModel):
     series_order: Optional[int] = None
     title: Optional[str] = None
     description: Optional[str] = None
-    duration_minutes: Optional[int] = None
+    duration_minutes: Optional[int] = Field(None, gt=0)
     is_published: Optional[bool] = None
     category: Optional[str] = None
     series_name: Optional[str] = None
@@ -54,6 +54,11 @@ class QuestionValidationMixin(BaseModel):
         answer, neg_override, clear_opts = validate_answer_for_type(
             q_type, self.correct_answer
         )
+        if q_type in {"mcq", "msq"}:
+            if len(self.options) < 4 or any(not option.strip() for option in self.options):
+                raise ValueError(
+                    "mcq and msq questions must have at least 4 non-empty options"
+                )
         self.correct_answer = answer
         if neg_override is not None:
             self.negative_marks = neg_override
@@ -67,8 +72,8 @@ class QuestionIn(QuestionValidationMixin):
     question_text: str
     options: List[str] = []
     correct_answer: str
-    marks: float = 1.0
-    negative_marks: float = 0.33
+    marks: float = Field(1.0, gt=0)
+    negative_marks: float = Field(0.33, ge=0)
     subject: Optional[str] = None
     topic: Optional[str] = None
 
@@ -82,9 +87,9 @@ class QuestionFileImport(QuestionValidationMixin):
     question_text: str = Field(..., min_length=1)
     options: List[str] = Field(default_factory=list)
     correct_answer: str = Field(..., min_length=1)
-    marks: float = 1.0
-    negative_marks: float = 0.33
-    order_index: int = 0
+    marks: float = Field(1.0, gt=0)
+    negative_marks: float = Field(0.33, ge=0)
+    order_index: Optional[int] = None
     subject: Optional[str] = None
     topic: Optional[str] = None
 

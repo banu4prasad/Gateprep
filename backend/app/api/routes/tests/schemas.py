@@ -14,5 +14,5 @@ class BulkAnswerSubmit(BaseModel):
 
 
 class ViolationUpdate(BaseModel):
-    tab_violations: Optional[int] = None
-    fullscreen_violations: Optional[int] = None
+    tab_violations: Optional[int] = Field(default=None, ge=0)
+    fullscreen_violations: Optional[int] = Field(default=None, ge=0)

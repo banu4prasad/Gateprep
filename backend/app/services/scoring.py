@@ -6,6 +6,7 @@ MSQ:  +marks only if ALL correct options selected exactly, 0 otherwise (no negat
 NAT:  +marks if answer in range (or exact match), 0 otherwise (no negative)
 """
 
+from decimal import Decimal, InvalidOperation
 from typing import Optional
 
 from app.models.models import Question
@@ -16,7 +17,7 @@ from app.services.answer_utils import (normalize_question_type, parse_float,
 def _rounded_score(
     is_correct: bool, marks: float, negative_marks: float = 0.0
 ) -> tuple[bool, float]:
-    score = marks if is_correct else -negative_marks
+    score = marks if is_correct else -max(negative_marks, 0.0)
     return is_correct, round(score, 2)
 
 
@@ -39,12 +40,26 @@ def _nat_token_matches(given_value: float, accepted: str) -> bool:
         return lo <= given_value <= hi
 
     expected = parse_float(accepted)
-    return expected is not None and abs(given_value - expected) <= 0.01
+    if expected is None:
+        return False
+
+    if expected.is_integer():
+        return given_value == expected
+
+    return expected <= given_value <= expected + 1.0
+
+
+def _has_at_most_two_decimal_places(value: str) -> bool:
+    try:
+        decimal_value = Decimal(value)
+    except InvalidOperation:
+        return False
+    return decimal_value.as_tuple().exponent >= -2
 
 
 def _score_nat(correct: str, given: str, marks: float) -> tuple[bool, float]:
     given_value = parse_float(given)
-    if given_value is None:
+    if given_value is None or not _has_at_most_two_decimal_places(given):
         return False, 0.0
 
     is_correct = any(

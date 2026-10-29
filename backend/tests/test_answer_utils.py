@@ -105,9 +105,10 @@ def test_nat_colon_range_scores_boundary_values():
         negative_marks=0.0,
     )
 
-    for selected in ("0.44", "0.445", "0.45"):
+    for selected in ("0.44", "0.45"):
         assert evaluate_answer(question, selected) == (True, 2.0)
 
+    assert evaluate_answer(question, "0.445") == (False, 0.0)
     assert evaluate_answer(question, "0.46") == (False, 0.0)
 
 def test_nat_hyphen_negative_range_still_works():

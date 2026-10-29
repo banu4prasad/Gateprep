@@ -146,3 +146,110 @@ def test_delete_test_removes_all_question_and_option_cloudinary_images(
         "folder/option-one",
         "folder/option-two",
     }
+
+
+def test_delete_option_image_removes_cloudinary_asset(admin_client, monkeypatch):
+    client, session_factory, test_id = admin_client
+    db = session_factory()
+    question = _question(
+        test_id,
+        "Question with option image",
+        option_images={
+            "A": "https://res.cloudinary.com/demo/image/upload/v123/folder/option-a.png"
+        },
+    )
+    db.add(question)
+    db.commit()
+    question_id = question.id
+    db.close()
+
+    delete_image = MagicMock()
+    monkeypatch.setattr(admin_questions, "delete_image", delete_image)
+
+    response = client.delete(f"/admin/questions/{question_id}/image?target=A")
+
+    assert response.status_code == 200
+    assert delete_image.call_args_list == [call("folder/option-a")]
+
+
+def test_upload_option_image_removes_previous_cloudinary_asset(
+    admin_client, monkeypatch
+):
+    client, session_factory, test_id = admin_client
+    db = session_factory()
+    question = _question(
+        test_id,
+        "Question with replaced option image",
+        option_images={
+            "A": "https://res.cloudinary.com/demo/image/upload/v123/folder/old-option.png"
+        },
+    )
+    db.add(question)
+    db.commit()
+    question_id = question.id
+    db.close()
+
+    upload_image = MagicMock(
+        return_value={
+            "url": "https://res.cloudinary.com/demo/image/upload/v456/folder/new-option.png",
+            "public_id": "folder/new-option",
+        }
+    )
+    delete_image = MagicMock()
+    monkeypatch.setattr(admin_questions, "upload_image", upload_image)
+    monkeypatch.setattr(admin_questions, "delete_image", delete_image)
+
+    response = client.post(
+        f"/admin/questions/{question_id}/image?target=A",
+        files={"image": ("option.png", b"image-data", "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert delete_image.call_args_list == [call("folder/old-option")]
+    db = session_factory()
+    try:
+        assert db.get(Question, question_id).option_images == {
+            "A": "https://res.cloudinary.com/demo/image/upload/v456/folder/new-option.png"
+        }
+    finally:
+        db.close()
+
+
+def test_changing_question_to_nat_removes_option_cloudinary_assets(
+    admin_client, monkeypatch
+):
+    client, session_factory, test_id = admin_client
+    db = session_factory()
+    question = _question(
+        test_id,
+        "Question changed to NAT",
+        option_images={
+            "A": "https://res.cloudinary.com/demo/image/upload/v123/folder/option-a.png",
+            "B": "https://res.cloudinary.com/demo/image/upload/v123/folder/option-b.png",
+        },
+    )
+    db.add(question)
+    db.commit()
+    question_id = question.id
+    db.close()
+
+    delete_image = MagicMock()
+    monkeypatch.setattr(admin_questions, "delete_image", delete_image)
+
+    response = client.patch(
+        f"/admin/tests/{test_id}/questions/{question_id}",
+        json={
+            "question_type": "nat",
+            "question_text": "NAT question",
+            "options": [],
+            "correct_answer": "42",
+            "marks": 1.0,
+            "negative_marks": 0.0,
+        },
+    )
+
+    assert response.status_code == 200
+    assert delete_image.call_args_list == [
+        call("folder/option-a"),
+        call("folder/option-b"),
+    ]

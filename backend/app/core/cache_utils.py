@@ -19,7 +19,7 @@ def admin_users_cache_key_builder(
                     str(value.value if hasattr(value, "value") else value),
                 )
                 for key, value in kwargs.items()
-                if key in {"limit", "cursor", "q", "role"} and value is not None
+                if key in {"limit", "cursor", "q", "role", "is_active"} and value is not None
             )
         )
 

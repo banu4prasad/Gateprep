@@ -169,6 +169,18 @@ def get_series_tests(
 ):
     series = _get_series_or_404(db, series_id)
     question_counts = _build_question_count_subquery(db)
+    first_attempt_ids = (
+        db.query(
+            TestAttempt.test_id.label("test_id"),
+            func.min(TestAttempt.id).label("attempt_id"),
+        )
+        .filter(
+            TestAttempt.user_id == current_user.id,
+            TestAttempt.status == TestStatus.submitted,
+        )
+        .group_by(TestAttempt.test_id)
+        .subquery()
+    )
 
     results = (
         db.query(
@@ -179,10 +191,12 @@ def get_series_tests(
         )
         .outerjoin(question_counts, question_counts.c.test_id == Test.id)
         .outerjoin(
+            first_attempt_ids,
+            first_attempt_ids.c.test_id == Test.id,
+        )
+        .outerjoin(
             TestAttempt,
-            (TestAttempt.test_id == Test.id)
-            & (TestAttempt.user_id == current_user.id)
-            & (TestAttempt.status == TestStatus.submitted),
+            TestAttempt.id == first_attempt_ids.c.attempt_id,
         )
         .filter(Test.series_id == series_id, Test.is_published.is_(True))
         .order_by(Test.series_order)

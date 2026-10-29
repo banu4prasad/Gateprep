@@ -88,6 +88,64 @@ class AdminQuestionFileUploadTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_upload_questions_file_assigns_indexes_when_omitted(self):
+        db = self.SessionLocal()
+        try:
+            existing_question = Question(
+                test_id=self.test_id,
+                question_type=QuestionType.mcq,
+                question_text="Existing question",
+                options=["A", "B", "C", "D"],
+                correct_answer="A",
+                marks=1.0,
+                negative_marks=0.33,
+                order_index=2,
+            )
+            db.add(existing_question)
+            db.commit()
+        finally:
+            db.close()
+
+        payload = {
+            "questions": [
+                {
+                    "question_type": "mcq",
+                    "question_text": "Imported question one",
+                    "options": ["A", "B", "C", "D"],
+                    "correct_answer": "A",
+                },
+                {
+                    "question_type": "mcq",
+                    "question_text": "Imported question two",
+                    "options": ["A", "B", "C", "D"],
+                    "correct_answer": "B",
+                },
+            ]
+        }
+
+        response = self.client.post(
+            f"/admin/tests/{self.test_id}/questions/upload-file",
+            files={"file": ("questions.json", json.dumps(payload), "application/json")},
+        )
+
+        self.assertEqual(response.status_code, 201)
+        db = self.SessionLocal()
+        try:
+            imported = (
+                db.query(Question)
+                .filter(
+                    Question.test_id == self.test_id,
+                    Question.question_text.in_(
+                        ["Imported question one", "Imported question two"]
+                    ),
+                )
+                .order_by(Question.question_text)
+                .all()
+            )
+            self.assertEqual([question.order_index for question in imported], [3, 4])
+        finally:
+            db.close()
+
     def test_upload_questions_file_accepts_nat_colon_range(self):
         payload = {
             "questions": [

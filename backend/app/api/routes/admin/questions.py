@@ -59,6 +59,14 @@ def _get_existing_question_count(db: Session, test_id: int) -> int:
         or 0
     )
 
+def _get_max_question_order(db: Session, test_id: int) -> int:
+    """Return the highest question order for a test, or -1 when it is empty."""
+    return (
+        db.query(func.coalesce(func.max(Question.order_index), -1))
+        .filter(Question.test_id == test_id)
+        .scalar()
+    )
+
 def _insert_questions(
     db: Session, test_id: int, questions: List[QuestionIn], start_index: int
 ) -> float:
@@ -84,6 +92,8 @@ def _insert_questions(
 
 def _apply_question_payload(question: Question, payload: QuestionIn) -> None:
     """Apply payload fields onto an existing Question, including NAT cleanup."""
+    if payload.question_type == "nat":
+        _delete_option_images(question.option_images)
     question.question_type = QuestionType(payload.question_type)
     question.question_text = payload.question_text
     question.options = payload.options
@@ -94,6 +104,17 @@ def _apply_question_payload(question: Question, payload: QuestionIn) -> None:
     question.topic = payload.topic
     if question.question_type == QuestionType.nat:
         question.option_images = None
+
+
+def _delete_option_images(option_images: dict | None) -> None:
+    """Delete Cloudinary-hosted option images referenced by a question."""
+    deleted_public_ids = set()
+    for image_url in (option_images or {}).values():
+        public_id = cloudinary_public_id_from_url(image_url)
+        if public_id and public_id not in deleted_public_ids:
+            delete_image(public_id)
+            deleted_public_ids.add(public_id)
+
 
 def _recalculate_test_marks(test: Test, old_marks: float, new_marks: float) -> None:
     """Adjust the test's total_marks after a question's marks change."""
@@ -159,9 +180,16 @@ def _persist_imported_questions(
 ) -> tuple[int, int]:
     """Bulk-insert validated questions into a test. Returns (imported_count, new_total)."""
     existing = _get_existing_question_count(db, test.id)
+    max_order = _get_max_question_order(db, test.id)
     new_rows = []
     total_marks = 0.0
     for question in questions:
+        order_index = question.order_index
+        if order_index is None:
+            max_order += 1
+            order_index = max_order
+        else:
+            max_order = max(max_order, order_index)
         new_rows.append(
             Question(
                 test_id=test.id,
@@ -171,7 +199,7 @@ def _persist_imported_questions(
                 correct_answer=question.correct_answer,
                 marks=question.marks,
                 negative_marks=question.negative_marks,
-                order_index=question.order_index,
+                order_index=order_index,
                 subject=question.subject,
                 topic=question.topic,
             )
@@ -208,7 +236,8 @@ def add_questions(
         raise HTTPException(status_code=404, detail="Not found")
 
     existing = _get_existing_question_count(db, test_id)
-    total_added = _insert_questions(db, test_id, payload.questions, existing)
+    start_index = _get_max_question_order(db, test_id) + 1
+    total_added = _insert_questions(db, test_id, payload.questions, start_index)
 
     test.total_marks = (test.total_marks or 0.0) + total_added
     db.commit()
@@ -302,7 +331,12 @@ async def upload_question_image(
         q.question_image_id = result["public_id"]
     elif target.upper() in ["A", "B", "C", "D"]:
         imgs = dict(q.option_images or {})
-        imgs[target.upper()] = result["url"]
+        option_key = target.upper()
+        old_image_url = imgs.get(option_key)
+        old_public_id = cloudinary_public_id_from_url(old_image_url)
+        if old_public_id:
+            await run_in_threadpool(delete_image, old_public_id)
+        imgs[option_key] = result["url"]
         q.option_images = imgs
     else:
         raise HTTPException(
@@ -329,7 +363,10 @@ def delete_question_image(
         q.question_image_id = None
     elif target.upper() in ["A", "B", "C", "D"]:
         imgs = dict(q.option_images or {})
-        imgs.pop(target.upper(), None)
+        old_image_url = imgs.pop(target.upper(), None)
+        old_public_id = cloudinary_public_id_from_url(old_image_url)
+        if old_public_id:
+            delete_image(old_public_id)
         q.option_images = imgs
     db.commit()
     return {"message": "Image deleted"}

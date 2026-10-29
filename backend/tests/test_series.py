@@ -117,6 +117,43 @@ def test_get_series_tests_authenticated(client, db_session, sample_series, aspir
     test_2_res = next(t for t in data["tests"] if t["title"] == "Test 2")
     assert test_2_res["is_completed"] is False
 
+
+def test_get_series_tests_uses_first_submitted_attempt(
+    client, db_session, sample_series, aspirant_user
+):
+    test1 = db_session.query(Test).filter_by(title="Test 1").first()
+    db_session.add_all(
+        [
+            TestAttempt(
+                user_id=aspirant_user.id,
+                test_id=test1.id,
+                status=TestStatus.submitted,
+                score=15.0,
+            ),
+            TestAttempt(
+                user_id=aspirant_user.id,
+                test_id=test1.id,
+                status=TestStatus.submitted,
+                score=25.0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get(
+        f"/series/{sample_series.id}/tests",
+        cookies=_auth_cookie(aspirant_user, db_session),
+    )
+
+    assert response.status_code == 200
+    test_results = [
+        test for test in response.json()["tests"] if test["id"] == test1.id
+    ]
+    assert len(test_results) == 1
+    assert test_results[0]["attempt_id"] is not None
+    assert test_results[0]["score"] == 15.0
+
+
 def test_get_series_tests_not_found(client, db_session, aspirant_user):
     resp = client.get("/series/999/tests", cookies=_auth_cookie(aspirant_user, db_session))
     assert resp.status_code == 404

@@ -8,6 +8,7 @@ from app.main import app as fastapi_app
 from app.models.models import User, UserRole
 from app.core.security import hash_password, create_access_token, decode_token
 from app.core.config import settings
+from app.api.routes.auth import _lock_registration_bootstrap
 
 @pytest.fixture
 def db_session():
@@ -38,6 +39,26 @@ def test_register_first_user_becomes_admin(client, db_session):
     })
     assert response.status_code == 200
     assert response.json()["role"] == UserRole.admin.value
+
+
+def test_registration_bootstrap_lock_restarts_after_implicit_sqlite_transaction(
+    db_session,
+):
+    db_session.query(User).count()
+
+    _lock_registration_bootstrap(db_session)
+
+    user = User(
+        email="locked@test.com",
+        full_name="Locked User",
+        hashed_password=hash_password("password123"),
+        role=UserRole.admin,
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    assert db_session.query(User).filter(User.email == "locked@test.com").one()
+
 
 def test_register_second_user_becomes_user(client, db_session):
     client.post("/auth/register", json={"email": "first@test.com", "full_name": "First", "password": "password123"})
