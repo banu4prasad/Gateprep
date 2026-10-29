@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { fetcher } from '../api/api'
@@ -32,6 +33,8 @@ const MEDAL_COLORS = {
     icon: <Medal size={18} className="text-amber-700 dark:text-amber-500" />,
   },
 }
+
+const LEADERBOARD_PAGE_SIZE = 50
 
 export function getPodiumOrder(entries = []) {
   if (entries.length < 3) {
@@ -183,14 +186,14 @@ function LeaderboardTable({ entries }) {
             <TableHead className="text-right px-3 sm:px-5 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wider hidden sm:table-cell">Date</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="divide-y divide-slate-800/60">
+        <TableBody>
           {entries.map((entry) => {
             const medal = MEDAL_COLORS[entry.rank]
 
             return (
               <TableRow
                 key={`leaderboard-rank-${entry.rank}-user-${entry.user_id}`}
-                className={clsx('transition-colors', entry.is_current_user ? 'bg-primary/5' : 'hover:bg-muted')}
+                className={clsx('theme-border transition-colors', entry.is_current_user ? 'bg-primary/5' : 'hover:bg-muted')}
                 style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 53px' }}
               >
                 <TableCell className="px-3 sm:px-5 py-3.5">
@@ -231,7 +234,10 @@ function LeaderboardTable({ entries }) {
 
 export default function LeaderboardPage() {
   const { testId } = useParams()
-  const { data, isLoading: loading } = useSWR(`/tests/${testId}/leaderboard`, fetcher)
+  const [pageState, setPageState] = useState(() => ({ testId, offset: 0 }))
+  const offset = pageState.testId === testId ? pageState.offset : 0
+  const leaderboardKey = `/tests/${testId}/leaderboard?limit=${LEADERBOARD_PAGE_SIZE}&offset=${offset}`
+  const { data, isLoading: loading } = useSWR(leaderboardKey, fetcher)
 
   if (loading) {
     return <LeaderboardLoadingState />
@@ -265,8 +271,42 @@ export default function LeaderboardPage() {
           <EmptyLeaderboardState testId={testId} />
         ) : (
           <>
-            {data.leaderboard.length >= 3 && <LeaderboardPodium entries={data.leaderboard} />}
+            {offset === 0 && data.leaderboard.length >= 3 && (
+              <LeaderboardPodium entries={data.leaderboard} />
+            )}
             <LeaderboardTable entries={data.leaderboard} />
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-muted-foreground">
+                {`Showing ${offset + 1}–${Math.min(
+                  offset + data.leaderboard.length,
+                  data.total_participants
+                )} of ${data.total_participants}`}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={offset === 0}
+                  onClick={() => setPageState({
+                    testId,
+                    offset: Math.max(0, offset - LEADERBOARD_PAGE_SIZE),
+                  })}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={offset + data.leaderboard.length >= data.total_participants}
+                  onClick={() => setPageState({
+                    testId,
+                    offset: offset + LEADERBOARD_PAGE_SIZE,
+                  })}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
             <p className="text-center text-muted-foreground text-xs">
               Only first attempts count toward rankings. Reattempts are for practice only.
             </p>

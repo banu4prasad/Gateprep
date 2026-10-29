@@ -55,6 +55,7 @@ export default function useAttemptLifecycle({
           attempt_number: 'Preview',
           max_attempts: '∞',
           started_at: new Date().toISOString(),
+          server_time: new Date().toISOString(),
         }
         const qRes = await adminAPI.getQuestions(testId)
         qData = qRes.data
@@ -70,21 +71,36 @@ export default function useAttemptLifecycle({
       setAttemptNumber(attemptData.attempt_number || 1)
       setMaxAttempts(attemptData.max_attempts || 6)
 
+      const restoredAnswers = Object.fromEntries(
+        (attemptData.answers || [])
+          .filter(answer => answer.selected_answer)
+          .map(answer => [answer.question_id, answer.selected_answer])
+      )
+      const restoredTimings = Object.fromEntries(
+        (attemptData.answers || []).map(answer => [
+          answer.question_id,
+          answer.time_spent_seconds || 0,
+        ])
+      )
+
       setQuestions(qData)
       questionsRef.current = qData
-      setVisited(qData[0] ? new Set([qData[0].id]) : new Set())
-      setAnswers({})
-      setTimings({})
+      setVisited(new Set([
+        ...(qData[0] ? [qData[0].id] : []),
+        ...Object.keys(restoredAnswers).map(Number),
+      ]))
+      setAnswers(restoredAnswers)
+      setTimings(restoredTimings)
       setMarked(new Set())
       setCurrent(0)
       setNatInput('')
-      setTabViolations(0)
-      setFsViolations(0)
+      setTabViolations(attemptData.tab_violations || 0)
+      setFsViolations(attemptData.fullscreen_violations || 0)
       setShowFsWarning(false)
-      tabViolRef.current = 0
-      fsViolRef.current = 0
-      answersRef.current = {}
-      timingsRef.current = {}
+      tabViolRef.current = attemptData.tab_violations || 0
+      fsViolRef.current = attemptData.fullscreen_violations || 0
+      answersRef.current = restoredAnswers
+      timingsRef.current = restoredTimings
       setStarted(true)
 
       setTimeout(() => {

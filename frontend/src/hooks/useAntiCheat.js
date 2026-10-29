@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { testAPI } from '../api/api'
 
@@ -14,10 +14,11 @@ export default function useAntiCheat({
   tabViolRef,
   testIdRef,
 }) {
-  useEffect(() => {
-    const handleFsChange = () => {
-      if (document.fullscreenElement || !loadedRef.current) return
+  const fullscreenExitTimeoutRef = useRef(null)
 
+  useEffect(() => {
+    const recordFullscreenViolation = () => {
+      fullscreenExitTimeoutRef.current = null
       const next = fsViolRef.current + 1
       fsViolRef.current = next
       setFsViolations(next)
@@ -36,13 +37,25 @@ export default function useAntiCheat({
       }
     }
 
+    const handleFsChange = () => {
+      if (document.fullscreenElement || !loadedRef.current) return
+
+      window.clearTimeout(fullscreenExitTimeoutRef.current)
+      fullscreenExitTimeoutRef.current = window.setTimeout(recordFullscreenViolation, 250)
+    }
+
     document.addEventListener('fullscreenchange', handleFsChange)
-    return () => document.removeEventListener('fullscreenchange', handleFsChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange)
+      window.clearTimeout(fullscreenExitTimeoutRef.current)
+    }
   }, [attemptRef, doSubmitRef, fsViolRef, isPreview, loadedRef, setFsViolations, setShowFsWarning, testIdRef])
 
   useEffect(() => {
     const handleVisibility = () => {
       if (!document.hidden || !loadedRef.current) return
+
+      window.clearTimeout(fullscreenExitTimeoutRef.current)
 
       const next = tabViolRef.current + 1
       tabViolRef.current = next
@@ -67,9 +80,22 @@ export default function useAntiCheat({
   }, [attemptRef, doSubmitRef, isPreview, loadedRef, setTabViolations, tabViolRef, testIdRef])
 
   useEffect(() => {
+    if (isPreview) return
+
+    const warnBeforeUnload = event => {
+      if (!attemptRef.current) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', warnBeforeUnload)
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload)
+  }, [attemptRef, isPreview])
+
+  useEffect(() => {
     const prevent = event => event.preventDefault()
     const preventKeys = event => {
-      if (event.ctrlKey && ['c', 'v', 'a', 'u'].includes(event.key.toLowerCase())) {
+      if ((event.ctrlKey || event.metaKey) && ['c', 'v', 'a', 'u'].includes(event.key.toLowerCase())) {
         event.preventDefault()
       }
     }

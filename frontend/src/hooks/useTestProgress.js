@@ -17,13 +17,14 @@ export default function useTestProgress({
 
   const markAndNext = useCallback(() => {
     if (!currentQuestion) return
+    if (currentQuestion.question_type === 'nat') commitNAT()
     setMarked(m => {
       const n = new Set(m)
       n.has(currentQuestion.id) ? n.delete(currentQuestion.id) : n.add(currentQuestion.id)
       return n
     })
     if (current < questions.length - 1) setCurrent(c => c + 1)
-  }, [current, currentQuestion, questions.length, setMarked, setCurrent])
+  }, [commitNAT, current, currentQuestion, questions.length, setMarked, setCurrent])
 
   const questionGroups = useMemo(() => {
     const map = new Map()

@@ -130,6 +130,7 @@ export const SCIENTIFIC_FUNCTIONS = {
   'eˣ':    (v) => Math.exp(v),
   '10ˣ':   (v) => Math.pow(10, v),
   '|x|':   (v) => Math.abs(v),
+  '%':     (v) => v / 100,
 }
 
 export const SCIENTIFIC_CONSTANTS = {

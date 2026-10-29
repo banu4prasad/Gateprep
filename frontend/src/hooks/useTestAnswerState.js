@@ -11,7 +11,25 @@ export default function useTestAnswerState({
   const [timings, setTimings] = useState({})
   const [marked, setMarked] = useState(new Set())
   const [visited, setVisited] = useState(new Set())
-  const [natInput, setNatInput] = useState('')
+  const [natInput, setNatInputState] = useState('')
+  const natInputRef = useRef('')
+  const setNatInput = useCallback((value) => {
+    natInputRef.current = value
+    setNatInputState(value)
+  }, [])
+
+  const updateNatInput = useCallback((value) => {
+    setNatInput(value)
+
+    const question = questions[current]
+    if (!question || question.question_type !== 'nat') return
+
+    const updated = { ...answersRef.current }
+    if (value.trim()) updated[question.id] = value.trim()
+    else delete updated[question.id]
+    answersRef.current = updated
+    setAnswers(updated)
+  }, [answersRef, current, questions, setNatInput])
 
   const questionStartRef = useRef(Date.now())
 
@@ -41,8 +59,11 @@ export default function useTestAnswerState({
   // NAT input sync effect
   useEffect(() => {
     const q = questions[current]
-    if (q?.question_type === 'nat') setNatInput(answers[q.id] || '')
-  }, [current, questions, answers])
+    if (q?.question_type === 'nat') {
+      const value = answers[q.id] || ''
+      setNatInput(value)
+    }
+  }, [current, questions, answers, setNatInput])
 
   const setMCQ = useCallback((letter) => {
     if (!currentQuestion) return
@@ -66,12 +87,13 @@ export default function useTestAnswerState({
 
   const commitNAT = useCallback(() => {
     if (!currentQuestion) return
-    setAnswers(a => {
-      const updated = { ...a, [currentQuestion.id]: natInput.trim() || undefined }
-      answersRef.current = updated
-      return updated
-    })
-  }, [currentQuestion, natInput, answersRef])
+    const value = natInputRef.current.trim()
+    const updated = { ...answersRef.current }
+    if (value) updated[currentQuestion.id] = value
+    else delete updated[currentQuestion.id]
+    answersRef.current = updated
+    setAnswers(updated)
+  }, [currentQuestion, answersRef])
 
   const clearResponse = useCallback(() => {
     if (!currentQuestion) return
@@ -95,6 +117,7 @@ export default function useTestAnswerState({
     setVisited,
     natInput,
     setNatInput,
+    updateNatInput,
     setMCQ,
     toggleMSQ,
     commitNAT,

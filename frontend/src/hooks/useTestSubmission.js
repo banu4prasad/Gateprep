@@ -11,6 +11,7 @@ export default function useTestSubmission({
   timingsRef,
   testIdRef,
   autoSaveRef,
+  commitNAT,
 }) {
   const [submitting, setSubmitting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -34,6 +35,8 @@ export default function useTestSubmission({
       navigate(`/admin/tests/${testIdRef.current}`)
       return
     }
+
+    commitNAT()
 
     const currentAttempt = attemptRef.current
     const currentAnswers = answersRef.current
@@ -70,7 +73,7 @@ export default function useTestSubmission({
       submitLockRef.current = false
       setSubmitting(false)
     }
-  }, [isPreview, navigate, attemptRef, answersRef, questionsRef, timingsRef, testIdRef, autoSaveRef])
+  }, [isPreview, navigate, attemptRef, answersRef, questionsRef, timingsRef, testIdRef, autoSaveRef, commitNAT])
 
   const doSubmitRef = useRef(doSubmitCore)
   useEffect(() => { doSubmitRef.current = doSubmitCore }, [doSubmitCore])

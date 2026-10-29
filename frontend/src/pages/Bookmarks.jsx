@@ -19,6 +19,7 @@ import X from 'lucide-react/dist/esm/icons/x'
 import Check from 'lucide-react/dist/esm/icons/check'
 import Spinner from '../components/shared/Spinner'
 import MathText from '../components/shared/MathText'
+import OptionImage from '../components/test/OptionImage'
 import clsx from 'clsx'
 
 // --- Helpers (pure, no complexity cost) ---
@@ -38,7 +39,7 @@ const OPTION_LETTERS = ['A', 'B', 'C', 'D']
 
 // --- Extracted: options grid ---
 
-function BookmarkOptions({ options, correctAnswer }) {
+function BookmarkOptions({ options, correctAnswer, optionImages }) {
   if (!options?.length) return null
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -52,6 +53,7 @@ function BookmarkOptions({ options, correctAnswer }) {
           )}>
             <span className="font-mono font-semibold mr-1.5">{letter}.</span>
             <MathText>{o}</MathText>
+            <OptionImage src={optionImages?.[letter]} letter={letter} />
             {isCorrect && <span className="ml-1 text-success-text">✓</span>}
           </div>
         )
@@ -167,7 +169,20 @@ function BookmarkHeader({ bm, open, onToggle, onRemove, removing }) {
 function BookmarkDetails({ bm }) {
   return (
     <div className="border-t theme-border pt-3 mt-3 space-y-3">
-      <BookmarkOptions options={bm.options} correctAnswer={bm.correct_answer} />
+      {bm.question_image_url && (
+        <img
+          src={bm.question_image_url}
+          alt="Question illustration"
+          loading="lazy"
+          decoding="async"
+          className="max-h-64 max-w-full rounded border bg-muted object-contain border-border"
+        />
+      )}
+      <BookmarkOptions
+        options={bm.options}
+        correctAnswer={bm.correct_answer}
+        optionImages={bm.option_images}
+      />
       {bm.question_type === 'nat' && <NatAnswer correctAnswer={bm.correct_answer} />}
       <BookmarkNoteEditor bm={bm} />
     </div>

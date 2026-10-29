@@ -5,6 +5,7 @@ import Pencil from 'lucide-react/dist/esm/icons/pencil'
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2'
 import ImageSlot from './ImageSlot'
 import QuestionEditForm from './QuestionEditForm'
+import MathText from '../shared/MathText'
 import { OPTION_LETTERS } from './questionUtils'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -47,7 +48,7 @@ const QuestionCard = memo(function QuestionCard({
       >
         <span className="font-mono theme-muted text-sm mt-0.5 w-6 flex-shrink-0">Q{idx + 1}</span>
         <div className="flex-1 min-w-0">
-          <p className="theme-text text-sm line-clamp-2">{q.question_text}</p>
+          <p className="theme-text text-sm line-clamp-2"><MathText>{q.question_text}</MathText></p>
           <div className="flex items-center gap-2 mt-2">
             <Badge variant="outline" className={`text-xs ${typeColor[q.question_type]}`}>{q.question_type.toUpperCase()}</Badge>
             <span className="theme-muted text-xs">{q.marks}M</span>
@@ -101,7 +102,7 @@ const QuestionCard = memo(function QuestionCard({
                         }`}
                       >
                         <p>
-                          <span className="font-mono font-semibold mr-1.5">{letter}.</span>{option}
+                          <span className="font-mono font-semibold mr-1.5">{letter}.</span><MathText>{option}</MathText>
                         </p>
                         <ImageSlot
                           imageUrl={optionImages[letter] || null}

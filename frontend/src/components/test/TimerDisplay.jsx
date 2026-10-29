@@ -12,7 +12,7 @@ export default function TimerDisplay({
   normalClassName = 'bg-muted theme-border text-foreground',
 }) {
   const getRemaining = useCallback(
-    () => Number.isFinite(endTime) ? Math.max(0, endTime - Date.now()) : null,
+    () => Number.isFinite(endTime) ? Math.max(0, endTime - performance.now()) : null,
     [endTime]
   )
   const [remaining, setRemaining] = useState(getRemaining)
@@ -29,7 +29,7 @@ export default function TimerDisplay({
     warnedRef.current = new Set()
 
     const timer = setInterval(() => {
-      const left = Math.max(0, endTime - Date.now())
+      const left = Math.max(0, endTime - performance.now())
 
       setRemaining(left)
 
@@ -48,7 +48,7 @@ export default function TimerDisplay({
       }
     }, 1000)
 
-    const left = Math.max(0, endTime - Date.now())
+    const left = Math.max(0, endTime - performance.now())
     setRemaining(left)
 
     return () => clearInterval(timer)

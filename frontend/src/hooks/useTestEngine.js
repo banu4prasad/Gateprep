@@ -62,6 +62,7 @@ export default function useTestEngine() {
     setVisited,
     natInput,
     setNatInput,
+    updateNatInput,
     setMCQ,
     toggleMSQ,
     commitNAT,
@@ -138,6 +139,7 @@ export default function useTestEngine() {
     timingsRef,
     testIdRef,
     autoSaveRef,
+    commitNAT,
   })
 
   const {
@@ -168,8 +170,12 @@ export default function useTestEngine() {
   // --- derived ---
   const totalViolations = tabViolations + fsViolations
   const endTimeMs = useMemo(
-    () => getEndTimeMs(attempt?.started_at, test?.duration_minutes),
-    [attempt?.started_at, test?.duration_minutes]
+    () => getEndTimeMs(
+      attempt?.started_at,
+      test?.duration_minutes,
+      attempt?.server_time
+    ),
+    [attempt?.started_at, attempt?.server_time, test?.duration_minutes]
   )
 
   // --- return: exact same shape as before ---
@@ -192,6 +198,7 @@ export default function useTestEngine() {
     marked,
     maxAttempts,
     natInput,
+    updateNatInput,
     navigate,
     notAnswered,
     questions,

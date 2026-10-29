@@ -26,20 +26,31 @@ export function getQStatus(qId, currentQId, answers, marked) {
   return 'not-answered'
 }
 
-export function getEndTimeMs(startedAt, durationMinutes) {
+export function getEndTimeMs(startedAt, durationMinutes, serverTime) {
   if (!startedAt || !durationMinutes) return null
 
   let startMs
+  let serverNowMs
   try {
-    let str = String(startedAt).trim()
-    if (!str.endsWith('Z') && !str.includes('+') && !/[0-9]-[0-9]{2}:[0-9]{2}$/.test(str)) {
-      str = `${str}Z`
+    const parseUtcDate = value => {
+      let str = String(value).trim()
+      if (!str.endsWith('Z') && !str.includes('+') && !/[0-9]-[0-9]{2}:[0-9]{2}$/.test(str)) {
+        str = `${str}Z`
+      }
+      return new Date(str).getTime()
     }
-    startMs = new Date(str).getTime()
-    if (isNaN(startMs)) throw new Error('Invalid date')
+    startMs = parseUtcDate(startedAt)
+    serverNowMs = serverTime ? parseUtcDate(serverTime) : startMs
+    if (!Number.isFinite(startMs) || !Number.isFinite(serverNowMs)) {
+      throw new Error('Invalid date')
+    }
   } catch {
-    startMs = Date.now()
+    return performance.now() + durationMinutes * 60 * 1000
   }
 
-  return startMs + durationMinutes * 60 * 1000
+  const remainingMs = Math.max(
+    0,
+    startMs + durationMinutes * 60 * 1000 - serverNowMs
+  )
+  return performance.now() + remainingMs
 }

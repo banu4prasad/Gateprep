@@ -17,6 +17,7 @@ import Clock from 'lucide-react/dist/esm/icons/clock'
 import TrendingUp from 'lucide-react/dist/esm/icons/trending-up'
 import Download from 'lucide-react/dist/esm/icons/download'
 import MathText from '../components/shared/MathText'
+import OptionImage from '../components/test/OptionImage'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { downloadResultReport } from '../utils/reportGenerator'
@@ -82,6 +83,7 @@ function McqOptionsGrid({ qa }) {
         return (
           <div key={i} className={clsx('px-3 py-2 rounded text-xs', getOptionClassName(isCorrect, isSelected))}>
             <span className="font-mono font-semibold mr-1">{letter}.</span><MathText>{o}</MathText>
+            <OptionImage src={qa.option_images?.[letter]} letter={letter} />
             <OptionMarkers isCorrect={isCorrect} isSelected={isSelected} isTopperPick={isTopperPick} />
           </div>
         )
@@ -168,6 +170,15 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
 
       {open && (
         <div className="px-4 pb-3 border-t space-y-2 border-border">
+          {qa.question_image_url && (
+            <img
+              src={qa.question_image_url}
+              alt={`Question ${idx + 1} illustration`}
+              loading="lazy"
+              decoding="async"
+              className="mt-3 max-h-64 max-w-full rounded border bg-muted object-contain border-border"
+            />
+          )}
           <McqOptionsGrid qa={qa} />
           <NatAnswerComparison qa={qa} />
           <TopperTimeComparison qa={qa} />

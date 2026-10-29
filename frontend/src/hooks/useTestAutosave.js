@@ -14,14 +14,14 @@ export default function useTestAutosave({
   useEffect(() => {
     if (!attempt || isPreview) return
     autoSaveRef.current = setInterval(() => {
-      const ans = Object.entries(answersRef.current).map(([qid, sel]) => ({
-        question_id: +qid,
-        selected_answer: sel,
-        time_spent_seconds: timingsRef.current[+qid] || 0,
-      }))
-      if (ans.length > 0) {
-        testAPI.saveAnswers(testIdRef.current, attemptRef.current?.id, ans).catch(() => {})
-      }
+      const ans = Object.entries(answersRef.current)
+        .filter(([, selectedAnswer]) => typeof selectedAnswer === 'string' && selectedAnswer.trim())
+        .map(([qid, sel]) => ({
+          question_id: +qid,
+          selected_answer: sel,
+          time_spent_seconds: timingsRef.current[+qid] || 0,
+        }))
+      testAPI.saveAnswers(testIdRef.current, attemptRef.current?.id, ans).catch(() => {})
     }, 30000)
     return () => clearInterval(autoSaveRef.current)
   }, [attempt, isPreview, answersRef, timingsRef, attemptRef, testIdRef])

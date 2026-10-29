@@ -67,7 +67,7 @@ export default function MyResults() {
               const t   = tests[a.test_id]
               const pct = a.total_marks ? Math.round(a.score / a.total_marks * 100) : 0
               const color = pct >= 75 ? 'text-success-text' : pct >= 50 ? 'text-warning-text' : 'text-destructive'
-              const bg    = pct >= 75 ? 'color-mix(in srgb, var(--success-text) 10%, transparent)' : pct >= 50 ? 'color-mix(in srgb, var(--warning-text) 10%, transparent)' : 'rgba(255,107,107,0.1)'
+              const bg    = pct >= 75 ? 'color-mix(in srgb, var(--success-text) 10%, transparent)' : pct >= 50 ? 'color-mix(in srgb, var(--warning-text) 10%, transparent)' : 'color-mix(in srgb, var(--danger-text) 10%, transparent)'
               return (
                 <Card key={a.id}>
                   <CardContent className="p-4 flex items-center gap-4">
