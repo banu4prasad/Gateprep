@@ -1,6 +1,7 @@
 import pytest
 import secrets
 from datetime import datetime, timezone
+from types import SimpleNamespace
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
@@ -21,6 +22,10 @@ from app.models.models import (
     UserRole,
 )
 from app.api.routes.tests.result_builder import _result_payload
+from app.api.routes.tests.leaderboard import (
+    _leaderboard_cache_key_builder,
+    get_leaderboard,
+)
 
 
 @pytest.fixture
@@ -228,6 +233,70 @@ def test_leaderboard_returns_correct_ranks_and_scores(
         assert item["full_name"] == expected_names[rank - 1]
         assert item["total_marks"] == 5.0
         assert item["is_current_user"] == (item["user_id"] == user3.id)
+
+
+def test_leaderboard_paginates_rows_and_keeps_global_ranks(
+    client, db_session, multi_attempt_data
+):
+    test = multi_attempt_data["test"]
+    user1 = multi_attempt_data["users"][0]
+
+    resp = client.get(
+        f"/tests/{test.id}/leaderboard?limit=2&offset=2",
+        cookies=_auth_cookie(user1, db_session),
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total_participants"] == 6
+    assert data["current_user_rank"] == 1
+    assert data["limit"] == 2
+    assert data["offset"] == 2
+    assert [entry["rank"] for entry in data["leaderboard"]] == [3, 4]
+    assert [entry["score"] for entry in data["leaderboard"]] == [3.0, 2.0]
+    assert not any(entry["is_current_user"] for entry in data["leaderboard"])
+
+
+def test_leaderboard_rejects_page_sizes_above_maximum(
+    client, db_session, multi_attempt_data
+):
+    user = multi_attempt_data["users"][0]
+    response = client.get(
+        f"/tests/{multi_attempt_data['test'].id}/leaderboard?limit=101",
+        cookies=_auth_cookie(user, db_session),
+    )
+
+    assert response.status_code == 422
+
+
+def test_leaderboard_cache_key_includes_page_parameters_and_user():
+    request = SimpleNamespace(
+        path_params={"test_id": 42},
+        query_params={"limit": "20", "offset": "0"},
+    )
+    current_user = SimpleNamespace(id=7)
+
+    first_page_key = _leaderboard_cache_key_builder(
+        get_leaderboard,
+        request=request,
+        kwargs={"current_user": current_user},
+    )
+    second_page_key = _leaderboard_cache_key_builder(
+        get_leaderboard,
+        request=SimpleNamespace(
+            path_params={"test_id": 42},
+            query_params={"limit": "20", "offset": "20"},
+        ),
+        kwargs={"current_user": current_user},
+    )
+    other_user_key = _leaderboard_cache_key_builder(
+        get_leaderboard,
+        request=request,
+        kwargs={"current_user": SimpleNamespace(id=8)},
+    )
+
+    assert first_page_key != second_page_key
+    assert first_page_key != other_user_key
 
 
 def test_result_payload_populates_topper_details(
