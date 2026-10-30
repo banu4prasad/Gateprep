@@ -6,12 +6,14 @@ import {
 } from './client'
 
 const mocks = vi.hoisted(() => ({
+  isAxiosError: vi.fn(() => true),
   post: vi.fn(),
   responseUse: vi.fn(),
 }))
 
 vi.mock('axios', () => ({
   default: {
+    isAxiosError: mocks.isAxiosError,
     create: vi.fn(() => ({
       interceptors: {
         response: {
@@ -24,12 +26,13 @@ vi.mock('axios', () => ({
 }))
 
 describe('API client response interceptor', () => {
-  let rejectResponse: (error: unknown) => Promise<never>
+  const rejectResponse = mocks.responseUse.mock.calls[0][1] as (
+    error: unknown,
+  ) => Promise<never>
 
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers()
-    rejectResponse = mocks.responseUse.mock.calls[0][1]
   })
 
   afterEach(() => {

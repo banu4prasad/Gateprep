@@ -1,0 +1,226 @@
+import type { AxiosResponse } from 'axios'
+
+export type ApiResponse<T> = AxiosResponse<T>
+export type ApiJson = Record<string, unknown>
+export type ApiId = number
+
+export type TestStatus = 'in_progress' | 'submitted'
+
+export interface TestCatalogItem {
+  id: number
+  title: string
+  description: string | null
+  duration_minutes: number
+  total_marks: number
+  question_count: number
+  series_id: number | null
+  created_at: string
+  category: string | null
+  series_name: string | null
+  test_type: string | null
+  subject: string | null
+}
+
+export interface TestDetail {
+  id: number
+  title: string
+  description: string | null
+  duration_minutes: number
+  total_marks: number
+  question_count: number
+  series_id: number | null
+  created_at: string
+}
+
+export interface AnswerSubmit {
+  question_id: number
+  selected_answer: string | null
+  time_spent_seconds: number
+}
+
+export interface AttemptAnswer {
+  question_id: number
+  selected_answer: string | null
+  time_spent_seconds: number
+}
+
+export interface AttemptStart {
+  id: number
+  test_id: number
+  status: TestStatus
+  started_at: string | null
+  submitted_at: string | null
+  score: number | null
+  total_marks: number | null
+  tab_violations: number
+  fullscreen_violations: number
+  server_time: string
+  answers: AttemptAnswer[]
+  attempt_number: number
+  max_attempts: number
+}
+
+export interface TestQuestion {
+  id: number
+  question_type: 'mcq' | 'msq' | 'nat'
+  question_text: string
+  question_image_url: string | null
+  options: unknown[] | Record<string, unknown>
+  option_images: Record<string, unknown> | null
+  order_index: number
+  marks: number
+  negative_marks: number
+  subject: string | null
+  topic: string | null
+}
+
+export interface SaveAnswersResponse {
+  message: string
+}
+
+export interface ViolationUpdateResponse {
+  message: string
+}
+
+export interface ViolationUpdateRequest {
+  tab_violations?: number
+  fullscreen_violations?: number
+}
+
+export interface ResultAnswer {
+  question_id?: number
+  question_type?: 'mcq' | 'msq' | 'nat'
+  question_image_url?: string | null
+  option_images?: Record<string, unknown> | null
+  marks?: number
+  negative_marks?: number
+  topper_answer?: string | null
+  topper_time_seconds?: number
+  is_correct?: boolean | null
+  options?: unknown[]
+  marks_awarded?: unknown
+  question_text?: unknown
+  selected_answer?: unknown
+  correct_answer?: unknown
+  time_spent_seconds?: unknown
+}
+
+export interface ResultData {
+  test_title?: string
+  attempt_number?: unknown
+  submitted_at?: string | null
+  score?: number
+  total_marks?: unknown
+  percentage?: number
+  correct?: unknown
+  incorrect?: unknown
+  skipped?: unknown
+  attempt_id?: number | string | null
+  answers?: ResultAnswer[]
+}
+
+export interface PersistedResult extends ResultData {
+  attempt_id: number
+  client_result_id: string | null
+  attempts_remaining: number
+  max_attempts: number
+  counts_for_leaderboard: boolean
+  persisted: boolean
+  test_id: number
+  test_title: string
+  score: number
+  total_marks: number
+  percentage: number
+  correct: number
+  incorrect: number
+  skipped: number
+  submitted_at: string | null
+  tab_violations: number
+  rank: number | null
+  total_participants: number
+  topper: unknown
+  answers: ResultAnswer[]
+}
+
+export interface PracticeResult {
+  id: string
+  persisted: false
+  result: PersistedResult
+}
+
+export interface SubmittedAttempt {
+  id: number
+  test_id: number
+  status: TestStatus
+  started_at: string | null
+  submitted_at: string | null
+  score: number | null
+  total_marks: number | null
+  tab_violations: number
+  fullscreen_violations: number
+  persisted: true
+}
+
+export type SubmitResult = SubmittedAttempt | PracticeResult
+
+export interface HistoryItem {
+  id: number
+  test_id: number
+  status: TestStatus
+  started_at: string | null
+  submitted_at: string | null
+  score: number | null
+  total_marks: number | null
+  tab_violations: number
+  fullscreen_violations: number
+}
+
+export interface MyAttempt {
+  attempt_id: number
+  attempt_number: number
+  counts_for_leaderboard: boolean
+  is_first: boolean
+  status: TestStatus
+  score: number | null
+  total_marks: number | null
+  percentage: number
+  started_at: string | null
+  submitted_at: string | null
+  attempts_remaining: number
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  user_id: number
+  full_name: string
+  score: number | null
+  total_marks: number | null
+  percentage: number
+  submitted_at: string | null
+  tab_violations: number
+  is_current_user: boolean
+}
+
+export interface LeaderboardResponse {
+  test_id: number
+  test_title: string
+  total_participants: number
+  current_user_rank: number | null
+  limit: number
+  offset: number
+  leaderboard: LeaderboardEntry[]
+}
+
+export type AuthRequest = unknown
+export type AdminRequest = unknown
+export type BookmarkRequest = unknown
+export type SeriesRequest = unknown
+
+// TODO(response_model): add response models for auth routes.
+export type AuthResponse = unknown
+// TODO(response_model): add response models for admin routes.
+export type AdminResponse = unknown
+// TODO(response_model): add response models for bookmark routes.
+export type BookmarkResponse = unknown
+// TODO(response_model): add response models for series routes.
+export type SeriesResponse = unknown
