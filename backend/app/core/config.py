@@ -3,6 +3,7 @@ import logging
 import re
 from pathlib import Path
 from typing import List
+from urllib.parse import urlsplit
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,6 +17,7 @@ PASSWORD_URL_ENCODING_MESSAGE = (
 )
 
 LOCAL_DATABASE_HOSTS = {"localhost", "db", "postgres", "host.docker.internal"}
+LOCAL_ORIGIN_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
 
 def _is_remote_database_host(host: str | None) -> bool:
@@ -86,7 +88,11 @@ def normalize_database_url(database_url: str) -> str:
 
 
 def _is_local_origin(origin: str) -> bool:
-    return "localhost" in origin or "127.0.0.1" in origin
+    try:
+        hostname = urlsplit(origin).hostname
+    except ValueError:
+        return False
+    return hostname in LOCAL_ORIGIN_HOSTS
 
 
 def _is_insecure_remote_origin(origin: str) -> bool:

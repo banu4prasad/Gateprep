@@ -11,7 +11,7 @@ from fastapi_cache.backends.redis import RedisBackend
 from redis import asyncio as aioredis
 
 from app.api.routes import admin, auth, bookmarks, tests, series
-from app.core.config import settings
+from app.core.config import _is_local_origin, settings
 from app.core.csrf import CSRFHeaderMiddleware
 from app.core.limiter import limiter
 from slowapi.errors import RateLimitExceeded
@@ -35,10 +35,7 @@ async def lifespan(app: FastAPI):
             await redis.close()
             redis = None
 
-        if (
-            "localhost" not in settings.REDIS_URL
-            and "127.0.0.1" not in settings.REDIS_URL
-        ):
+        if not _is_local_origin(settings.REDIS_URL):
             raise RuntimeError(
                 f"Redis cache unavailable at REDIS_URL={settings.REDIS_URL}"
             ) from exc

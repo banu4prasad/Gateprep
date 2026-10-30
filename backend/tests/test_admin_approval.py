@@ -154,7 +154,8 @@ def test_admin_deactivates_user(client, db_session, admin_user, regular_user):
 def test_deactivated_user_cannot_login(client, db_session, admin_user, regular_user):
     client.patch(f"/admin/users/{regular_user.id}/status", cookies=_auth_cookie(admin_user, db_session))
     response = client.post("/auth/login", json={"email": "user@test.com", "password": "pass"})
-    assert response.status_code == 403
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid email or password"
 
 def test_deactivated_user_session_invalidated(client, db_session, admin_user, regular_user):
     cookies = _auth_cookie(regular_user, db_session)
@@ -181,7 +182,7 @@ def test_full_approval_workflow(client, db_session, admin_user):
     client.post("/auth/register", json={"email": "new@test.com", "full_name": "New User", "password": "password123"})
     new_user = db_session.query(User).filter(User.email == "new@test.com").first()
     client.patch(f"/admin/users/{new_user.id}/status", cookies=_auth_cookie(admin_user, db_session))
-    assert client.post("/auth/login", json={"email": "new@test.com", "password": "password123"}).status_code == 403
+    assert client.post("/auth/login", json={"email": "new@test.com", "password": "password123"}).status_code == 401
     client.patch(f"/admin/users/{new_user.id}/status", cookies=_auth_cookie(admin_user, db_session))
     response = client.post("/auth/login", json={"email": "new@test.com", "password": "password123"})
     assert response.status_code == 200

@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.routes import admin as admin_routes
 from app.api.routes import auth as auth_routes
+from app.api.routes.admin.helpers import _password_reset_url
 from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.security import (
@@ -97,6 +98,13 @@ class PasswordResetTests(unittest.TestCase):
         token = parse_qs(urlparse(reset_url).query).get("token", [None])[0]
         self.assertTrue(token)
         return token
+
+    def test_reset_url_subdomain_is_not_classified_as_local(self):
+        settings.FRONTEND_URL = "http://localhost.attacker.com"
+
+        _, is_local = _password_reset_url("test-token")
+
+        self.assertFalse(is_local)
 
     def test_admin_generated_link_resets_password_once_and_invalidates_session(self):
         self._login_admin()

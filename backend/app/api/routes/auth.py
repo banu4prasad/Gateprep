@@ -34,6 +34,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 ADMIN_USERS_CACHE_NAMESPACE = "admin-users"
 REGISTRATION_BOOTSTRAP_LOCK_ID = 0x4741544550524550
+# A bcrypt hash used to keep unknown-user and passwordless-user logins costly.
+DUMMY_PASSWORD_HASH = (
+    "$2b$12$HIZeKhlr3M4bFUSEIGke7u5twMoMA1vs6tfxvPeDBfjulXAH6m6Vm"
+)
 
 BcryptPassword = Annotated[
     str,
@@ -220,11 +224,10 @@ def register(
 
 def _is_valid_credentials(user: Optional[User], password: str) -> bool:
     """True if the user exists, has a password set, and it matches."""
-    return (
-        bool(user)
-        and bool(user.hashed_password)
-        and verify_password(password, user.hashed_password)
-    )
+    if user is None or not user.hashed_password:
+        verify_password(password, DUMMY_PASSWORD_HASH)
+        return False
+    return verify_password(password, user.hashed_password)
 
 
 @router.post("/login", response_model=AuthUserResponse)
@@ -236,10 +239,8 @@ def login(
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == payload.email).first()
-    if not _is_valid_credentials(user, payload.password):
+    if not _is_valid_credentials(user, payload.password) or not user.is_active:
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="Account disabled. Contact admin.")
 
     _set_auth_cookie(response, create_token_for_user(user, db, request))
     return _auth_user_response(user)

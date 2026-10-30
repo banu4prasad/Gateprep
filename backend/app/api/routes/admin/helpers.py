@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 
 from fastapi import HTTPException, UploadFile
 
-from app.core.config import settings
+from app.core.config import _is_local_origin, settings
 from app.models.models import Question, User
 from app.services.cloudinary_service import (
     optimize_delivery_image_url,
@@ -45,7 +45,7 @@ def _password_reset_url(token: str) -> tuple[str, bool]:
     """
     base = settings.FRONTEND_URL.rstrip("/")
     url = f"{base}/reset-password?{urlencode({'token': token})}"
-    is_local = "localhost" in base or "127.0.0.1" in base
+    is_local = _is_local_origin(base)
     if is_local:
         logger.warning(
             "Password-reset link generated with localhost FRONTEND_URL (%s). "

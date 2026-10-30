@@ -46,7 +46,11 @@ def get_leaderboard(
     db: Session = Depends(get_db),
     current_user=Depends(require_aspirant),
 ):
-    test = db.query(Test).filter(Test.id == test_id).first()
+    test = (
+        db.query(Test)
+        .filter(Test.id == test_id, Test.is_published.is_(True))
+        .first()
+    )
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 

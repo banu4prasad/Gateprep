@@ -235,6 +235,36 @@ def test_leaderboard_returns_correct_ranks_and_scores(
         assert item["is_current_user"] == (item["user_id"] == user3.id)
 
 
+def test_get_test_returns_404_for_unpublished_test(
+    client, db_session, multi_attempt_data
+):
+    test = multi_attempt_data["test"]
+    test.is_published = False
+    db_session.commit()
+
+    response = client.get(
+        f"/tests/{test.id}",
+        cookies=_auth_cookie(multi_attempt_data["users"][0], db_session),
+    )
+
+    assert response.status_code == 404
+
+
+def test_leaderboard_returns_404_for_unpublished_test(
+    client, db_session, multi_attempt_data
+):
+    test = multi_attempt_data["test"]
+    test.is_published = False
+    db_session.commit()
+
+    response = client.get(
+        f"/tests/{test.id}/leaderboard",
+        cookies=_auth_cookie(multi_attempt_data["users"][0], db_session),
+    )
+
+    assert response.status_code == 404
+
+
 def test_leaderboard_paginates_rows_and_keeps_global_ranks(
     client, db_session, multi_attempt_data
 ):

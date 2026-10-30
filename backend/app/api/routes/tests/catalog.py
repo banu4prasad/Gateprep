@@ -35,7 +35,11 @@ def list_tests(db: Session = Depends(get_db), _=Depends(require_aspirant)):
 
 
 def get_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_aspirant)):
-    test = db.query(Test).filter(Test.id == test_id).first()
+    test = (
+        db.query(Test)
+        .filter(Test.id == test_id, Test.is_published.is_(True))
+        .first()
+    )
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
     question_count = db.query(Question).filter(Question.test_id == test_id).count()

@@ -8,6 +8,7 @@ from app.main import app as fastapi_app
 from app.models.models import User, UserRole
 from app.core.security import hash_password, create_access_token, decode_token
 from app.core.config import settings
+from app.api.routes import auth as auth_routes
 from app.api.routes.auth import _lock_registration_bootstrap
 
 @pytest.fixture
@@ -81,12 +82,27 @@ def test_login_wrong_password(client, db_session):
     response = client.post("/auth/login", json={"email": "test@test.com", "password": "wrongpassword"})
     assert response.status_code == 401
 
+def test_unknown_user_login_verifies_dummy_password(monkeypatch):
+    verification_calls = []
+
+    def record_verify(password, hashed_password):
+        verification_calls.append((password, hashed_password))
+        return False
+
+    monkeypatch.setattr(auth_routes, "verify_password", record_verify)
+
+    assert not auth_routes._is_valid_credentials(None, "wrongpassword")
+    assert verification_calls == [
+        ("wrongpassword", auth_routes.DUMMY_PASSWORD_HASH)
+    ]
+
 def test_login_inactive_user(client, db_session):
     user = User(email="inactive@test.com", full_name="Inactive", hashed_password=hash_password("password123"), role=UserRole.user, is_active=False)
     db_session.add(user)
     db_session.commit()
     response = client.post("/auth/login", json={"email": "inactive@test.com", "password": "password123"})
-    assert response.status_code == 403
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid email or password"
 
 def test_protected_route_access(client, db_session):
     client.post("/auth/register", json={"email": "test@test.com", "full_name": "Test", "password": "password123"})
