@@ -1,3 +1,4 @@
+from base64 import b64decode
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -21,6 +22,11 @@ from app.models.models import (
     User,
     UserAnswer,
     UserRole,
+)
+
+_VALID_PNG = b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/"
+    "w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg=="
 )
 
 
@@ -250,7 +256,7 @@ def test_upload_option_image_removes_previous_cloudinary_asset(
 
     response = client.post(
         f"/admin/questions/{question_id}/image?target=A",
-        files={"image": ("option.png", b"image-data", "image/png")},
+        files={"image": ("option.png", _VALID_PNG, "image/png")},
     )
 
     assert response.status_code == 200

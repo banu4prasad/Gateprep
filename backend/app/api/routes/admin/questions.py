@@ -313,7 +313,17 @@ async def upload_question_image(
     if not q:
         raise HTTPException(status_code=404, detail="Question not found")
 
-    contents_bytes = await read_upload_bytes(image, max_size=5 * 1024 * 1024, allowed_content_types=["image/"])
+    contents_bytes = await read_upload_bytes(
+        image,
+        max_size=5 * 1024 * 1024,
+        allowed_extensions=["jpg", "jpeg", "png", "webp", "gif"],
+        allowed_content_types=[
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif",
+        ],
+    )
 
     result = await run_in_threadpool(
         upload_image, contents_bytes, folder="gate-prep/questions"

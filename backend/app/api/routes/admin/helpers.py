@@ -14,6 +14,26 @@ from app.services.cloudinary_service import (
 
 logger = logging.getLogger(__name__)
 
+_IMAGE_EXTENSIONS_BY_CONTENT_TYPE = {
+    "image/jpeg": {"jpg", "jpeg"},
+    "image/png": {"png"},
+    "image/webp": {"webp"},
+    "image/gif": {"gif"},
+}
+
+
+def _detect_image_content_type(contents: bytes) -> str | None:
+    if contents.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if contents.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if contents.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif"
+    if contents.startswith(b"RIFF") and contents[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -73,19 +93,37 @@ async def read_upload_bytes(
     allowed_content_types: list[str] | None = None,
 ) -> bytes:
     """Read and validate an uploaded file, enforcing size and format constraints."""
-    if allowed_extensions and file.filename:
+    extension = None
+    if allowed_extensions is not None or allowed_content_types is not None:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="File name is required")
+
+    if allowed_extensions is not None:
         secure_name = os.path.basename(file.filename.replace("\\", "/"))
         if "." not in secure_name:
             raise HTTPException(status_code=400, detail="File must have an extension")
         ext = secure_name.rsplit(".", 1)[-1].lower()
-        if ext not in allowed_extensions:
+        normalized_extensions = {
+            item.lower().lstrip(".") for item in allowed_extensions
+        }
+        if ext not in normalized_extensions:
             raise HTTPException(
                 status_code=400,
                 detail=f"Only {', '.join(allowed_extensions)} files accepted",
             )
-            
-    if allowed_content_types and file.content_type:
-        if not any(file.content_type.startswith(ct) for ct in allowed_content_types):
+        extension = ext
+
+    normalized_content_type = None
+    normalized_allowed_content_types = None
+    if allowed_content_types is not None:
+        if not file.content_type:
+            raise HTTPException(status_code=400, detail="Content-Type is required")
+        normalized_content_type = file.content_type.split(";", 1)[0].strip().lower()
+        normalized_allowed_content_types = {
+            content_type.split(";", 1)[0].strip().lower()
+            for content_type in allowed_content_types
+        }
+        if normalized_content_type not in normalized_allowed_content_types:
             raise HTTPException(
                 status_code=400,
                 detail=f"Only {', '.join(allowed_content_types)} files are accepted",
@@ -103,5 +141,27 @@ async def read_upload_bytes(
 
     if not contents_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    if (
+        normalized_allowed_content_types is not None
+        and normalized_content_type is not None
+        and normalized_content_type.startswith("image/")
+    ):
+        detected_content_type = _detect_image_content_type(contents_bytes)
+        if (
+            detected_content_type not in normalized_allowed_content_types
+            or detected_content_type != normalized_content_type
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Uploaded file contents do not match an allowed image type",
+            )
+        if extension and extension not in _IMAGE_EXTENSIONS_BY_CONTENT_TYPE.get(
+            detected_content_type, set()
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="File extension does not match the image contents",
+            )
 
     return contents_bytes

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_aspirant
 from app.core.database import get_db
-from app.models.models import Question, Test, TestAttempt, TestStatus, UserAnswer
+from app.models.models import Question, Test, TestAttempt, TestStatus, User, UserAnswer
 from app.services.cloudinary_service import (
     optimize_delivery_image_url,
     optimize_delivery_image_urls,
@@ -60,31 +60,26 @@ def _require_active_attempt(
     return attempt
 
 
-def _enforce_submission_time_limit(
-    attempt: TestAttempt, test: Test, submitted_at: datetime
-) -> None:
-    """Reject submissions that arrive after the server-side deadline.
-
-    The short grace period accounts for request transit after the client's
-    timer reaches zero; it is not enough to permit a materially late attempt.
-    """
-    if attempt.started_at is None:
-        raise HTTPException(status_code=400, detail="Attempt start time is unavailable")
-
+def _attempt_deadline(attempt: TestAttempt, test: Test) -> datetime:
     started_at = attempt.started_at
+    if started_at is None:
+        raise HTTPException(status_code=400, detail="Attempt start time is unavailable")
     if started_at.tzinfo is None:
         # SQLite may return timezone-aware columns as naive datetimes.
         started_at = started_at.replace(tzinfo=timezone.utc)
     else:
         started_at = started_at.astimezone(timezone.utc)
-
-    deadline = (
+    return (
         started_at
         + timedelta(minutes=test.duration_minutes)
         + SUBMISSION_GRACE_PERIOD
     )
-    if submitted_at > deadline:
-        raise HTTPException(status_code=400, detail="Test time limit has expired")
+
+
+def _is_attempt_expired(
+    attempt: TestAttempt, test: Test, now: datetime | None = None
+) -> bool:
+    return (now or datetime.now(timezone.utc)) > _attempt_deadline(attempt, test)
 
 
 def _enforce_reattempt_limit(progress: dict) -> None:
@@ -114,7 +109,24 @@ def _upsert_answers(
     db: Session, attempt: TestAttempt, answers: list
 ) -> List[UserAnswer]:
     """Reconcile a complete answer snapshot and return newly created rows."""
-    question_ids = {answer.question_id for answer in answers}
+    answers_by_question = {answer.question_id: answer for answer in answers}
+    question_ids = set(answers_by_question)
+    if question_ids:
+        valid_question_ids = {
+            row[0]
+            for row in db.query(Question.id)
+            .filter(
+                Question.test_id == attempt.test_id,
+                Question.id.in_(question_ids),
+            )
+            .all()
+        }
+        if question_ids - valid_question_ids:
+            raise HTTPException(
+                status_code=400,
+                detail="One or more questions do not belong to this test",
+            )
+
     stale_answers = db.query(UserAnswer).filter(UserAnswer.attempt_id == attempt.id)
     if question_ids:
         stale_answers = stale_answers.filter(UserAnswer.question_id.notin_(question_ids))
@@ -122,7 +134,7 @@ def _upsert_answers(
 
     existing = {a.question_id: a for a in attempt.answers}
     new_answers = []
-    for ans in answers:
+    for ans in answers_by_question.values():
         if ans.question_id in existing:
             row = existing[ans.question_id]
             row.selected_answer = ans.selected_answer
@@ -230,6 +242,7 @@ def start_test(
     if not test:
         raise HTTPException(status_code=404, detail="Test not found")
 
+    db.query(User).filter(User.id == current_user.id).with_for_update().one()
     progress = _attempt_progress(db, current_user.id, test_id)
     attempt = (
         db.query(TestAttempt)
@@ -238,9 +251,14 @@ def start_test(
             TestAttempt.test_id == test_id,
             TestAttempt.status == TestStatus.in_progress,
         )
+        .with_for_update()
         .order_by(TestAttempt.id.desc())
         .first()
     )
+    if attempt is not None and _is_attempt_expired(attempt, test):
+        db.delete(attempt)
+        db.flush()
+        attempt = None
     if attempt is None:
         _enforce_reattempt_limit(progress)
         attempt = _create_fresh_attempt(db, current_user.id, test_id)
@@ -318,9 +336,11 @@ def update_violations(
     attempt = _require_active_attempt(db, current_user.id, test_id, attempt_id)
 
     if payload.tab_violations is not None:
-        attempt.tab_violations = payload.tab_violations
+        attempt.tab_violations = max(attempt.tab_violations, payload.tab_violations)
     if payload.fullscreen_violations is not None:
-        attempt.fullscreen_violations = payload.fullscreen_violations
+        attempt.fullscreen_violations = max(
+            attempt.fullscreen_violations, payload.fullscreen_violations
+        )
     db.commit()
     return {"message": "Updated"}
 
@@ -353,7 +373,18 @@ def submit_test(
     db: Session = Depends(get_db),
     current_user=Depends(require_aspirant),
 ):
-    attempt = _get_user_attempt(db, current_user.id, test_id, attempt_id)
+    attempt = (
+        db.query(TestAttempt)
+        .filter(
+            TestAttempt.id == attempt_id,
+            TestAttempt.user_id == current_user.id,
+            TestAttempt.test_id == test_id,
+        )
+        .with_for_update()
+        .first()
+    )
+    if not attempt:
+        raise HTTPException(status_code=404, detail="Attempt not found")
     if attempt.status == TestStatus.submitted:
         raise HTTPException(status_code=400, detail="Already submitted")
 
@@ -362,7 +393,13 @@ def submit_test(
         raise HTTPException(status_code=404, detail="Test not found")
 
     submitted_at = datetime.now(timezone.utc)
-    _enforce_submission_time_limit(attempt, test, submitted_at)
+    if _is_attempt_expired(attempt, test, now=submitted_at):
+        db.delete(attempt)
+        db.commit()
+        raise HTTPException(
+            status_code=400,
+            detail="Test attempt expired. Please start a new attempt.",
+        )
 
     db.query(UserAnswer).filter(UserAnswer.attempt_id == attempt_id).delete()
 
@@ -370,6 +407,9 @@ def submit_test(
     previous_submission_count = _submitted_attempts_query(
         db, current_user.id, test_id
     ).count()
+    _enforce_reattempt_limit(
+        _attempt_progress(db, current_user.id, test_id, previous_submission_count)
+    )
     is_first = previous_submission_count == 0
     if is_first:
         return _persist_first_submission(

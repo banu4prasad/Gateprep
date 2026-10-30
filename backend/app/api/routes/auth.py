@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
+from typing import Annotated, Literal, Optional, cast
 
-from typing import Optional, cast, Literal
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -10,7 +10,7 @@ from fastapi import (
     Response,
 )
 from fastapi_cache import FastAPICache
-from pydantic import BaseModel, EmailStr
+from pydantic import AfterValidator, BaseModel, EmailStr, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -19,11 +19,13 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.limiter import limiter
 from app.core.security import (
+    MAX_BCRYPT_PASSWORD_BYTES,
     create_access_token,
     decode_token,
     generate_session_id,
     hash_password,
     hash_password_reset_token,
+    validate_bcrypt_password,
     verify_password,
 )
 from app.models.models import PasswordResetToken, User, UserRole
@@ -33,21 +35,30 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 ADMIN_USERS_CACHE_NAMESPACE = "admin-users"
 REGISTRATION_BOOTSTRAP_LOCK_ID = 0x4741544550524550
 
+BcryptPassword = Annotated[
+    str,
+    Field(
+        max_length=MAX_BCRYPT_PASSWORD_BYTES,
+        description="Maximum 72 UTF-8 bytes for bcrypt compatibility.",
+    ),
+    AfterValidator(validate_bcrypt_password),
+]
+
 
 class RegisterRequest(BaseModel):
     email: EmailStr
     full_name: str
-    password: str
+    password: BcryptPassword
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: BcryptPassword
 
 
 class ResetPasswordRequest(BaseModel):
     token: str
-    password: str
+    password: BcryptPassword
 
 
 class AuthUserResponse(BaseModel):

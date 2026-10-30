@@ -11,13 +11,32 @@ from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 logger = logging.getLogger(__name__)
+MAX_BCRYPT_PASSWORD_BYTES = 72
+
+
+def validate_bcrypt_password(password: str) -> str:
+    """Reject passwords bcrypt would truncate or fail to hash."""
+    try:
+        password_bytes = password.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise ValueError("Password must be valid UTF-8") from exc
+    if len(password_bytes) > MAX_BCRYPT_PASSWORD_BYTES:
+        raise ValueError(
+            f"Password must be at most {MAX_BCRYPT_PASSWORD_BYTES} UTF-8 bytes"
+        )
+    return password
 
 
 def hash_password(password: str) -> str:
+    validate_bcrypt_password(password)
     return pwd_context.hash(password)
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    try:
+        validate_bcrypt_password(plain)
+    except ValueError:
+        return False
     return pwd_context.verify(plain, hashed)
 
 

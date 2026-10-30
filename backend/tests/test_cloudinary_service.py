@@ -69,6 +69,7 @@ def test_upload_image_success(mock_settings, mock_uploader):
         b"test_bytes",
         folder="gate-prep/questions",
         resource_type="image",
+        allowed_formats=["jpg", "png", "webp", "gif"],
         transformation=[
             {"fetch_format": "auto", "quality": "auto"},
             {"width": 1200, "crop": "limit"},

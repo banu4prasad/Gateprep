@@ -13,9 +13,11 @@ AUTO_IMAGE_TRANSFORMATION = "f_auto,q_auto"
 AUTO_IMAGE_TRANSFORMATION_PARAMS = {"fetch_format": "auto", "quality": "auto"}
 CLOUDINARY_IMAGE_UPLOAD_SEGMENT = "/image/upload/"
 _CLOUDINARY_VERSION = re.compile(r"^v\d+$")
+# Keep SVG recognition for cleanup of legacy assets; new uploads are raster-only.
 _IMAGE_FORMAT = re.compile(
     r"\.(?:avif|bmp|gif|jpe?g|png|svg|tiff?|webp)$", re.IGNORECASE
 )
+_ALLOWED_UPLOAD_FORMATS = ("jpg", "png", "webp", "gif")
 
 
 def cloudinary_public_id_from_url(url: str | None) -> str | None:
@@ -117,6 +119,7 @@ def upload_image(file_bytes: bytes, folder: str = "gate-prep/questions") -> dict
             file_bytes,
             folder=folder,
             resource_type="image",
+            allowed_formats=list(_ALLOWED_UPLOAD_FORMATS),
             transformation=[
                 dict(AUTO_IMAGE_TRANSFORMATION_PARAMS),
                 {"width": 1200, "crop": "limit"},
