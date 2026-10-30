@@ -12,4 +12,4 @@ export const ALERT_BOX = {
   error: 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400',
   warning: 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400',
   info: 'bg-sky-500/10 border-sky-500/20 text-sky-600 dark:text-sky-400',
-}
+} as const

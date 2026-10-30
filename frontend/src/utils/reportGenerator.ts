@@ -3,22 +3,47 @@ import katexCss from 'katex/dist/katex.min.css?raw'
 import katexJs from 'katex/dist/katex.min.js?raw'
 import katexAutoRenderJs from 'katex/dist/contrib/auto-render.min.js?raw'
 
-function escapeHtml(value) {
-  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+interface ResultAnswer {
+  is_correct?: boolean | null
+  options?: unknown[]
+  marks_awarded?: unknown
+  question_text?: unknown
+  selected_answer?: unknown
+  correct_answer?: unknown
+  time_spent_seconds?: unknown
+}
+
+interface ResultData {
+  test_title?: string
+  attempt_number?: unknown
+  submitted_at?: string | null
+  score?: number
+  total_marks?: unknown
+  percentage?: number
+  correct?: unknown
+  incorrect?: unknown
+  skipped?: unknown
+  attempt_id?: number | string | null
+  answers?: ResultAnswer[]
+}
+
+function escapeHtml(value: unknown): string {
+  const entities: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
     "'": '&#39;',
-  }[ch]))
+  }
+  return String(value ?? '').replace(/[&<>"']/g, ch => entities[ch] ?? ch)
 }
 
-function formatDate(value) {
+function formatDate(value: string | null | undefined): string {
   if (!value) return '-'
   return new Date(value).toLocaleString('en-IN')
 }
 
-export function buildResultHtml(result) {
+export function buildResultHtml(result: ResultData): string {
   const rows = (result.answers || []).map((answer, idx) => {
     const status = answer.is_correct === true ? 'Correct' : answer.is_correct === false ? 'Wrong' : 'Skipped'
     const options = (answer.options || []).map((option, i) => {
@@ -72,7 +97,7 @@ export function buildResultHtml(result) {
     <div>Attempt ${escapeHtml(result.attempt_number)} · Practice attempt · ${escapeHtml(formatDate(result.submitted_at))}</div>
     <div class="summary">
       <div class="metric"><span>Score</span><strong>${escapeHtml(result.score?.toFixed?.(2) ?? result.score)} / ${escapeHtml(result.total_marks)}</strong></div>
-      <div class="metric"><span>Percentage</span><strong>${escapeHtml(Math.round(result.percentage))}%</strong></div>
+      <div class="metric"><span>Percentage</span><strong>${escapeHtml(Math.round(result.percentage ?? NaN))}%</strong></div>
       <div class="metric"><span>Correct</span><strong>${escapeHtml(result.correct)}</strong></div>
       <div class="metric"><span>Wrong</span><strong>${escapeHtml(result.incorrect)}</strong></div>
       <div class="metric"><span>Skipped</span><strong>${escapeHtml(result.skipped)}</strong></div>
@@ -96,7 +121,7 @@ export function buildResultHtml(result) {
 </html>`
 }
 
-export function downloadPracticeResultHtml(result) {
+export function downloadPracticeResultHtml(result: ResultData): void {
   const slug = (result.test_title || 'result').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   const suffix = 'practice-result'
   const blob = new Blob([buildResultHtml(result)], { type: 'text/html;charset=utf-8' })
@@ -110,7 +135,7 @@ export function downloadPracticeResultHtml(result) {
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
-export async function downloadResultReport(result) {
+export async function downloadResultReport(result: ResultData | null | undefined): Promise<void> {
   if (!result || result.attempt_id == null || String(result.attempt_id).startsWith('practice-')) {
     return downloadPracticeResultHtml(result || {})
   }

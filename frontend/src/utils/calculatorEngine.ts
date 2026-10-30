@@ -1,19 +1,27 @@
 const DEG_TO_RAD = Math.PI / 180
-const OPERATORS = new Set(['+', '-', '×', '÷', 'xʸ', '%'])
-const OPERATOR_PRECEDENCE = { '+': 1, '-': 1, '×': 2, '÷': 2, '%': 2, 'xʸ': 3 }
+type Operator = '+' | '-' | '×' | '÷' | 'xʸ' | '%'
+type RpnToken = number | Operator
 
-export const formatResult = (value) => {
+const OPERATORS: ReadonlySet<Operator> = new Set(['+', '-', '×', '÷', 'xʸ', '%'])
+const OPERATOR_PRECEDENCE: Record<Operator, number> = {
+  '+': 1, '-': 1, '×': 2, '÷': 2, '%': 2, 'xʸ': 3,
+}
+
+export const formatResult = (value: number): string => {
   if (!Number.isFinite(value)) return 'Error'
   return String(parseFloat(value.toFixed(10)))
 }
 
-const isOperatorToken = (token) => OPERATORS.has(token)
+const isOperatorToken = (token: string): token is Operator => OPERATORS.has(token as Operator)
 
-export const isOperatorTail = (expression) => isOperatorToken(expression.trim().split(/\s+/).at(-1))
+export const isOperatorTail = (expression: string): boolean => {
+  const token = expression.trim().split(/\s+/).at(-1)
+  return token !== undefined && isOperatorToken(token)
+}
 
-export const tokenizeExpression = (expression) => expression.trim().split(/\s+/).filter(Boolean)
+export const tokenizeExpression = (expression: string): string[] => expression.trim().split(/\s+/).filter(Boolean)
 
-const applyOperator = (op, left, right) => {
+const applyOperator = (op: Operator, left: number, right: number): number => {
   switch (op) {
     case '+': return left + right
     case '-': return left - right
@@ -25,41 +33,45 @@ const applyOperator = (op, left, right) => {
   }
 }
 
-function shouldPopOperator(operators, token) {
+function shouldPopOperator(operators: string[], token: Operator): boolean {
   const top = operators.at(-1)
   return (
     operators.length > 0 &&
+    top !== undefined &&
     isOperatorToken(top) &&
     OPERATOR_PRECEDENCE[top] >= OPERATOR_PRECEDENCE[token]
   )
 }
 
-function handleOperatorToken(token, operators, output) {
+function handleOperatorToken(token: Operator, operators: string[], output: RpnToken[]): void {
   while (shouldPopOperator(operators, token)) {
-    output.push(operators.pop())
+    const operator = operators.pop()
+    if (operator !== undefined) output.push(operator as Operator)
   }
   operators.push(token)
 }
 
-function handleCloseParen(operators, output) {
+function handleCloseParen(operators: string[], output: RpnToken[]): void {
   while (operators.length > 0 && operators.at(-1) !== '(') {
-    output.push(operators.pop())
+    const operator = operators.pop()
+    if (operator !== undefined) output.push(operator as Operator)
   }
   if (operators.at(-1) !== '(') throw new Error('Mismatched parentheses')
   operators.pop()
 }
 
-function drainRemainingOperators(operators, output) {
+function drainRemainingOperators(operators: string[], output: RpnToken[]): void {
   while (operators.length > 0) {
     const op = operators.pop()
+    if (op === undefined) continue
     if (op === '(' || op === ')') throw new Error('Mismatched parentheses')
-    output.push(op)
+    output.push(op as Operator)
   }
 }
 
-function toRPN(tokens) {
-  const output = []
-  const operators = []
+function toRPN(tokens: string[]): RpnToken[] {
+  const output: RpnToken[] = []
+  const operators: string[] = []
 
   tokens.forEach((token) => {
     if (!Number.isNaN(Number(token))) {
@@ -85,8 +97,8 @@ function toRPN(tokens) {
   return output
 }
 
-function evaluateRPN(rpn) {
-  const stack = []
+function evaluateRPN(rpn: RpnToken[]): number {
+  const stack: number[] = []
   rpn.forEach((token) => {
     if (typeof token === 'number') {
       stack.push(token)
@@ -101,12 +113,12 @@ function evaluateRPN(rpn) {
   return stack[0]
 }
 
-export const evaluateExpression = (expression) => {
+export const evaluateExpression = (expression: string): number => {
   const rpn = toRPN(tokenizeExpression(expression))
   return evaluateRPN(rpn)
 }
 
-const factorial = (n) => {
+const factorial = (n: number): number => {
   if (n < 0 || !Number.isInteger(n)) return NaN
   if (n === 0 || n === 1) return 1
   let r = 1; for (let i = 2; i <= n; i++) r *= i; return r
@@ -131,11 +143,11 @@ export const SCIENTIFIC_FUNCTIONS = {
   '10ˣ':   (v) => Math.pow(10, v),
   '|x|':   (v) => Math.abs(v),
   '%':     (v) => v / 100,
-}
+} satisfies Record<string, (value: number, degrees?: boolean) => number>
 
 export const SCIENTIFIC_CONSTANTS = {
   'π': Math.PI,
   'e': Math.E,
-}
+} as const
 
 export { DEG_TO_RAD }

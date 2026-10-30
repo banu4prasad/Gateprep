@@ -9,7 +9,9 @@ export const STATUS_CLASS = {
   'answered-marked': 'q-dot q-dot-answered-marked',
 }
 
-export function formatTime(ms) {
+export type QuestionStatus = keyof typeof STATUS_CLASS
+
+export function formatTime(ms: number | null | undefined): string {
   if (ms === null || ms === undefined || isNaN(ms)) return '--:--:--'
   const totalSecs = Math.max(0, Math.floor(ms / 1000))
   const h = Math.floor(totalSecs / 3600)
@@ -18,7 +20,12 @@ export function formatTime(ms) {
   return [h, m, s].map(n => String(n).padStart(2, '0')).join(':')
 }
 
-export function getQStatus(qId, currentQId, answers, marked) {
+export function getQStatus(
+  qId: string,
+  currentQId: string,
+  answers: Record<string, unknown>,
+  marked: ReadonlySet<string>,
+): QuestionStatus {
   if (qId === currentQId) return 'current'
   if (marked.has(qId) && answers[qId]) return 'answered-marked'
   if (marked.has(qId)) return 'marked'
@@ -26,13 +33,17 @@ export function getQStatus(qId, currentQId, answers, marked) {
   return 'not-answered'
 }
 
-export function getEndTimeMs(startedAt, durationMinutes, serverTime) {
+export function getEndTimeMs(
+  startedAt: string | null | undefined,
+  durationMinutes: number | null | undefined,
+  serverTime?: string | null,
+): number | null {
   if (!startedAt || !durationMinutes) return null
 
   let startMs
   let serverNowMs
   try {
-    const parseUtcDate = value => {
+    const parseUtcDate = (value: string): number => {
       let str = String(value).trim()
       if (!str.endsWith('Z') && !str.includes('+') && !/[0-9]-[0-9]{2}:[0-9]{2}$/.test(str)) {
         str = `${str}Z`
