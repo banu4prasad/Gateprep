@@ -4,7 +4,7 @@ This file defines how AI assistants should work in this repository.
 
 Gateprep is a full-stack GATE exam preparation platform with:
 - `backend/` — FastAPI, SQLAlchemy, Alembic, PostgreSQL/Supabase
-- `frontend/` — React 18, Vite, Tailwind CSS, JavaScript/JSX
+- `frontend/` — React 18, Vite, Tailwind CSS, TypeScript/TSX migration in progress
 - root Docker files for local and deployment workflows
 
 Read this file first, then load only the relevant files from `.agents/rules/`, `.agents/workflows/`, and `.agents/skills/` for the task at hand.
@@ -25,7 +25,7 @@ When repository files disagree with these notes, trust the actual code and updat
 ### Frontend
 
 - React 18 with Vite
-- JavaScript/JSX, not TypeScript
+- TypeScript/TSX for migrated files; existing JavaScript/JSX remains during the migration
 - Tailwind CSS
 - SWR for some data fetching
 - React Router
@@ -67,12 +67,13 @@ Run commands from the repository root unless a `cd` is shown.
 - Run dev server: `cd frontend && npm run dev`
 - Build frontend: `cd frontend && npm run build`
 - Audit contrast: `cd frontend && npm run audit:contrast`
+- Typecheck: `cd frontend && npm run typecheck`
 
 ### Full Stack
 
 - Run with Docker: `docker compose up --build`
 
-Do not assume `npm test`, `npm run lint`, or `npm run typecheck` exists. Check `frontend/package.json` before using frontend scripts.
+The frontend `npm run typecheck` and `npm test` scripts are required checks. Do not assume a lint script exists unless confirmed in `frontend/package.json`.
 
 ## How AI Should Work Here
 
@@ -91,8 +92,10 @@ Do not load unrelated rule files just because they exist.
 
 ### 2. Match the real stack
 
-- Do not assume TypeScript tooling exists for the frontend
-- Do not assume lint/typecheck scripts exist unless confirmed
+- Use TypeScript for migrated frontend files and keep the compiler strict.
+- Use `unknown` with narrowing instead of `any`.
+- Use `@ts-expect-error` with a reason when a temporary suppression is verified; never use `@ts-ignore`.
+- Migration PRs must not change runtime behavior or include unrelated changes.
 - Prefer existing patterns in the touched area over generic framework advice
 - Do not introduce a new state management or form library without a clear need
 - Treat listed agents/workflows as guidance unless the active AI harness actually provides them as callable tools
@@ -121,9 +124,12 @@ Validation should match the part of the project being changed.
 Available commands:
 - `cd frontend && npm run build`
 - `cd frontend && npm run audit:contrast`
+- `cd frontend && npm run typecheck`
+- `cd frontend && npm test`
 
 Notes:
-- There is currently no guaranteed `test`, `lint`, or `typecheck` script
+- `npm run typecheck` and `npm test` are required frontend checks
+- There is no guaranteed frontend lint script
 - For UI changes, build verification is the default minimum check
 
 ### Backend
