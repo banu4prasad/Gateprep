@@ -26,14 +26,14 @@ describe('getQStatus', () => {
   })
 
   it('returns "answered" when question is answered but NOT marked', () => {
-    const marked = new Set()
+    const marked = new Set<string>()
     const answers = { q1: 'Option C' }
     
     expect(getQStatus('q1', 'q2', answers, marked)).toBe('answered')
   })
 
   it('returns "not-answered" when question is neither answered nor marked', () => {
-    const marked = new Set()
+    const marked = new Set<string>()
     const answers = {}
     
     expect(getQStatus('q1', 'q2', answers, marked)).toBe('not-answered')

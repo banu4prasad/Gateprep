@@ -12,7 +12,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "audit:contrast": "node scripts/audit-contrast.mjs",
-    "test": "vitest run"
+    "gen:api": "cd ../backend && python3 -m app.scripts.export_openapi --out ../frontend/openapi.json && cd ../frontend && openapi-typescript openapi.json -o src/api/schema.d.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
@@ -38,12 +40,16 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^6.0.3",
     "browserslist": "^4.28.4",
     "jsdom": "^29.1.1",
     "lightningcss": "^1.32.0",
+    "openapi-typescript": "^7.13.0",
     "rollup-plugin-visualizer": "^7.0.1",
     "tailwindcss": "^4.3.2",
+    "typescript": "^5.8.2",
     "vite": "^8.1.0",
     "vitest": "^4.1.9"
   }

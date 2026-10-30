@@ -77,17 +77,17 @@ describe('reportGenerator', () => {
   })
 
   describe('downloadResultReport', () => {
-    let createObjectURLSpy
-    let revokeObjectURLSpy
-    let createElementSpy
-    let appendChildSpy
+    let createObjectURLSpy: ReturnType<typeof vi.fn<(object: Blob | MediaSource) => string>>
+    let revokeObjectURLSpy: ReturnType<typeof vi.fn<(url: string) => void>>
+    let createElementSpy: ReturnType<typeof vi.spyOn>
+    let appendChildSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
-      createObjectURLSpy = vi.fn(() => 'blob:mock-url')
-      revokeObjectURLSpy = vi.fn()
+      createObjectURLSpy = vi.fn<(object: Blob | MediaSource) => string>(() => 'blob:mock-url')
+      revokeObjectURLSpy = vi.fn<(url: string) => void>()
 
-      global.URL.createObjectURL = createObjectURLSpy
-      global.URL.revokeObjectURL = revokeObjectURLSpy
+      window.URL.createObjectURL = createObjectURLSpy
+      window.URL.revokeObjectURL = revokeObjectURLSpy
 
       vi.useFakeTimers()
     })
@@ -104,8 +104,8 @@ describe('reportGenerator', () => {
         click: vi.fn(),
         remove: vi.fn(),
       }
-      createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockLink)
-      appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => {})
+      createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockLink as unknown as HTMLElement)
+      appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(node => node)
 
       const mockResult = {
         test_title: 'Practice Test 101',
@@ -115,7 +115,7 @@ describe('reportGenerator', () => {
 
       expect(testAPI.downloadResultHtml).not.toHaveBeenCalled()
       expect(createObjectURLSpy).toHaveBeenCalledTimes(1)
-      const blobArg = createObjectURLSpy.mock.calls[0][0]
+      const blobArg = createObjectURLSpy.mock.calls[0][0] as Blob
       expect(blobArg).toBeInstanceOf(Blob)
       expect(blobArg.type).toBe('text/html;charset=utf-8')
 
@@ -133,13 +133,13 @@ describe('reportGenerator', () => {
         click: vi.fn(),
         remove: vi.fn(),
       }
-      createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockLink)
-      appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => {})
+      createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(mockLink as unknown as HTMLElement)
+      appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(node => node)
 
       const mockBlob = new Blob(['<!DOCTYPE html><html><body>Server Rendered Report</body></html>'], { type: 'text/html' })
-      testAPI.downloadResultHtml.mockResolvedValueOnce({
+      vi.mocked(testAPI.downloadResultHtml).mockResolvedValueOnce({
         data: mockBlob,
-      })
+      } as Awaited<ReturnType<typeof testAPI.downloadResultHtml>>)
 
       const mockResult = {
         attempt_id: 42,
@@ -150,7 +150,7 @@ describe('reportGenerator', () => {
 
       expect(testAPI.downloadResultHtml).toHaveBeenCalledWith(42)
       expect(createObjectURLSpy).toHaveBeenCalledTimes(1)
-      const blobArg = createObjectURLSpy.mock.calls[0][0]
+      const blobArg = createObjectURLSpy.mock.calls[0][0] as Blob
       expect(blobArg).toBeInstanceOf(Blob)
       expect(blobArg.type).toBe('text/html')
 

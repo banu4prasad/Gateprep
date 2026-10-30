@@ -41,4 +41,4 @@ export const TYPE_LABELS = {
   subject_wise: 'Subject Wise',
   topic_wise:   'Topic Wise',
   full_length:  'Full Length',
-}
+} as const
