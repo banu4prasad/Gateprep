@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timezone
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -13,6 +14,7 @@ from app.api.routes.tests import (
     start_test,
     submit_test,
 )
+from app.api.routes.tests.history import _as_utc
 from app.core.database import Base
 from app.models.models import (
     PracticeAttemptCounter,
@@ -20,6 +22,7 @@ from app.models.models import (
     QuestionType,
     Test,
     TestAttempt,
+    TestStatus,
     User,
     UserAnswer,
     UserRole,
@@ -118,6 +121,53 @@ class AttemptPersistenceTests(unittest.TestCase):
 
             third_attempt = start_test(self.test_id, db, user)
             self.assertEqual(third_attempt["attempt_number"], 3)
+        finally:
+            db.close()
+
+    def test_history_timestamp_normalization_handles_missing_and_mixed_timezone_values(
+        self,
+    ):
+        naive_timestamp = datetime(2026, 1, 1, 12, 0)
+        aware_timestamp = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+
+        self.assertEqual(
+            _as_utc(None),
+            datetime.min.replace(tzinfo=timezone.utc),
+        )
+        self.assertEqual(_as_utc(naive_timestamp), aware_timestamp)
+        self.assertEqual(_as_utc(aware_timestamp), aware_timestamp)
+
+    def test_history_does_not_crash_when_attempt_has_no_timestamps(self):
+        db = self.SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == self.user_id).one()
+            dated_test = Test(title="Dated history test", created_by=user.id)
+            missing_date_test = Test(title="Missing date history test", created_by=user.id)
+            db.add_all([dated_test, missing_date_test])
+            db.commit()
+            db.add_all(
+                [
+                    TestAttempt(
+                        user_id=user.id,
+                        test_id=dated_test.id,
+                        status=TestStatus.submitted,
+                        submitted_at=datetime(2026, 1, 1, 12, 0),
+                    ),
+                    TestAttempt(
+                        user_id=user.id,
+                        test_id=missing_date_test.id,
+                        status=TestStatus.submitted,
+                    ),
+                ]
+            )
+            db.commit()
+
+            history = my_history(db, user)
+
+            self.assertEqual(
+                [entry["test_id"] for entry in history[:2]],
+                [dated_test.id, missing_date_test.id],
+            )
         finally:
             db.close()
 

@@ -188,6 +188,32 @@ def test_save_answers(client, db_session, test_data):
     assert response.status_code == 200
 
 
+def test_duplicate_question_ids_are_reconciled_to_one_answer(
+    client, db_session, test_data
+):
+    start_resp = client.post(
+        f"/tests/{test_data['test'].id}/start",
+        cookies=_auth_cookie(test_data["user"], db_session),
+    )
+    attempt_id = start_resp.json()["id"]
+    question_id = test_data["questions"][0].id
+    response = client.post(
+        f"/tests/{test_data['test'].id}/attempt/{attempt_id}/save",
+        json={
+            "answers": [
+                {"question_id": question_id, "selected_answer": "A"},
+                {"question_id": question_id, "selected_answer": "B"},
+            ]
+        },
+        cookies=_auth_cookie(test_data["user"], db_session),
+    )
+
+    assert response.status_code == 200
+    answers = db_session.query(UserAnswer).filter_by(attempt_id=attempt_id).all()
+    assert len(answers) == 1
+    assert answers[0].selected_answer == "B"
+
+
 def test_save_answers_removes_answers_missing_from_autosave_snapshot(
     client, db_session, test_data
 ):
@@ -263,9 +289,47 @@ def test_submit_rejects_attempt_past_time_limit(client, db_session, test_data):
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "Test time limit has expired"
-    db_session.refresh(attempt)
-    assert attempt.status == TestStatus.in_progress
+    assert response.json()["detail"] == "Test attempt expired. Please start a new attempt."
+    assert db_session.query(TestAttempt).filter_by(id=attempt_id).one_or_none() is None
+
+    restart_response = client.post(
+        f"/tests/{test_data['test'].id}/start",
+        cookies=_auth_cookie(test_data["user"], db_session),
+    )
+    assert restart_response.status_code == 200
+    assert restart_response.json()["status"] == "in_progress"
+
+
+def test_start_replaces_expired_in_progress_attempt(
+    client, db_session, test_data
+):
+    start_resp = client.post(
+        f"/tests/{test_data['test'].id}/start",
+        cookies=_auth_cookie(test_data["user"], db_session),
+    )
+    old_attempt_id = start_resp.json()["id"]
+    attempt = db_session.query(TestAttempt).filter_by(id=old_attempt_id).one()
+    attempt.started_at -= timedelta(hours=2)
+    db_session.add(
+        UserAnswer(
+            attempt_id=old_attempt_id,
+            question_id=test_data["questions"][0].id,
+            selected_answer="B",
+        )
+    )
+    db_session.commit()
+
+    response = client.post(
+        f"/tests/{test_data['test'].id}/start",
+        cookies=_auth_cookie(test_data["user"], db_session),
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "in_progress"
+    assert response.json()["answers"] == []
+    assert (
+        db_session.query(UserAnswer).filter_by(attempt_id=old_attempt_id).count() == 0
+    )
 
 
 def test_submit_allows_small_request_transit_grace(client, db_session, test_data):

@@ -206,6 +206,14 @@ class UserAnswer(Base):
     time_spent_seconds: Mapped[int] = mapped_column(Integer, default=0)
     answered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
+    __table_args__ = (
+        UniqueConstraint(
+            "attempt_id",
+            "question_id",
+            name="uq_user_answer_attempt_question",
+        ),
+    )
+
     attempt = relationship("TestAttempt", back_populates="answers")
     question = relationship("Question")
 
@@ -224,4 +232,3 @@ class Bookmark(Base):
 
     user = relationship("User", back_populates="bookmarks")
     question = relationship("Question", back_populates="bookmarks")
-

@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
 from app.core.database import get_db
-from app.models.models import Question, Test
+from app.models.models import Question, Test, TestAttempt, UserAnswer
 from app.services.cloudinary_service import (
     cloudinary_public_id_from_url,
     delete_image,
@@ -128,6 +128,22 @@ def delete_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_a
             public_id = cloudinary_public_id_from_url(image_url)
             if public_id and public_id not in image_public_ids:
                 image_public_ids.append(public_id)
+
+    question_ids = [question.id for question in questions]
+    attempt_ids = [
+        attempt_id
+        for (attempt_id,) in db.query(TestAttempt.id)
+        .filter(TestAttempt.test_id == test_id)
+        .all()
+    ]
+    answer_query = db.query(UserAnswer)
+    if question_ids or attempt_ids:
+        answer_filters = []
+        if question_ids:
+            answer_filters.append(UserAnswer.question_id.in_(question_ids))
+        if attempt_ids:
+            answer_filters.append(UserAnswer.attempt_id.in_(attempt_ids))
+        answer_query.filter(or_(*answer_filters)).delete(synchronize_session=False)
 
     db.delete(test)
     db.commit()

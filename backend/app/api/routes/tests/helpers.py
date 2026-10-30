@@ -120,6 +120,21 @@ def _get_first_attempts(test_id: int, db: Session) -> list[TestAttempt]:
     return _first_attempts_generic(test_id, db)
 
 
+def _first_attempts_query(test_id: int, db: Session):
+    first_attempt_ids = (
+        db.query(func.min(TestAttempt.id).label("attempt_id"))
+        .filter(
+            TestAttempt.test_id == test_id,
+            TestAttempt.status == TestStatus.submitted,
+        )
+        .group_by(TestAttempt.user_id)
+        .subquery()
+    )
+    return db.query(TestAttempt).join(
+        first_attempt_ids, TestAttempt.id == first_attempt_ids.c.attempt_id
+    )
+
+
 def _first_attempts_pg(test_id: int, db: Session) -> list[TestAttempt]:
     """Fetch first attempts using PostgreSQL DISTINCT ON."""
     first_attempts_subquery = (
@@ -141,7 +156,7 @@ def _first_attempts_pg(test_id: int, db: Session) -> list[TestAttempt]:
             joinedload(FirstAttempt.user),
         )
         .order_by(
-            FirstAttempt.score.desc(),
+            FirstAttempt.score.desc().nulls_last(),
             FirstAttempt.id.asc(),
         )
         .all()
@@ -178,7 +193,7 @@ def _first_attempts_generic(test_id: int, db: Session) -> list[TestAttempt]:
         )
         .filter(first_attempt_ids_subquery.c.attempt_rank == 1)
         .order_by(
-            TestAttempt.score.desc(),
+            TestAttempt.score.desc().nulls_last(),
             TestAttempt.id.asc(),
         )
         .all()

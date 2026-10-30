@@ -12,7 +12,16 @@ from app.api.routes.admin import router
 from app.api.routes.admin import questions as admin_questions
 from app.api.routes.admin import tests as admin_tests
 from app.core.database import Base, get_db
-from app.models.models import Question, QuestionType, Test, User, UserRole
+from app.models.models import (
+    Question,
+    QuestionType,
+    Test,
+    TestAttempt,
+    TestStatus,
+    User,
+    UserAnswer,
+    UserRole,
+)
 
 
 @pytest.fixture
@@ -146,6 +155,46 @@ def test_delete_test_removes_all_question_and_option_cloudinary_images(
         "folder/option-one",
         "folder/option-two",
     }
+
+
+def test_delete_test_removes_answered_attempts_and_answers(admin_client):
+    client, session_factory, test_id = admin_client
+    db = session_factory()
+    student = User(
+        email="student@example.com",
+        full_name="Student",
+        role=UserRole.aspirant,
+    )
+    question = _question(test_id, "Answered question")
+    db.add_all([student, question])
+    db.commit()
+    attempt = TestAttempt(
+        user_id=student.id,
+        test_id=test_id,
+        status=TestStatus.submitted,
+    )
+    db.add(attempt)
+    db.commit()
+    db.add(
+        UserAnswer(
+            attempt_id=attempt.id,
+            question_id=question.id,
+            selected_answer="A",
+        )
+    )
+    db.commit()
+    db.close()
+
+    response = client.delete(f"/admin/tests/{test_id}")
+
+    assert response.status_code == 200
+    db = session_factory()
+    try:
+        assert db.query(Test).filter(Test.id == test_id).count() == 0
+        assert db.query(TestAttempt).filter(TestAttempt.test_id == test_id).count() == 0
+        assert db.query(UserAnswer).count() == 0
+    finally:
+        db.close()
 
 
 def test_delete_option_image_removes_cloudinary_asset(admin_client, monkeypatch):

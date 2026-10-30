@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,14 @@ from app.api.routes.tests.helpers import (
 )
 
 router = APIRouter()
+
+
+def _as_utc(value: datetime | None) -> datetime:
+    if value is None:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 @router.get("/{test_id}/my-attempts")
@@ -64,7 +72,7 @@ def my_history(db: Session = Depends(get_db), current_user=Depends(get_current_u
 
     first_attempts = sorted(
         first_by_test.values(),
-        key=lambda a: a.started_at or a.submitted_at or datetime.min,
+        key=lambda a: _as_utc(a.started_at or a.submitted_at),
         reverse=True,
     )
 

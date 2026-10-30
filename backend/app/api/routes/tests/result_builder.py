@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import Session, joinedload
 
-from app.models.models import Question, Test, UserAnswer
+from app.models.models import Question, Test, TestAttempt, UserAnswer
 from app.services.cloudinary_service import (
     optimize_delivery_image_url,
     optimize_delivery_image_urls,
@@ -11,7 +12,7 @@ from app.services.cloudinary_service import (
 from app.services.scoring import evaluate_answer
 from app.api.routes.tests.helpers import (
     MAX_REATTEMPTS,
-    _get_first_attempts,
+    _first_attempts_query,
     _percentage,
 )
 from app.api.routes.tests.schemas import AnswerSubmit
@@ -101,9 +102,19 @@ def _result_payload(
     db: Session,
     client_result_id: Optional[str] = None,
 ) -> dict:
-    first_attempts = _get_first_attempts(test.id, db)
-
-    topper = first_attempts[0] if first_attempts else None
+    first_attempts = _first_attempts_query(test.id, db)
+    total_participants = (
+        db.query(func.count()).select_from(first_attempts.subquery()).scalar() or 0
+    )
+    topper = (
+        first_attempts.options(joinedload(TestAttempt.user))
+        .order_by(
+            func.coalesce(TestAttempt.score, 0.0).desc().nulls_last(),
+            TestAttempt.id.asc(),
+        )
+        .limit(1)
+        .first()
+    )
     topper_data = None
     topper_answers_map = {}
     if topper:
@@ -132,10 +143,25 @@ def _result_payload(
             incorrect += 1
         else:
             skipped += 1
-    rank = next(
-        (i + 1 for i, a in enumerate(first_attempts) if a.user_id == current_user.id),
-        None,
-    )
+    current_attempt = first_attempts.filter(
+        TestAttempt.user_id == current_user.id
+    ).first()
+    rank = None
+    if current_attempt:
+        current_score = current_attempt.score or 0.0
+        score_before = func.coalesce(TestAttempt.score, 0.0)
+        rank = (
+            first_attempts.filter(
+                or_(
+                    score_before > current_score,
+                    and_(
+                        score_before == current_score,
+                        TestAttempt.id < current_attempt.id,
+                    ),
+                )
+            ).count()
+            + 1
+        )
 
     return {
         "attempt_id": attempt_id,
@@ -156,7 +182,7 @@ def _result_payload(
         "submitted_at": submitted_at,
         "tab_violations": tab_violations,
         "rank": rank,
-        "total_participants": len(first_attempts),
+        "total_participants": total_participants,
         "topper": topper_data,
         "answers": answer_details,
     }
