@@ -1,4 +1,11 @@
 import TestSidebar from './TestSidebar'
+import type { TestSidebarProps } from './TestSidebar'
+
+export type TestEngineSidebarProps = Omit<TestSidebarProps, 'onQuestionSelect' | 'onSubmitClick'> & {
+  setCurrent: React.Dispatch<React.SetStateAction<number>>
+  setShowPalette: React.Dispatch<React.SetStateAction<boolean>>
+  setShowConfirm: React.Dispatch<React.SetStateAction<boolean>>
+}
 
 export default function TestEngineSidebar({
   answered,
@@ -13,7 +20,7 @@ export default function TestEngineSidebar({
   questions,
   submitting,
   visited,
-}) {
+}: TestEngineSidebarProps): React.ReactElement {
   return (
     <TestSidebar
       answered={answered}
