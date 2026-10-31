@@ -1,21 +1,40 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import api, { AUTH_UNAUTHORIZED_EVENT, startTokenRefresh, stopTokenRefresh } from '../api/client'
 import { mutate } from 'swr'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import type { MeResponse, AuthUserResponse } from '../types/api'
 
-const AuthContext = createContext(null)
+type AuthUser = {
+  id: number
+  email: string
+  role: string
+  full_name: string
+} & Partial<Pick<MeResponse, 'is_active' | 'profile_photo' | 'created_at'>>
 
-export function AuthProvider({ children }) {
+type SaveUserInput = AuthUserResponse & { user_id?: number }
+
+interface AuthContextValue {
+  user: AuthUser | null
+  loading: boolean
+  saveUser: (userData: SaveUserInput) => AuthUser
+  logout: () => Promise<void>
+  sessionExpired: boolean
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null)
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [sessionExpired, setSessionExpired] = useState(false)
 
   useEffect(() => {
-    api.get('/auth/me')
+    api.get<MeResponse>('/auth/me')
       .then(r => {
         setUser(r.data)
         startTokenRefresh({ refreshNow: true })
@@ -40,7 +59,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   // Called after successful login or registration
-  const saveUser = useCallback((userData) => {
+  const saveUser = useCallback((userData: SaveUserInput): AuthUser => {
     const u = {
       id: userData.id ?? userData.user_id,
       email: userData.email,

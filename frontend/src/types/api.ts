@@ -36,6 +36,7 @@ export interface TestDetail {
 export type LoginRequest = components['schemas']['LoginRequest']
 export type RegisterRequest = components['schemas']['RegisterRequest']
 export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest']
+export type AuthUserResponse = components['schemas']['AuthUserResponse']
 export type RoleUpdate = components['schemas']['RoleUpdate']
 export type TestCreate = components['schemas']['TestCreate']
 export type TestPatch = components['schemas']['TestPatch']
@@ -214,8 +215,21 @@ export interface LeaderboardResponse {
   leaderboard: LeaderboardEntry[]
 }
 
-// TODO(response_model): add response models for auth routes.
-export type AuthResponse = unknown
+// TODO(response_model): response shape for GET /auth/me.
+export interface MeResponse {
+  id: number
+  email: string
+  full_name: string
+  role: string
+  is_active: boolean
+  profile_photo: string | null
+  created_at: string
+}
+
+// TODO(response_model): response shape for logout and reset-password.
+export interface MessageResponse {
+  message: string
+}
 // TODO(response_model): add response models for admin routes.
 export type AdminResponse = unknown
 // TODO(response_model): add response models for bookmark routes.

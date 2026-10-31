@@ -4,7 +4,11 @@ import userEvent from '@testing-library/user-event'
 import { ThemeProvider, useTheme } from './ThemeContext'
 
 function ThemeConsumer() {
-  const { theme, toggle } = useTheme()
+  const ctx = useTheme()
+  if (!ctx) {
+    return <span data-testid="theme">null</span>
+  }
+  const { theme, toggle } = ctx
   return (
     <div>
       <span data-testid="theme">{theme}</span>

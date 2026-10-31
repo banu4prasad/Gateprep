@@ -4,7 +4,9 @@ import type {
   AdminResponse,
   AnswerSubmit,
   ApiResponse,
-  AuthResponse,
+  AuthUserResponse,
+  MeResponse,
+  MessageResponse,
   BookmarkResponse,
   HistoryItem,
   LeaderboardResponse,
@@ -35,11 +37,11 @@ export const fetcher = <T = unknown>(url: string): Promise<T> => api.get<T>(url)
 
 // ── Auth ──────────────────────────────────────────────────────────
 export const authAPI = {
-  register: (data: RegisterRequest): Promise<ApiResponse<AuthResponse>> => api.post('/auth/register', data),
-  login:    (data: LoginRequest): Promise<ApiResponse<AuthResponse>> => api.post('/auth/login', data),
-  resetPassword: (data: ResetPasswordRequest): Promise<ApiResponse<AuthResponse>> => api.post('/auth/reset-password', data),
-  logout:   (): Promise<ApiResponse<AuthResponse>>     => api.post('/auth/logout'),
-  me:       (): Promise<ApiResponse<AuthResponse>>     => api.get('/auth/me'),
+  register: (data: RegisterRequest): Promise<ApiResponse<AuthUserResponse>> => api.post('/auth/register', data),
+  login:    (data: LoginRequest): Promise<ApiResponse<AuthUserResponse>> => api.post('/auth/login', data),
+  resetPassword: (data: ResetPasswordRequest): Promise<ApiResponse<MessageResponse>> => api.post('/auth/reset-password', data),
+  logout:   (): Promise<ApiResponse<MessageResponse>>     => api.post('/auth/logout'),
+  me:       (): Promise<ApiResponse<MeResponse>>     => api.get('/auth/me'),
 }
 
 // ── Admin ─────────────────────────────────────────────────────────
