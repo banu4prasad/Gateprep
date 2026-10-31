@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
+import { getApiErrorDetail } from '../lib/apiError'
 import toast from 'react-hot-toast'
 import Spinner from '../components/shared/Spinner'
 import Logo from '../components/shared/Logo'
@@ -17,15 +18,6 @@ interface RegisterForm {
   full_name: string
   password: string
   confirm: string
-}
-
-const getErrorDetail = (error: unknown): string | undefined => {
-  if (!error || typeof error !== 'object' || !('response' in error)) return undefined
-  const response = error.response
-  if (!response || typeof response !== 'object' || !('data' in response)) return undefined
-  const data = response.data
-  if (!data || typeof data !== 'object' || !('detail' in data)) return undefined
-  return typeof data.detail === 'string' ? data.detail : undefined
 }
 
 export default function RegisterPage() {
@@ -54,7 +46,7 @@ export default function RegisterPage() {
       if (user.role === 'admin') navigate('/admin', { replace: true })
       else navigate('/pending', { replace: true })
     } catch (err: unknown) {
-      toast.error(getErrorDetail(err) || 'Registration failed')
+      toast.error(getApiErrorDetail(err) || 'Registration failed')
     } finally { setLoading(false) }
   }
 

@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent, ReactElement } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
+import { getApiErrorDetail } from '../lib/apiError'
 import toast from 'react-hot-toast'
 import Spinner from '../components/shared/Spinner'
 import Logo from '../components/shared/Logo'
@@ -15,17 +16,6 @@ import { CheckCircle2, Eye, EyeOff, Hash, ListChecks, LogIn } from 'lucide-react
 interface LoginForm {
   email: string
   password: string
-}
-
-const getErrorMessage = (error: unknown): string => {
-  if (!error || typeof error !== 'object' || !('response' in error) || !error.response) {
-    return 'Network Error: Could not connect to the server.'
-  }
-  const response = error.response
-  if (typeof response !== 'object' || !('data' in response)) return 'Invalid email or password'
-  const data = response.data
-  if (!data || typeof data !== 'object' || !('detail' in data)) return 'Invalid email or password'
-  return typeof data.detail === 'string' && data.detail ? data.detail : 'Invalid email or password'
 }
 
 const featureCards: Array<[string, string, ReactElement]> = [
@@ -55,7 +45,10 @@ export default function LoginPage() {
       else if (user.role === 'aspirant') navigate('/dashboard', { replace: true })
       else navigate('/pending', { replace: true })
     } catch (err: unknown) {
-      const errMsg = getErrorMessage(err)
+      const hasResponse = err && typeof err === 'object' && 'response' in err && Boolean(err.response)
+      const errMsg = hasResponse
+        ? getApiErrorDetail(err) || 'Invalid email or password'
+        : 'Network Error: Could not connect to the server.'
       toast.error(errMsg)
     } finally { setLoading(false) }
   }

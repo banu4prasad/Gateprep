@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { authAPI } from '../api/api'
+import { getApiErrorDetail } from '../lib/apiError'
 import Spinner from '../components/shared/Spinner'
 import Logo from '../components/shared/Logo'
 import { Button } from '../components/ui/button'
@@ -35,19 +36,11 @@ export default function ResetPasswordPage() {
       toast.success('Password updated. Sign in again.')
       navigate('/login', { replace: true })
     } catch (err: unknown) {
-      toast.error(getErrorDetail(err) || 'Password reset failed')
+      toast.error(getApiErrorDetail(err) || 'Password reset failed')
     } finally {
       setLoading(false)
     }
 
-    function getErrorDetail(error: unknown): string | undefined {
-      if (!error || typeof error !== 'object' || !('response' in error)) return undefined
-      const response = error.response
-      if (!response || typeof response !== 'object' || !('data' in response)) return undefined
-      const data = response.data
-      if (!data || typeof data !== 'object' || !('detail' in data)) return undefined
-      return typeof data.detail === 'string' ? data.detail : undefined
-    }
   }
 
   return (
