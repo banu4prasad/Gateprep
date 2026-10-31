@@ -1,5 +1,9 @@
 import UserMobileCard from './UserMobileCard'
 import UsersPagination from './UsersPagination'
+import type { DesktopUsersTableProps } from './DesktopUsersTable'
+import type { ReactElement } from 'react'
+
+export type MobileUsersListProps = DesktopUsersTableProps
 
 export default function MobileUsersList({
   users,
@@ -15,7 +19,7 @@ export default function MobileUsersList({
   hasMore,
   goToPreviousPage,
   goToNextPage,
-}) {
+}: MobileUsersListProps): ReactElement {
   return (
     <div className="flex flex-col gap-3 md:hidden">
       {users.map(u => (

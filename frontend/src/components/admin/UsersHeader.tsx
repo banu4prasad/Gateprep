@@ -1,7 +1,14 @@
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
+import type { ReactElement } from 'react'
 
-export default function UsersHeader({ totalUsers, pendingUsers, reload }) {
+export interface UsersHeaderProps {
+  totalUsers: number
+  pendingUsers: number
+  reload: () => void
+}
+
+export default function UsersHeader({ totalUsers, pendingUsers, reload }: UsersHeaderProps): ReactElement {
   return (
     <div className="flex items-center justify-between">
       <div>

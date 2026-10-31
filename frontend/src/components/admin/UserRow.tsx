@@ -5,8 +5,18 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { TableRow, TableCell } from '@/components/ui/table'
 import { ROLE_STYLE, ROLE_ACTION_STYLE, USER_STATUS_STYLE } from './roleStyles'
+import type { ManagedAdminUser, AdminRole } from './roleStyles'
+import type { ReactElement } from 'react'
 
-export default memo(function UserRow({ user: u, updating, onChangeRole, onToggleStatus, onCreateResetLink }) {
+export interface UserRowProps {
+  user: ManagedAdminUser
+  updating: Record<string | number, boolean>
+  onChangeRole: (id: number, role: AdminRole) => void
+  onToggleStatus: (id: number) => void
+  onCreateResetLink: (id: number) => void
+}
+
+export default memo(function UserRow({ user: u, updating, onChangeRole, onToggleStatus, onCreateResetLink }: UserRowProps): ReactElement {
   return (
     <TableRow className="hover:bg-muted">
       <TableCell className="px-5 py-4">

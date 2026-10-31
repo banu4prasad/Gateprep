@@ -4,8 +4,26 @@ import {
 } from '@/components/ui/table'
 import UserRow from './UserRow'
 import UsersPagination from './UsersPagination'
+import type { ManagedAdminUser, AdminRole } from './roleStyles'
+import type { ReactElement } from 'react'
 
 const TABLE_HEADERS = ['Name', 'Email', 'Role', 'Status', 'Joined', 'Actions']
+
+export interface DesktopUsersTableProps {
+  users: ManagedAdminUser[]
+  updating: Record<string | number, boolean>
+  changeRole: (id: number, role: AdminRole) => void
+  toggleStatus: (id: number) => void
+  createResetLink: (id: number) => void
+  pageIndex: number
+  showingFrom: number
+  showingTo: number
+  totalUsers: number
+  hasPagination: boolean
+  hasMore: boolean
+  goToPreviousPage: () => void
+  goToNextPage: () => void
+}
 
 export default function DesktopUsersTable({
   users,
@@ -21,7 +39,7 @@ export default function DesktopUsersTable({
   hasMore,
   goToPreviousPage,
   goToNextPage,
-}) {
+}: DesktopUsersTableProps): ReactElement {
   return (
     <Card className="overflow-hidden hidden md:block">
       <Table>

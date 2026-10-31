@@ -1,5 +1,18 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import type { ReactElement } from 'react'
+
+export interface UsersPaginationProps {
+  pageIndex: number
+  showingFrom: number
+  showingTo: number
+  totalUsers: number
+  hasPagination: boolean
+  hasMore: boolean
+  onPrev: () => void
+  onNext: () => void
+  mobile?: boolean
+}
 
 export default function UsersPagination({
   pageIndex,
@@ -11,7 +24,7 @@ export default function UsersPagination({
   onPrev,
   onNext,
   mobile = false,
-}) {
+}: UsersPaginationProps): ReactElement | null {
   if (!hasPagination) return null
 
   const controls = (
