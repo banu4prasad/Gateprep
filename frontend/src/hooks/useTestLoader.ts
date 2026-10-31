@@ -14,12 +14,20 @@ export default function useTestLoader({ testId, navigate }: TestLoaderParams): T
   useEffect(() => {
     let cancelled = false
 
+    if (testId === undefined || testId === null || testId === '') {
+      setLoading(false)
+      setTest(null)
+      toast.error('Test could not be found')
+      navigate('/tests')
+      return
+    }
+
     ;(async () => {
       setLoading(true)
       setTest(null)
 
       try {
-        const testRes = await testAPI.getTest(testId ?? '')
+        const testRes = await testAPI.getTest(testId)
         if (cancelled) return
         setTest(testRes.data)
       } catch (err) {

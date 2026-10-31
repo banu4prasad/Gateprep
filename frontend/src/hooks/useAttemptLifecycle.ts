@@ -78,6 +78,12 @@ export default function useAttemptLifecycle({
   const [accepted, setAccepted] = useState(false)
 
   const beginTest = useCallback(async () => {
+    if (testId === undefined || testId === null || testId === '') {
+      toast.error('Test identifier is required')
+      navigate('/tests')
+      return
+    }
+
     if (!accepted || starting) return
 
     setStarting(true)
@@ -103,12 +109,12 @@ export default function useAttemptLifecycle({
           started_at: new Date().toISOString(),
           server_time: new Date().toISOString(),
         }
-        const qRes = await adminAPI.getQuestions(testId ?? '')
+        const qRes = await adminAPI.getQuestions(testId)
         qData = qRes.data
       } else {
-        const attemptRes = await testAPI.startTest(testId ?? '')
+        const attemptRes = await testAPI.startTest(testId)
         attemptData = attemptRes.data
-        const qRes = await testAPI.getQuestions(testId ?? '', attemptData.id)
+        const qRes = await testAPI.getQuestions(testId, attemptData.id)
         qData = qRes.data
       }
 

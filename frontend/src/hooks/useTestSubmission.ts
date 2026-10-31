@@ -73,13 +73,21 @@ export default function useTestSubmission({
       return
     }
 
+    const currentTestId = testIdRef.current
+    if (currentTestId === undefined || currentTestId === null || currentTestId === '') {
+      submitLockRef.current = false
+      setSubmitting(false)
+      toast.error('Unable to submit test: test identifier is required')
+      return
+    }
+
     try {
       const ans = currentQuestions.map(q => ({
         question_id: q.id,
         selected_answer: currentAnswers[q.id] || null,
         time_spent_seconds: currentTimings[q.id] || 0,
       }))
-      const res = await testAPI.submitTest(testIdRef.current ?? '', currentAttempt.id, ans)
+      const res = await testAPI.submitTest(currentTestId, currentAttempt.id, ans)
       if (auto) toast('Time up! Auto-submitted.', { duration: 5000 })
       else toast.success('Test submitted successfully!')
 

@@ -28,6 +28,13 @@ export default function useTestAutosave({
   useEffect(() => {
     if (!attempt || isPreview) return
     autoSaveRef.current = setInterval(() => {
+      const testId = testIdRef.current
+      const attemptId = attemptRef.current?.id
+      if (
+        testId === undefined || testId === null || testId === '' ||
+        attemptId === undefined || attemptId === null || attemptId === ''
+      ) return
+
       const ans = Object.entries(answersRef.current)
         .filter(([, selectedAnswer]) => typeof selectedAnswer === 'string' && selectedAnswer.trim())
         .map(([qid, sel]) => ({
@@ -35,7 +42,7 @@ export default function useTestAutosave({
           selected_answer: sel,
           time_spent_seconds: timingsRef.current[+qid] || 0,
         }))
-      testAPI.saveAnswers(testIdRef.current ?? '', attemptRef.current?.id ?? '', ans).catch(() => {})
+      testAPI.saveAnswers(testId, attemptId, ans).catch(() => {})
     }, 30000)
     return () => {
       if (autoSaveRef.current) clearInterval(autoSaveRef.current)

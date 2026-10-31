@@ -3,6 +3,24 @@ import toast from 'react-hot-toast'
 import { testAPI } from '../api/api'
 import type { MutableRefObject, Dispatch, SetStateAction } from 'react'
 
+type Identifier = string | number | null | undefined
+
+interface ViolationIdentifiers {
+  testId: string | number
+  attemptId: string | number
+}
+
+function getIdentifiers(testId: Identifier, attemptId: Identifier): ViolationIdentifiers | null {
+  if (
+    testId === undefined || testId === null || testId === '' ||
+    attemptId === undefined || attemptId === null || attemptId === ''
+  ) {
+    return null
+  }
+
+  return { testId, attemptId }
+}
+
 export interface AntiCheatParams {
   attemptRef: MutableRefObject<{ id: number | string } | null>
   doSubmitRef: MutableRefObject<(auto?: boolean) => void>
@@ -32,6 +50,9 @@ export default function useAntiCheat({
   useEffect(() => {
     const recordFullscreenViolation = () => {
       fullscreenExitTimeoutRef.current = null
+      const identifiers = getIdentifiers(testIdRef.current, attemptRef.current?.id)
+      if (!identifiers) return
+
       const next = fsViolRef.current + 1
       fsViolRef.current = next
       setFsViolations(next)
@@ -44,13 +65,14 @@ export default function useAntiCheat({
 
       setShowFsWarning(true)
       if (!isPreview) {
-        testAPI.updateViolations(testIdRef.current ?? '', attemptRef.current?.id ?? '', {
+        testAPI.updateViolations(identifiers.testId, identifiers.attemptId, {
           fullscreen_violations: next,
         }).catch(() => {})
       }
     }
 
     const handleFsChange = () => {
+      if (!getIdentifiers(testIdRef.current, attemptRef.current?.id)) return
       if (document.fullscreenElement || !loadedRef.current) return
 
       if (fullscreenExitTimeoutRef.current) window.clearTimeout(fullscreenExitTimeoutRef.current)
@@ -66,6 +88,8 @@ export default function useAntiCheat({
 
   useEffect(() => {
     const handleVisibility = () => {
+      const identifiers = getIdentifiers(testIdRef.current, attemptRef.current?.id)
+      if (!identifiers) return
       if (!document.hidden || !loadedRef.current) return
 
       if (fullscreenExitTimeoutRef.current) window.clearTimeout(fullscreenExitTimeoutRef.current)
@@ -82,7 +106,7 @@ export default function useAntiCheat({
 
       toast(`Tab switch detected! Warning ${next}/3`, { duration: 3000 })
       if (!isPreview) {
-        testAPI.updateViolations(testIdRef.current ?? '', attemptRef.current?.id ?? '', {
+        testAPI.updateViolations(identifiers.testId, identifiers.attemptId, {
           tab_violations: next,
         }).catch(() => {})
       }
