@@ -62,6 +62,25 @@ export interface BookmarkIdsResponse { ids: number[] }
 // TODO(response_model): response shape for POST /bookmarks/{id}/toggle.
 export interface BookmarkToggleResponse { bookmarked: boolean }
 
+// TODO(response_model): option_images typed as string|null per app write paths (admin/questions.py upload/delete/NAT clear); backend BookmarkOut types it as Optional[dict]; replace with generated BookmarkOut once backend types option_images.
+export interface BookmarkItem {
+  correct_answer?: string | null
+  created_at: string
+  id: number
+  marks: number
+  note: string | null
+  option_images?: Record<string, string | null> | null
+  options: string[]
+  question_id: number
+  question_image_url?: string | null
+  question_text: string
+  question_type: string
+  subject: string | null
+  test_id: number
+  test_title: string
+  topic: string | null
+}
+
 // TODO(response_model): fields consumed by admin test editing.
 export interface AdminTestQuestion extends TestQuestion {
   question_type: 'mcq' | 'msq' | 'nat'
