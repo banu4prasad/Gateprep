@@ -118,7 +118,7 @@ export interface ResultData {
   correct?: unknown
   incorrect?: unknown
   skipped?: unknown
-  attempt_id?: number | null
+  attempt_id?: number | string | null
   answers?: ResultAnswer[]
 }
 
