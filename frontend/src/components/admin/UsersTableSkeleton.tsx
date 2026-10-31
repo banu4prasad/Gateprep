@@ -1,7 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { ReactElement } from 'react'
 
-export default function UsersTableSkeleton() {
+export default function UsersTableSkeleton(): ReactElement {
   return (
     <Card>
       <CardContent className="flex flex-col gap-4 p-4">

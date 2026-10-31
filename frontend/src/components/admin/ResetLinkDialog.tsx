@@ -6,8 +6,23 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter, DialogClose,
 } from '@/components/ui/dialog'
+import type { PasswordResetResponse } from '@/types/api'
+import type { ReactElement } from 'react'
 
-export default function ResetLinkDialog({ resetLink, onClose, onCopy }) {
+export interface ResetLink extends PasswordResetResponse {
+  full_name: string
+  email: string
+  is_local_url?: boolean
+  expires_at: string
+}
+
+export interface ResetLinkDialogProps {
+  resetLink: ResetLink | null
+  onClose: () => void
+  onCopy: () => Promise<void>
+}
+
+export default function ResetLinkDialog({ resetLink, onClose, onCopy }: ResetLinkDialogProps): ReactElement {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = useCallback(async () => {

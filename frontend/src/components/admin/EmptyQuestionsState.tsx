@@ -1,8 +1,14 @@
 import { FileJson, Plus } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import type { ReactElement } from 'react'
 
-export default function EmptyQuestionsState({ onOpenJson, onOpenManual }) {
+export interface EmptyQuestionsStateProps {
+  onOpenJson: () => void
+  onOpenManual: () => void
+}
+
+export default function EmptyQuestionsState({ onOpenJson, onOpenManual }: EmptyQuestionsStateProps): ReactElement {
   return (
     <Card>
       <CardContent className="p-10 text-center">
