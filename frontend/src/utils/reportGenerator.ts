@@ -116,7 +116,7 @@ export async function downloadResultReport(result: ResultData | null | undefined
   if (!result || result.attempt_id == null || String(result.attempt_id).startsWith('practice-')) {
     return downloadPracticeResultHtml(result || {})
   }
-  const res = await testAPI.downloadResultHtml(Number(result.attempt_id))
+  const res = await testAPI.downloadResultHtml(result.attempt_id)
   const slug = (result.test_title || 'result').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   const suffix = 'result'
   const blob = res.data instanceof Blob ? res.data : new Blob([res.data], { type: 'text/html' })

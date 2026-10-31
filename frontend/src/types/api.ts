@@ -1,4 +1,5 @@
 import type { AxiosResponse } from 'axios'
+import type { components } from '../api/schema'
 
 export type ApiResponse<T> = AxiosResponse<T>
 export type ApiJson = Record<string, unknown>
@@ -32,11 +33,18 @@ export interface TestDetail {
   created_at: string
 }
 
-export interface AnswerSubmit {
-  question_id: number
-  selected_answer: string | null
-  time_spent_seconds: number
-}
+export type LoginRequest = components['schemas']['LoginRequest']
+export type RegisterRequest = components['schemas']['RegisterRequest']
+export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest']
+export type RoleUpdate = components['schemas']['RoleUpdate']
+export type TestCreate = components['schemas']['TestCreate']
+export type TestPatch = components['schemas']['TestPatch']
+export type QuestionIn = components['schemas']['QuestionIn']
+export type QuestionsBulk = components['schemas']['QuestionsBulk']
+export type SeriesCreate = components['schemas']['SeriesCreate']
+export type BookmarkNote = components['schemas']['BookmarkNote']
+export type AnswerSubmit = components['schemas']['AnswerSubmit']
+export type ViolationUpdate = components['schemas']['ViolationUpdate']
 
 export interface AttemptAnswer {
   question_id: number
@@ -82,11 +90,6 @@ export interface ViolationUpdateResponse {
   message: string
 }
 
-export interface ViolationUpdateRequest {
-  tab_violations?: number
-  fullscreen_violations?: number
-}
-
 export interface ResultAnswer {
   question_id?: number
   question_type?: 'mcq' | 'msq' | 'nat'
@@ -115,7 +118,7 @@ export interface ResultData {
   correct?: unknown
   incorrect?: unknown
   skipped?: unknown
-  attempt_id?: number | string | null
+  attempt_id?: number | null
   answers?: ResultAnswer[]
 }
 
@@ -145,7 +148,7 @@ export interface PersistedResult extends ResultData {
 export interface PracticeResult {
   id: string
   persisted: false
-  result: PersistedResult
+  result: ResultData & { attempt_id: string }
 }
 
 export interface SubmittedAttempt {
@@ -210,11 +213,6 @@ export interface LeaderboardResponse {
   offset: number
   leaderboard: LeaderboardEntry[]
 }
-
-export type AuthRequest = unknown
-export type AdminRequest = unknown
-export type BookmarkRequest = unknown
-export type SeriesRequest = unknown
 
 // TODO(response_model): add response models for auth routes.
 export type AuthResponse = unknown

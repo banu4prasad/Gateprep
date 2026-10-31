@@ -33,7 +33,7 @@ describe('API Wrappers', () => {
   describe('authAPI', () => {
     it('register should call POST /auth/register', async () => {
       vi.mocked(api.post).mockResolvedValueOnce({ data: 'registered' });
-      const userData = { email: 'test@example.com', password: 'password123' };
+      const userData = { email: 'test@example.com', full_name: 'Test User', password: 'password123' };
       
       await authAPI.register(userData);
       
@@ -51,7 +51,7 @@ describe('API Wrappers', () => {
 
     it('resetPassword should call POST /auth/reset-password', async () => {
       vi.mocked(api.post).mockResolvedValueOnce({ data: 'reset_sent' });
-      const resetData = { email: 'test@example.com' };
+      const resetData = { token: 'reset-token', password: 'password123' };
       
       await authAPI.resetPassword(resetData);
       

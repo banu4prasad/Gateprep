@@ -70,6 +70,16 @@ describe('API client response interceptor', () => {
     expect(dispatchSpy).not.toHaveBeenCalled()
   })
 
+  it('does not dispatch when a 401 error is not identified as an Axios error', async () => {
+    mocks.isAxiosError.mockReturnValueOnce(false)
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent')
+    const error = { response: { status: 401 }, config: { url: '/tests' } }
+
+    await expect(rejectResponse(error)).rejects.toBe(error)
+
+    expect(dispatchSpy).not.toHaveBeenCalled()
+  })
+
   it('re-rejects the original error unchanged', async () => {
     const error = { response: { status: 400 }, config: { url: '/tests' } }
 
