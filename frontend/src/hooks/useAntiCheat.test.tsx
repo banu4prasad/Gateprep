@@ -162,6 +162,17 @@ describe('useAntiCheat window switching', () => {
     unmount()
   })
 
+  it('records visibility changes with the same setup when both identifiers are present', () => {
+    const options = createOptions()
+    const { unmount } = renderHook(() => useAntiCheat(options))
+    setDocumentHidden(true)
+
+    act(() => document.dispatchEvent(new Event('visibilitychange')))
+
+    expect(testAPI.updateViolations).toHaveBeenCalledExactlyOnceWith(7, 3, { tab_violations: 1 })
+    unmount()
+  })
+
   it('records visibility changes when the attempt identifier is zero', () => {
     const options = createOptions({
       attemptRef: { current: { id: 0 } },

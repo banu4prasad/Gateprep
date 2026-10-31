@@ -98,6 +98,16 @@ describe('useTestSubmission NAT answers', () => {
     expect(result.current.submitting).toBe(false)
   })
 
+  it('submits with the same payload when an attempt exists', async () => {
+    vi.mocked(testAPI.submitTest).mockRejectedValueOnce(new Error('request failed'))
+    const options = createOptions()
+    const { result } = renderHook(() => useTestSubmission(options))
+
+    await act(async () => result.current.doSubmit())
+
+    expect(testAPI.submitTest).toHaveBeenCalledExactlyOnceWith(7, 3, [])
+  })
+
   it.each(missingTestIds)('reports a missing test identifier (%s) and releases the submission state', async testId => {
     const options = createOptions({ testIdRef: { current: testId } })
     const { result } = renderHook(() => useTestSubmission(options))
@@ -108,5 +118,15 @@ describe('useTestSubmission NAT answers', () => {
     expect(toast.error).toHaveBeenCalledWith('Unable to submit test: test identifier is required')
     expect(result.current.submitLockRef.current).toBe(false)
     expect(result.current.submitting).toBe(false)
+  })
+
+  it.each(missingTestIds)('submits the same payload when the test identifier (%s) is present', async () => {
+    vi.mocked(testAPI.submitTest).mockRejectedValueOnce(new Error('request failed'))
+    const options = createOptions({ testIdRef: { current: 7 } })
+    const { result } = renderHook(() => useTestSubmission(options))
+
+    await act(async () => result.current.doSubmit())
+
+    expect(testAPI.submitTest).toHaveBeenCalledExactlyOnceWith(7, 3, [])
   })
 })

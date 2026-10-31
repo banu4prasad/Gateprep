@@ -30,7 +30,7 @@ describe('useTestAutosave', () => {
     const testIdRef: TestAutosaveParams['testIdRef'] = { current: 7 }
 
     renderHook(() => useTestAutosave({
-      attempt: { id: 0 },
+      attempt: { id: 3 },
       isPreview: false,
       answersRef,
       timingsRef,
