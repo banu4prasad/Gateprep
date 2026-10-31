@@ -7,6 +7,7 @@ export type ApiId = number
 
 export type TestStatus = 'in_progress' | 'submitted'
 
+// TODO(response_model): response shape for GET /tests.
 export interface TestCatalogItem {
   id: number
   title: string
@@ -56,7 +57,9 @@ export interface PasswordResetResponse {
   reset_url: string
 }
 
+// TODO(response_model): response shape for GET /bookmarks/ids.
 export interface BookmarkIdsResponse { ids: number[] }
+// TODO(response_model): response shape for POST /bookmarks/{id}/toggle.
 export interface BookmarkToggleResponse { bookmarked: boolean }
 
 // TODO(response_model): fields consumed by admin test editing.
@@ -159,6 +162,7 @@ export interface ResultData {
   answers?: ResultAnswer[]
 }
 
+// TODO(response_model): response shape for GET /tests/attempt/{id}/result.
 export interface PersistedResult extends ResultData {
   attempt_id: number
   client_result_id: string | null
@@ -203,6 +207,7 @@ export interface SubmittedAttempt {
 
 export type SubmitResult = SubmittedAttempt | PracticeResult
 
+// TODO(response_model): response shape for GET /tests/my/history.
 export interface HistoryItem {
   id: number
   test_id: number
@@ -215,6 +220,7 @@ export interface HistoryItem {
   fullscreen_violations: number
 }
 
+// TODO(response_model): response shape for GET /tests/{id}/my-attempts.
 export interface MyAttempt {
   attempt_id: number
   attempt_number: number
@@ -241,6 +247,7 @@ export interface LeaderboardEntry {
   is_current_user: boolean
 }
 
+// TODO(response_model): response shape for GET /tests/{id}/leaderboard.
 export interface LeaderboardResponse {
   test_id: number
   test_title: string
