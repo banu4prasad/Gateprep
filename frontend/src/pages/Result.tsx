@@ -1,4 +1,5 @@
 import { useState, useMemo, memo, useCallback } from 'react'
+import type { CSSProperties, Dispatch, ReactNode, SetStateAction } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { testAPI } from '../api/api'
@@ -14,8 +15,13 @@ import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { BADGE_COLORS } from '../utils/badgeStyles'
+import type { MyAttempt, PersistedResult, PersistedResultAnswer } from '../types/api'
 
-function ScoreRing({ pct }) {
+export interface ScoreRingProps {
+  pct: number
+}
+
+function ScoreRing({ pct }: ScoreRingProps) {
   const r = 48, c = 2 * Math.PI * r
   const filled = (pct / 100) * c
   const color = pct >= 75 ? 'var(--success-text)' : pct >= 50 ? 'var(--warning-text)' : 'var(--danger-text)'
@@ -31,26 +37,40 @@ function ScoreRing({ pct }) {
   )
 }
 
-function AnswerStatusIcon({ qa }) {
+export interface AnswerStatusIconProps {
+  qa: PersistedResultAnswer
+}
+
+function AnswerStatusIcon({ qa }: AnswerStatusIconProps) {
   if (qa.is_correct === true) return <CheckCircle size={14} className="text-success-text flex-shrink-0 mt-0.5" />
   if (qa.is_correct === false) return <XCircle size={14} className="text-destructive flex-shrink-0 mt-0.5" />
   return <MinusCircle size={14} className="text-muted-foreground flex-shrink-0 mt-0.5" />
 }
 
-function getOptionState(qa, letter) {
+function getOptionState(qa: PersistedResultAnswer, letter: string | undefined) {
+  // String.includes(undefined) coerces to "undefined" in JavaScript; keep that legacy edge case.
+  // @ts-expect-error Keep the existing direct includes call for a missing option letter.
   const isCorrect = qa.correct_answer?.includes(letter)
+  // @ts-expect-error Keep the existing direct includes call for a missing option letter.
   const isSelected = qa.selected_answer?.includes(letter)
+  // @ts-expect-error Keep the existing direct includes call for a missing option letter.
   const isTopperPick = qa.topper_answer?.includes(letter)
   return { isCorrect, isSelected, isTopperPick }
 }
 
-function getOptionClassName(isCorrect, isSelected) {
+function getOptionClassName(isCorrect: boolean | undefined, isSelected: boolean | undefined) {
   if (isCorrect) return 'result-stat-correct text-success-text'
   if (isSelected) return 'result-stat-incorrect text-destructive'
   return 'border text-muted-foreground border-border'
 }
 
-function OptionMarkers({ isCorrect, isSelected, isTopperPick }) {
+export interface OptionMarkersProps {
+  isCorrect: boolean | undefined
+  isSelected: boolean | undefined
+  isTopperPick: boolean | undefined
+}
+
+function OptionMarkers({ isCorrect, isSelected, isTopperPick }: OptionMarkersProps) {
   return (
     <>
       {isCorrect && <span className="ml-1 text-success-text">✓</span>}
@@ -60,26 +80,46 @@ function OptionMarkers({ isCorrect, isSelected, isTopperPick }) {
   )
 }
 
-function McqOptionsGrid({ qa }) {
+export interface McqOptionsGridProps {
+  qa: PersistedResultAnswer
+}
+
+function McqOptionsGrid({ qa }: McqOptionsGridProps) {
+  // The backend model permits dict options, but this page has always used array length/map.
+  // Keep that existing runtime behavior while retaining the model's list-or-dict type.
+  // @ts-expect-error Question.options is list | dict in backend/app/models/models.py:137.
   if (!(qa.options?.length > 0)) return null
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
-      {qa.options.map((o, i) => {
+      {
+        // @ts-expect-error The legacy page maps options directly; the backend also permits dict JSON.
+        qa.options.map((o: unknown, i: number) => {
         const letter = 'ABCD'[i]
         const { isCorrect, isSelected, isTopperPick } = getOptionState(qa, letter)
+        // @ts-expect-error Preserve the legacy rendering path for arbitrary option JSON.
+        const optionText: ReactNode = o
+        // @ts-expect-error Preserve direct pass-through of unknown optimizer values to OptionImage.
+        const optionImageSource: string | null | undefined = qa.option_images?.[letter]
+        const optionImageLetter: string = letter
         return (
           <div key={i} className={clsx('px-3 py-2 rounded text-xs', getOptionClassName(isCorrect, isSelected))}>
-            <span className="font-mono font-semibold mr-1">{letter}.</span><MathText>{o}</MathText>
-            <OptionImage src={qa.option_images?.[letter]} letter={letter} />
+            <span className="font-mono font-semibold mr-1">{letter}.</span>
+            <MathText>{optionText}</MathText>
+            <OptionImage src={optionImageSource} letter={optionImageLetter} />
             <OptionMarkers isCorrect={isCorrect} isSelected={isSelected} isTopperPick={isTopperPick} />
           </div>
         )
-      })}
+        })
+      }
     </div>
   )
 }
 
-function NatAnswerComparison({ qa }) {
+export interface NatAnswerComparisonProps {
+  qa: PersistedResultAnswer
+}
+
+function NatAnswerComparison({ qa }: NatAnswerComparisonProps) {
   if (qa.question_type !== 'nat') return null
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-xs">
@@ -93,7 +133,11 @@ function NatAnswerComparison({ qa }) {
   )
 }
 
-function TopperTimeComparison({ qa }) {
+export interface TopperTimeComparisonProps {
+  qa: PersistedResultAnswer
+}
+
+function TopperTimeComparison({ qa }: TopperTimeComparisonProps) {
   if (!(qa.topper_time_seconds > 0)) return null
   return (
     <div className="flex items-center gap-4 text-xs mt-1 text-muted-foreground">
@@ -103,7 +147,12 @@ function TopperTimeComparison({ qa }) {
   )
 }
 
-function BookmarkToggle({ isBookmarked, onToggle }) {
+export interface BookmarkToggleProps {
+  isBookmarked: boolean
+  onToggle: () => void
+}
+
+function BookmarkToggle({ isBookmarked, onToggle }: BookmarkToggleProps) {
   return (
     <button onClick={e => { e.stopPropagation(); onToggle() }} aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
       className={clsx('p-2 rounded transition-colors', isBookmarked ? 'text-primary' : 'text-muted-foreground hover:text-primary')}>
@@ -112,28 +161,37 @@ function BookmarkToggle({ isBookmarked, onToggle }) {
   )
 }
 
-function marksBadgeClass(marksAwarded) {
+function marksBadgeClass(marksAwarded: number) {
   if (marksAwarded > 0) return 'text-success-text'
   if (marksAwarded < 0) return 'text-destructive'
   return 'text-muted-foreground'
 }
 
-const QUESTION_TYPE_CLASS = {
+const QUESTION_TYPE_CLASS: Record<string, string> = {
   mcq: 'bg-sky-500/10 text-sky-600 border-sky-500/20 dark:text-sky-400',
   msq: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400',
   nat: 'bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400',
   default: 'bg-muted text-muted-foreground border-border',
 }
 
-function questionTypeClass(questionType) {
+function questionTypeClass(questionType: string | undefined) {
+  // @ts-expect-error Preserve JavaScript's undefined-to-property-key conversion.
   return QUESTION_TYPE_CLASS[questionType] ?? QUESTION_TYPE_CLASS.default
 }
 
-const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onToggleBookmark }) {
+export interface QuestionReviewProps {
+  qa: PersistedResultAnswer
+  idx: number
+  isBookmarked: boolean
+  onToggleBookmark: (questionId: number) => void
+}
+
+const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onToggleBookmark }: QuestionReviewProps) {
   const [open, setOpen] = useState(false)
+  const cardStyle: CSSProperties & { [key: `--${string}`]: string } = { '--card-spacing': '0' }
 
   return (
-    <Card className="overflow-hidden mb-2" style={{ '--card-spacing': '0' }}>
+    <Card className="overflow-hidden mb-2" style={cardStyle}>
       <div className="flex items-start gap-3 p-3 cursor-pointer focus-visible:ring-2 focus-visible:ring-ring rounded outline-none" role="button" tabIndex={0} aria-expanded={open} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }} onClick={() => setOpen(o => !o)}>
         <span className="text-xs font-mono mt-0.5 w-5 flex-shrink-0 text-muted-foreground">Q{idx + 1}</span>
         <AnswerStatusIcon qa={qa} />
@@ -177,8 +235,17 @@ const QuestionReview = memo(function QuestionReview({ qa, idx, isBookmarked, onT
 
 /* ── Derived summary ── */
 
-function useResultSummary(result) {
+export interface ResultSummary {
+  pct: number
+  grade: string
+  gradeColor: string
+  rankText: string
+}
+
+function useResultSummary(result: Partial<PersistedResult>): ResultSummary {
   return useMemo(() => {
+    // Preserve Math.round(undefined) when called with the existing empty-object fallback.
+    // @ts-expect-error The result is deliberately partial before the loading/null branches.
     const pct = Math.round(result.percentage)
     const grade = pct >= 75 ? 'Excellent' : pct >= 50 ? 'Good' : 'Needs Work'
     const gradeColor = pct >= 75 ? 'text-success-text' : pct >= 50 ? 'text-warning-text' : 'text-destructive'
@@ -193,7 +260,12 @@ function useResultSummary(result) {
 
 /* ── Section components ── */
 
-const ResultHeader = memo(function ResultHeader({ result, onDownload }) {
+export interface ResultHeaderProps {
+  result: PersistedResult
+  onDownload: () => Promise<void>
+}
+
+const ResultHeader = memo(function ResultHeader({ result, onDownload }: ResultHeaderProps) {
   return (
     <div className="flex items-center justify-between flex-wrap gap-2">
       <Link to="/dashboard" className="flex items-center gap-1.5 text-sm hover:opacity-80 text-muted-foreground">
@@ -213,7 +285,11 @@ const ResultHeader = memo(function ResultHeader({ result, onDownload }) {
   )
 })
 
-const AttemptBadge = memo(function AttemptBadge({ result }) {
+export interface AttemptBadgeProps {
+  result: PersistedResult
+}
+
+const AttemptBadge = memo(function AttemptBadge({ result }: AttemptBadgeProps) {
   if (result.counts_for_leaderboard) return null
   return (
     <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm rounded border result-attempt-practice">
@@ -223,7 +299,12 @@ const AttemptBadge = memo(function AttemptBadge({ result }) {
   )
 })
 
-const ScoreCard = memo(function ScoreCard({ result, summary }) {
+export interface ScoreCardProps {
+  result: PersistedResult
+  summary: ResultSummary
+}
+
+const ScoreCard = memo(function ScoreCard({ result, summary }: ScoreCardProps) {
   const { pct, grade, gradeColor, rankText } = summary
   return (
     <Card>
@@ -257,7 +338,11 @@ const ScoreCard = memo(function ScoreCard({ result, summary }) {
   )
 })
 
-const ComparisonStats = memo(function ComparisonStats({ result }) {
+export interface ComparisonStatsProps {
+  result: PersistedResult
+}
+
+const ComparisonStats = memo(function ComparisonStats({ result }: ComparisonStatsProps) {
   return (
     <Card>
       <CardContent className="p-4">
@@ -285,7 +370,12 @@ const ComparisonStats = memo(function ComparisonStats({ result }) {
   )
 })
 
-const AttemptHistory = memo(function AttemptHistory({ attempts, currentAttemptId }) {
+export interface AttemptHistoryProps {
+  attempts: MyAttempt[]
+  currentAttemptId: string | undefined
+}
+
+const AttemptHistory = memo(function AttemptHistory({ attempts, currentAttemptId }: AttemptHistoryProps) {
   if (attempts.length <= 1) return null
   return (
     <Card>
@@ -294,7 +384,10 @@ const AttemptHistory = memo(function AttemptHistory({ attempts, currentAttemptId
         <div className="space-y-2">
           {attempts.map(a => (
             <div key={a.attempt_id} className={clsx('flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2 rounded border border-border',
-              a.attempt_id === parseInt(currentAttemptId) && 'result-current-attempt')}>
+              a.attempt_id === (
+                // @ts-expect-error Keep parseInt(undefined) returning NaN as before.
+                parseInt(currentAttemptId)
+              ) && 'result-current-attempt')}>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono text-muted-foreground">#{a.attempt_number}</span>
                 {a.counts_for_leaderboard
@@ -303,7 +396,10 @@ const AttemptHistory = memo(function AttemptHistory({ attempts, currentAttemptId
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-card-foreground">{a.score?.toFixed(1)}/{a.total_marks} ({a.percentage}%)</span>
-                {a.attempt_id !== parseInt(currentAttemptId) && (
+                {a.attempt_id !== (
+                  // @ts-expect-error Keep parseInt(undefined) returning NaN as before.
+                  parseInt(currentAttemptId)
+                ) && (
                   <Link to={`/results/${a.attempt_id}`} className="text-xs text-primary">View →</Link>
                 )}
               </div>
@@ -315,7 +411,12 @@ const AttemptHistory = memo(function AttemptHistory({ attempts, currentAttemptId
   )
 })
 
-const ResultActions = memo(function ResultActions({ result, onReattempt }) {
+export interface ResultActionsProps {
+  result: PersistedResult
+  onReattempt: () => void
+}
+
+const ResultActions = memo(function ResultActions({ result, onReattempt }: ResultActionsProps) {
   return (
     <div>
       <Button onClick={onReattempt} disabled={result.attempts_remaining <= 0} className="w-full flex items-center justify-center gap-2 text-sm">
@@ -326,7 +427,22 @@ const ResultActions = memo(function ResultActions({ result, onReattempt }) {
   )
 })
 
-const QuestionReviewList = memo(function QuestionReviewList({ items, filter, setFilter, bookmarked, onToggleBookmark }) {
+export type ResultFilter = keyof typeof FILTER_PREDICATES
+
+export interface QuestionReviewItem {
+  answer: PersistedResultAnswer
+  idx: number
+}
+
+export interface QuestionReviewListProps {
+  items: QuestionReviewItem[]
+  filter: ResultFilter
+  setFilter: Dispatch<SetStateAction<ResultFilter>>
+  bookmarked: Set<number>
+  onToggleBookmark: (questionId: number) => void
+}
+
+const QuestionReviewList = memo(function QuestionReviewList({ items, filter, setFilter, bookmarked, onToggleBookmark }: QuestionReviewListProps) {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
@@ -335,7 +451,7 @@ const QuestionReviewList = memo(function QuestionReviewList({ items, filter, set
           <span className="text-xs ml-2 text-muted-foreground">(click bookmark icon)</span>
         </h3>
         <div className="flex flex-wrap gap-1 p-1 rounded bg-card">
-          {['all', 'correct', 'incorrect', 'skipped'].map(f => (
+          {(['all', 'correct', 'incorrect', 'skipped'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={clsx('px-2.5 py-1 rounded text-xs font-medium capitalize transition-colors',
                 filter === f ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground')}>
@@ -357,26 +473,30 @@ const QuestionReviewList = memo(function QuestionReviewList({ items, filter, set
 
 const FILTER_PREDICATES = {
   all: () => true,
-  correct: (a) => a.is_correct === true,
-  incorrect: (a) => a.is_correct === false,
-  skipped: (a) => a.is_correct == null,
+  correct: (a: PersistedResultAnswer) => a.is_correct === true,
+  incorrect: (a: PersistedResultAnswer) => a.is_correct === false,
+  skipped: (a: PersistedResultAnswer) => a.is_correct == null,
 }
 
 export default function ResultPage() {
   const navigate = useNavigate()
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState<ResultFilter>('all')
   const { attemptId, result, bookmarked, attempts, loading, toggleBookmark } = useResultData()
 
   const reattempt = useCallback(() => {
+    // The button is rendered only after the existing !result return below.
+    // @ts-expect-error Keep the callback's existing access without adding a runtime guard.
     if (result.attempts_remaining <= 0) {
       toast.error('Maximum attempts reached for this test')
       return
     }
+    // @ts-expect-error Keep the callback's existing access without adding a runtime guard.
     navigate(`/tests/${result.test_id}`)
   }, [result, navigate])
 
   const handleDownload = useCallback(async () => {
     try {
+      // @ts-expect-error The report helper accepts array options; preserve the existing call for dict JSON results.
       await downloadResultReport(result)
       toast.success('Result downloaded')
     } catch {

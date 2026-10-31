@@ -159,11 +159,37 @@ export interface ResultAnswer {
   topper_time_seconds?: number
   is_correct?: boolean | null
   options?: unknown[]
-  marks_awarded?: unknown
-  question_text?: unknown
-  selected_answer?: unknown
-  correct_answer?: unknown
-  time_spent_seconds?: unknown
+  marks_awarded?: number
+  question_text?: string
+  selected_answer?: string | null
+  correct_answer?: string
+  time_spent_seconds?: number
+}
+
+export interface PersistedResultAnswer {
+  question_id: number
+  question_type: 'mcq' | 'msq' | 'nat'
+  question_image_url: string | null
+  option_images: Record<string, unknown> | null
+  marks: number
+  negative_marks: number
+  topper_answer: string | null
+  topper_time_seconds: number
+  is_correct: boolean | null
+  options: unknown[] | Record<string, unknown>
+  marks_awarded: number
+  question_text: string
+  selected_answer: string | null
+  correct_answer: string
+  time_spent_seconds: number
+}
+
+export interface ResultTopper {
+  user_id: number
+  full_name: string
+  score: number | null
+  total_marks: number | null
+  percentage: number
 }
 
 export interface ResultData {
@@ -182,8 +208,9 @@ export interface ResultData {
 }
 
 // TODO(response_model): response shape for GET /tests/attempt/{id}/result.
-export interface PersistedResult extends ResultData {
+export interface PersistedResult extends Omit<ResultData, 'answers'> {
   attempt_id: number
+  attempt_number: number
   client_result_id: string | null
   attempts_remaining: number
   max_attempts: number
@@ -201,8 +228,8 @@ export interface PersistedResult extends ResultData {
   tab_violations: number
   rank: number | null
   total_participants: number
-  topper: unknown
-  answers: ResultAnswer[]
+  topper: ResultTopper | null
+  answers: PersistedResultAnswer[]
 }
 
 export interface PracticeResult {
