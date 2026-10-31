@@ -4,6 +4,7 @@ import Layout from '../components/shared/Layout'
 import { useAuth } from '../context/AuthContext'
 import useSWR from 'swr'
 import { fetcher } from '../api/api'
+import type { HistoryItem, TestCatalogItem } from '../types/api'
 import { BookOpen, Clock, Target, ArrowRight, CheckCircle } from 'lucide-react'
 import clsx from 'clsx'
 import { SkeletonBlock, TestCardSkeleton } from '../components/shared/Skeletons'
@@ -12,16 +13,20 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { BADGE_COLORS } from '@/utils/badgeStyles'
 
-export function getAttemptMap(history = []) {
+export function getAttemptMap<T extends Pick<HistoryItem, 'test_id'> = HistoryItem>(
+  history: T[] = []
+): Partial<Record<number, T>> {
   return Object.fromEntries(history.map((item) => [item.test_id, item]))
 }
 
-export function getCompletedCount(history = []) {
+export function getCompletedCount(history: Pick<HistoryItem, 'test_id' | 'status'>[] = []): number {
   const submitted = history.filter((item) => item.status === 'submitted')
   return new Set(submitted.map((item) => item.test_id)).size
 }
 
-export function getAttemptPercentage(attempt) {
+export function getAttemptPercentage(
+  attempt: Pick<HistoryItem, 'score' | 'total_marks'> | null | undefined
+): number | null {
   if (!attempt || !attempt.total_marks || Number(attempt.total_marks) <= 0) {
     return null
   }
@@ -29,7 +34,7 @@ export function getAttemptPercentage(attempt) {
   return Math.round((Number(attempt.score ?? 0) / Number(attempt.total_marks)) * 100)
 }
 
-export function getScoreToneClass(percentage) {
+export function getScoreToneClass(percentage: number): string {
   if (percentage >= 75) {
     return 'bg-[var(--success-text)]/10 border-[var(--success-text)]/20 text-success-text dark:text-success-text'
   }
@@ -41,7 +46,14 @@ export function getScoreToneClass(percentage) {
   return 'bg-[var(--destructive)]/10 border-[var(--destructive)]/20 text-destructive dark:text-destructive'
 }
 
-function DashboardStats({ tests, completedCount, testsLoading, historyLoading }) {
+export interface DashboardStatsProps {
+  tests: TestCatalogItem[]
+  completedCount: number
+  testsLoading: boolean
+  historyLoading: boolean
+}
+
+function DashboardStats({ tests, completedCount, testsLoading, historyLoading }: DashboardStatsProps) {
   const stats = [
     { label: 'Tests Available', value: tests.length, isLoading: testsLoading, icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
     { label: 'Completed', value: completedCount, isLoading: historyLoading, icon: CheckCircle, color: 'text-success-text', bg: 'bg-[var(--success-text)]/10' },
@@ -70,7 +82,14 @@ function DashboardStats({ tests, completedCount, testsLoading, historyLoading })
   )
 }
 
-function DashboardTestCard({ testItem, attempt, done, percentage }) {
+export interface DashboardTestCardProps {
+  testItem: TestCatalogItem
+  attempt: HistoryItem | undefined
+  done: boolean
+  percentage: number | null
+}
+
+function DashboardTestCard({ testItem, attempt, done, percentage }: DashboardTestCardProps) {
   const resultTone = percentage !== null ? getScoreToneClass(percentage) : ''
 
   return (
@@ -90,13 +109,20 @@ function DashboardTestCard({ testItem, attempt, done, percentage }) {
         </div>
         {percentage !== null && (
           <div className={clsx('px-2.5 py-1.5 rounded-md border text-xs', resultTone)}>
-            Score: {attempt.score?.toFixed(1)} / {attempt.total_marks} ({percentage}%)
+            Score: {
+              // @ts-expect-error: percentage is non-null only when the same attempt exists.
+              attempt.score?.toFixed(1)
+            } / {
+              // @ts-expect-error: percentage is non-null only when the same attempt exists and has truthy total_marks.
+              attempt.total_marks
+            } ({percentage}%)
           </div>
         )}
       </CardContent>
       <CardFooter className="border-t-0 bg-transparent p-3 pt-1">
         {done ? (
           <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10">
+            {/* @ts-expect-error: done is derived from this same attempt's submitted status, so attempt is defined here. */}
             <Link to={`/results/${attempt.id}`}>
               View Result <ArrowRight size={16} className="ml-2" />
             </Link>
@@ -113,7 +139,13 @@ function DashboardTestCard({ testItem, attempt, done, percentage }) {
   )
 }
 
-function DashboardTests({ tests, attemptMap, isInitialDataLoading }) {
+export interface DashboardTestsProps {
+  tests: TestCatalogItem[]
+  attemptMap: Partial<Record<number, HistoryItem>>
+  isInitialDataLoading: boolean
+}
+
+function DashboardTests({ tests, attemptMap, isInitialDataLoading }: DashboardTestsProps) {
   const recentTests = tests.slice(0, 9)
 
   if (isInitialDataLoading) {
@@ -161,8 +193,8 @@ function DashboardTests({ tests, attemptMap, isInitialDataLoading }) {
 export default function Dashboard() {
   const { user } = useAuth()
 
-  const { data: tests = [], isLoading: testsLoading } = useSWR('/tests', fetcher)
-  const { data: history = [], isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
+  const { data: tests = [], isLoading: testsLoading } = useSWR<TestCatalogItem[]>('/tests', fetcher)
+  const { data: history = [], isLoading: historyLoading } = useSWR<HistoryItem[]>('/tests/my/history', fetcher)
   const isInitialDataLoading = testsLoading || historyLoading
 
   const attemptMap = useMemo(() => getAttemptMap(history), [history])

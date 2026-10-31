@@ -5,10 +5,13 @@ import {
   getCompletedCount,
   getScoreToneClass,
 } from './Dashboard'
+import type { HistoryItem } from '../types/api'
+
+type DashboardHistoryFixture = Pick<HistoryItem, 'test_id' | 'status' | 'score' | 'total_marks'>
 
 describe('Dashboard helpers', () => {
   it('builds the submitted-attempt map and completed count', () => {
-    const history = [
+    const history: DashboardHistoryFixture[] = [
       { test_id: 1, status: 'submitted', score: 10, total_marks: 20 },
       { test_id: 2, status: 'in_progress', score: 4, total_marks: 20 },
       { test_id: 1, status: 'submitted', score: 15, total_marks: 20 },
