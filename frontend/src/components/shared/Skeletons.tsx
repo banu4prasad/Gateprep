@@ -1,7 +1,11 @@
 import clsx from 'clsx'
 import { Card, CardContent } from '@/components/ui/card'
 
-export function SkeletonBlock({ className = '' }) {
+interface SkeletonBlockProps {
+  className?: string
+}
+
+export function SkeletonBlock({ className = '' }: SkeletonBlockProps) {
   return (
     <span
       className={clsx('block animate-pulse rounded bg-muted', className)}
@@ -10,7 +14,7 @@ export function SkeletonBlock({ className = '' }) {
   )
 }
 
-export function TestCardSkeleton() {
+export function TestCardSkeleton(): React.ReactElement {
   return (
     <Card aria-hidden="true">
       <CardContent className="p-5 flex flex-col gap-3">
@@ -33,7 +37,7 @@ export function TestCardSkeleton() {
   )
 }
 
-export function StatCardSkeleton() {
+export function StatCardSkeleton(): React.ReactElement {
   return (
     <Card>
       <CardContent className="p-3 sm:p-4 flex items-center gap-3">
@@ -47,7 +51,7 @@ export function StatCardSkeleton() {
   )
 }
 
-export function LeaderboardSkeleton() {
+export function LeaderboardSkeleton(): React.ReactElement {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -86,7 +90,7 @@ export function LeaderboardSkeleton() {
   )
 }
 
-export function ResultCardSkeleton() {
+export function ResultCardSkeleton(): React.ReactElement {
   return (
     <Card>
       <CardContent className="p-4 flex items-center gap-4">
@@ -101,7 +105,7 @@ export function ResultCardSkeleton() {
   )
 }
 
-export function ResultSkeleton() {
+export function ResultSkeleton(): React.ReactElement {
   return (
     <div className="flex flex-col gap-6 mt-4">
       <Card>

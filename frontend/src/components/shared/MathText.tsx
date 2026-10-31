@@ -1,4 +1,5 @@
 import { Fragment, memo, useRef, useEffect } from 'react'
+import type { ReactNode } from 'react'
 
 // ── Table detection ──────────────────────────────────────────────
 // Require 3+ pipes (2+ columns) so |x| (absolute value) never matches
@@ -7,7 +8,7 @@ const SEPARATOR_ROW = /^\|[-| :]+\|$/
 // Multiline anchors: only match whole lines starting/ending with |, not mid-line |x|
 const BLOCK_SPLIT = /((?:^\|.+\|.+\|[ \t]*$\n?)+)/gm
 
-function isTableBlock(text) {
+function isTableBlock(text: string): boolean {
   const lines = text.trim().split('\n').map(l => l.trim())
   // A real table MUST have a separator row (e.g. |---|---|)
   const hasSeparator = lines.some(l => SEPARATOR_ROW.test(l))
@@ -16,12 +17,12 @@ function isTableBlock(text) {
   return lines.some(l => TABLE_LINE.test(l) && !SEPARATOR_ROW.test(l))
 }
 
-function isEscapedPipeAt(str, i) {
+function isEscapedPipeAt(str: string, i: number): boolean {
   return str[i] === '\\' && i + 1 < str.length && str[i + 1] === '|'
 }
 
-function tokenizeRowCells(inner) {
-  const cells = []
+function tokenizeRowCells(inner: string): string[] {
+  const cells: string[] = []
   let current = ''
   for (let i = 0; i < inner.length; i++) {
     if (isEscapedPipeAt(inner, i)) {
@@ -38,9 +39,9 @@ function tokenizeRowCells(inner) {
   return cells
 }
 
-function mergeExcessCells(cells, expectedCols) {
+function mergeExcessCells(cells: string[], expectedCols: number): string[] {
   const extraCount = cells.length - expectedCols
-  const merged = []
+  const merged: string[] = []
   for (let i = 0; i < cells.length; i++) {
     if (i > 0 && i <= extraCount) {
       merged[merged.length - 1] += ' | ' + cells[i]
@@ -52,7 +53,7 @@ function mergeExcessCells(cells, expectedCols) {
 }
 
 /** Split a row on unescaped | characters, respecting \| as a literal pipe. */
-function splitTableCells(row, expectedCols) {
+function splitTableCells(row: string, expectedCols: number | null): string[] {
   const inner = row.slice(1, -1) // strip leading/trailing |
   const cells = tokenizeRowCells(inner)
 
@@ -63,7 +64,7 @@ function splitTableCells(row, expectedCols) {
   return cells
 }
 
-function parseTable(text) {
+function parseTable(text: string): React.ReactElement {
   const allRows = text.trim().split('\n').map(l => l.trim()).filter(l => TABLE_LINE.test(l))
 
   // Detect column count from the separator row (e.g. |---|---|)
@@ -119,7 +120,7 @@ const MATH_WORDS = new Set([
   'alpha', 'beta', 'gamma', 'pi', 'infty',
 ])
 
-function normalizeMath(math) {
+function normalizeMath(math: string): string {
   return math
     .replace(/^\\\(/, '')
     .replace(/\\\)$/, '')
@@ -136,7 +137,7 @@ function normalizeMath(math) {
     .replace(/(^|[^\\])\bOmega\b/g, '$1\\Omega')
 }
 
-function mathAriaLabel(math) {
+function mathAriaLabel(math: string): string {
   const label = normalizeMath(math)
     .replace(/\\frac/g, ' fraction ')
     .replace(/\\sqrt/g, ' square root ')
@@ -165,7 +166,7 @@ function mathAriaLabel(math) {
   return `Math expression: ${label}`
 }
 
-function isStandaloneMath(text) {
+function isStandaloneMath(text: string): boolean {
   const trimmed = text.trim()
   if (!RAW_LATEX_HINT.test(trimmed)) return false
 
@@ -180,8 +181,13 @@ function isStandaloneMath(text) {
   return true
 }
 
-function splitLegacyMath(text) {
-  const parts = []
+interface MathPart {
+  type: 'text' | 'math'
+  value: string
+}
+
+function splitLegacyMath(text: string): MathPart[] {
+  const parts: MathPart[] = []
   let lastIndex = 0
 
   for (const match of text.matchAll(LEGACY_MATH_PATTERN)) {
@@ -203,8 +209,11 @@ function splitLegacyMath(text) {
   return parts
 }
 
-function useKatexRender(math, displayMode) {
-  const containerRef = useRef(null)
+function useKatexRender<T extends HTMLElement>(math: string, displayMode: boolean): {
+  containerRef: React.MutableRefObject<T | null>
+  ariaLabel: string
+} {
+  const containerRef = useRef<T | null>(null)
   const ariaLabel = mathAriaLabel(math)
 
   useEffect(() => {
@@ -219,7 +228,7 @@ function useKatexRender(math, displayMode) {
           })
         }
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         console.error("KaTeX load/render error:", err, "Original:", math)
         if (containerRef.current) containerRef.current.innerText = math
       })
@@ -228,23 +237,23 @@ function useKatexRender(math, displayMode) {
   return { containerRef, ariaLabel }
 }
 
-function SafeInlineMath({ math }) {
-  const { containerRef, ariaLabel } = useKatexRender(math, false)
+function SafeInlineMath({ math }: { math: string }): React.ReactElement {
+  const { containerRef, ariaLabel } = useKatexRender<HTMLSpanElement>(math, false)
   return <span ref={containerRef} role="math" aria-label={ariaLabel} className="inline-math" />
 }
 
-function SafeBlockMath({ math }) {
-  const { containerRef, ariaLabel } = useKatexRender(math, true)
+function SafeBlockMath({ math }: { math: string }): React.ReactElement {
+  const { containerRef, ariaLabel } = useKatexRender<HTMLDivElement>(math, true)
   return <div ref={containerRef} role="math" aria-label={ariaLabel} className="block-math my-4 flex justify-center" />
 }
 
-function getMathPartKind(part) {
+function getMathPartKind(part: string): 'block' | 'inline' | 'text' {
   if (part.startsWith('$$') || part.startsWith('\\[')) return 'block'
   if (part.startsWith('$') || part.startsWith('\\(')) return 'inline'
   return 'text'
 }
 
-function renderLegacyMathText(text, keyPrefix) {
+function renderLegacyMathText(text: string, keyPrefix: string): ReactNode {
   if (isStandaloneMath(text)) {
     return <SafeInlineMath math={text} />
   }
@@ -267,7 +276,7 @@ function renderLegacyMathText(text, keyPrefix) {
   )
 }
 
-function renderExplicitMathParts(text, keyPrefix) {
+function renderExplicitMathParts(text: string, keyPrefix: string): ReactNode {
   const parts = text.split(MATH_PATTERN)
 
   return (
@@ -288,14 +297,14 @@ function renderExplicitMathParts(text, keyPrefix) {
   )
 }
 
-function renderMathSegment(text, keyPrefix = '') {
+function renderMathSegment(text: string, keyPrefix = ''): ReactNode {
   const hasExplicitMath = text.search(MATH_PATTERN) !== -1
   return hasExplicitMath
     ? renderExplicitMathParts(text, keyPrefix)
     : renderLegacyMathText(text, keyPrefix)
 }
 
-const MathText = memo(function MathText({ children }) {
+const MathText = memo(function MathText({ children }: { children?: ReactNode }): ReactNode {
   const text = String(children ?? '')
 
   if (!text.trim()) return null
