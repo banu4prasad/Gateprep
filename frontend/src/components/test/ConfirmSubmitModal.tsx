@@ -8,6 +8,18 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 
+export interface ConfirmSubmitModalProps {
+  answered: number
+  doSubmit: (auto?: boolean) => void
+  marked: ReadonlySet<number>
+  notAnswered: number
+  questions: TestQuestion[]
+  setShowConfirm: React.Dispatch<React.SetStateAction<boolean>>
+  submitting: boolean
+}
+
+import type { TestQuestion } from '@/types/api'
+
 export default function ConfirmSubmitModal({
   answered,
   doSubmit,
@@ -16,7 +28,7 @@ export default function ConfirmSubmitModal({
   questions,
   setShowConfirm,
   submitting,
-}) {
+}: ConfirmSubmitModalProps): React.ReactElement {
   return (
     <Dialog open={true} onOpenChange={open => { if (!open && !submitting) setShowConfirm(false) }}>
       <DialogContent showCloseButton={false} className="p-6 sm:max-w-sm">

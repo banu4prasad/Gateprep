@@ -8,13 +8,21 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 
+export interface FullscreenWarningProps {
+  endTimeMs: number | null
+  fsViolations: number
+  handleTimerExpire: () => void
+  setShowConfirm: React.Dispatch<React.SetStateAction<boolean>>
+  setShowFsWarning: React.Dispatch<React.SetStateAction<boolean>>
+}
+
 export default function FullscreenWarning({
   endTimeMs,
   fsViolations,
   handleTimerExpire,
   setShowConfirm,
   setShowFsWarning,
-}) {
+}: FullscreenWarningProps): React.ReactElement {
   return (
     <Dialog open={true}>
       <DialogContent
