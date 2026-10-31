@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom'
 import Logo from '../components/shared/Logo'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
-import ShieldCheck from 'lucide-react/dist/esm/icons/shield-check'
+import { ArrowLeft, ShieldCheck } from 'lucide-react'
 
 export default function ForgotPasswordPage() {
   return (
@@ -20,7 +19,7 @@ export default function ForgotPasswordPage() {
 
         <Card
           className="border border-border/80 shadow-sm"
-          style={{ background: 'var(--bg-card)', '--card-spacing': '1.5rem' }}
+          style={Object.assign({ background: 'var(--bg-card)' }, { '--card-spacing': '1.5rem' })}
         >
           <CardContent>
             <div className="flex items-start gap-4">

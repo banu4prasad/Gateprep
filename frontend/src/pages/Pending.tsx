@@ -1,8 +1,7 @@
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
-import Clock from 'lucide-react/dist/esm/icons/clock'
-import LogOut from 'lucide-react/dist/esm/icons/log-out'
+import { Clock, LogOut } from 'lucide-react'
 
 export default function PendingPage() {
   const { user, logout } = useAuth()
@@ -10,7 +9,7 @@ export default function PendingPage() {
     <div className="theme-light-surface min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg)' }}>
       <Card
         className="w-full max-w-md animate-slide-up border border-border/80 shadow-sm text-center"
-        style={{ background: 'var(--bg-card)', '--card-spacing': '1.5rem' }}
+        style={Object.assign({ background: 'var(--bg-card)' }, { '--card-spacing': '1.5rem' })}
       >
         <CardContent>
           <div className="flex flex-col items-center">

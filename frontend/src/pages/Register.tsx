@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
@@ -9,21 +10,36 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
-import Eye from 'lucide-react/dist/esm/icons/eye'
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off'
-import UserPlus from 'lucide-react/dist/esm/icons/user-plus'
+import { Eye, EyeOff, UserPlus } from 'lucide-react'
+
+interface RegisterForm {
+  email: string
+  full_name: string
+  password: string
+  confirm: string
+}
+
+const getErrorDetail = (error: unknown): string | undefined => {
+  if (!error || typeof error !== 'object' || !('response' in error)) return undefined
+  const response = error.response
+  if (!response || typeof response !== 'object' || !('data' in response)) return undefined
+  const data = response.data
+  if (!data || typeof data !== 'object' || !('detail' in data)) return undefined
+  return typeof data.detail === 'string' ? data.detail : undefined
+}
 
 export default function RegisterPage() {
   const { saveUser } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', full_name: '', password: '', confirm: '' })
+  const [form, setForm] = useState<RegisterForm>({ email: '', full_name: '', password: '', confirm: '' })
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const handle = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
+  const handle = (key: keyof RegisterForm) => (event: ChangeEvent<HTMLInputElement>): void =>
+    setForm(formState => ({ ...formState, [key]: event.target.value }))
 
-  const submit = async e => {
-    e.preventDefault()
+  const submit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
     if (form.password !== form.confirm) { toast.error('Passwords do not match'); return }
     if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return }
     setLoading(true)
@@ -37,8 +53,8 @@ export default function RegisterPage() {
       toast.success('Account created!')
       if (user.role === 'admin') navigate('/admin', { replace: true })
       else navigate('/pending', { replace: true })
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Registration failed')
+    } catch (err: unknown) {
+      toast.error(getErrorDetail(err) || 'Registration failed')
     } finally { setLoading(false) }
   }
 
@@ -55,7 +71,7 @@ export default function RegisterPage() {
 
         <Card
           className="border border-border/80 shadow-sm"
-          style={{ background: 'var(--bg-card)', '--card-spacing': '1.5rem' }}
+          style={Object.assign({ background: 'var(--bg-card)' }, { '--card-spacing': '1.5rem' })}
         >
           <CardContent>
             <form onSubmit={submit} className="flex flex-col gap-6">
