@@ -13,7 +13,7 @@ describe('NatInput', () => {
         savedValue=""
       />
     )
-    const input = screen.getByRole('textbox', { name: 'Numerical Answer' })
+    const input = screen.getByRole<HTMLInputElement>('textbox', { name: 'Numerical Answer' })
 
     expect(input.getAttribute('type')).toBe('text')
     expect(input.getAttribute('inputmode')).toBe('decimal')

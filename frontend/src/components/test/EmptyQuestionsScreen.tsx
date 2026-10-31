@@ -2,7 +2,11 @@ import { AlertTriangle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-export default function EmptyQuestionsScreen({ navigate }) {
+export interface EmptyQuestionsScreenProps {
+  navigate: (to: string) => void
+}
+
+export default function EmptyQuestionsScreen({ navigate }: EmptyQuestionsScreenProps): React.ReactElement {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md text-center border-border">

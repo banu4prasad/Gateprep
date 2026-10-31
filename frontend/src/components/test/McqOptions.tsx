@@ -1,8 +1,20 @@
 import clsx from 'clsx'
 import MathText from '../shared/MathText'
 import OptionImage from './OptionImage'
+import type { TestQuestion } from '@/types/api'
 
-export default function McqOptions({ question, selectedLetter, onSelect }) {
+export type OptionQuestion = TestQuestion & {
+  options: string[]
+  option_images?: Record<string, string | undefined> | null
+}
+
+export interface McqOptionsProps {
+  question: OptionQuestion
+  selectedLetter?: string
+  onSelect: (letter: string) => void
+}
+
+export default function McqOptions({ question, selectedLetter, onSelect }: McqOptionsProps): React.ReactElement {
   return (
     <div className="space-y-2" role="radiogroup" aria-label="Answer options">
       {question.options.map((option, i) => {
@@ -24,10 +36,12 @@ export default function McqOptions({ question, selectedLetter, onSelect }) {
 
               if (event.key === 'ArrowRight' || event.key === 'ArrowDown' || event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
                 event.preventDefault()
-                const options = Array.from(event.currentTarget.parentElement.querySelectorAll('[role="radio"]'))
+                const parent = event.currentTarget.parentElement
+                if (!parent) return
+                const options = Array.from(parent.querySelectorAll<HTMLElement>('[role="radio"]'))
                 const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1
                 const nextIndex = (i + direction + options.length) % options.length
-                options[nextIndex].focus()
+                options[nextIndex]?.focus()
                 onSelect('ABCD'[nextIndex])
               }
             }}

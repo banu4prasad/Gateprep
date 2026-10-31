@@ -1,4 +1,9 @@
-export default function OptionImage({ src, letter }) {
+export interface OptionImageProps {
+  src?: string | null
+  letter: string
+}
+
+export default function OptionImage({ src, letter }: OptionImageProps): React.ReactElement | null {
   if (!src) return null
   return (
     <img

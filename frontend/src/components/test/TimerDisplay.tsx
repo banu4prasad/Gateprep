@@ -3,6 +3,15 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { formatTime, TIMER_WARNINGS } from '../../utils/testEngineUtils'
 
+export interface TimerDisplayProps {
+  endTime: number | null | undefined
+  onExpire: () => void
+  announceWarnings?: boolean
+  className?: string
+  lowClassName?: string
+  normalClassName?: string
+}
+
 export default function TimerDisplay({
   endTime,
   onExpire,
@@ -10,17 +19,17 @@ export default function TimerDisplay({
   className = 'flex items-center gap-1.5 px-3 py-1 rounded font-mono font-bold text-sm border',
   lowClassName = 'bg-destructive/20 border-destructive/50 text-destructive timer-critical',
   normalClassName = 'bg-muted theme-border text-foreground',
-}) {
+}: TimerDisplayProps): React.ReactElement {
   const getRemaining = useCallback(
-    () => Number.isFinite(endTime) ? Math.max(0, endTime - performance.now()) : null,
+    () => typeof endTime === 'number' && Number.isFinite(endTime) ? Math.max(0, endTime - performance.now()) : null,
     [endTime]
   )
   const [remaining, setRemaining] = useState(getRemaining)
   const expiredRef = useRef(false)
-  const warnedRef = useRef(new Set())
+  const warnedRef = useRef<Set<number>>(new Set())
 
   useEffect(() => {
-    if (!Number.isFinite(endTime)) {
+    if (typeof endTime !== 'number' || !Number.isFinite(endTime)) {
       setRemaining(null)
       return
     }

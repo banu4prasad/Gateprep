@@ -1,8 +1,15 @@
 import clsx from 'clsx'
 import MathText from '../shared/MathText'
 import OptionImage from './OptionImage'
+import type { OptionQuestion } from './McqOptions'
 
-export default function MsqOptions({ question, selectedLetters, onToggle }) {
+export interface MsqOptionsProps {
+  question: OptionQuestion
+  selectedLetters?: string
+  onToggle: (letter: string) => void
+}
+
+export default function MsqOptions({ question, selectedLetters, onToggle }: MsqOptionsProps): React.ReactElement {
   return (
     <div className="space-y-2" role="group" aria-label="Answer options; select all that apply">
       <p className="text-xs text-warning-text mb-2">One or more correct answers. No negative marking.</p>

@@ -1,20 +1,26 @@
 import MathText from '../shared/MathText'
+import type { TestQuestion } from '@/types/api'
 
-export default function QuestionBody({ question }) {
+export interface QuestionBodyProps {
+  question: TestQuestion
+}
+
+export default function QuestionBody({ question }: QuestionBodyProps): React.ReactElement {
+  const imageUrl = question.question_image_url
   return (
     <div className="mb-4">
       <div className="leading-relaxed whitespace-pre-wrap text-foreground">
         <MathText>{question.question_text}</MathText>
       </div>
-      {question.question_image_url && (
+      {imageUrl && (
         <img
-          src={question.question_image_url}
+          src={imageUrl}
           alt="question"
           loading="eager"
-          fetchpriority="high"
+          {...{ fetchpriority: 'high' }}
           decoding="async"
           className="mt-3 w-full max-w-2xl max-h-64 object-contain rounded cursor-pointer border bg-muted aspect-[21/9] border-border"
-          onClick={() => window.open(question.question_image_url, '_blank')}
+          onClick={() => window.open(imageUrl, '_blank')}
         />
       )}
     </div>
