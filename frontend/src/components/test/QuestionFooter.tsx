@@ -1,9 +1,16 @@
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left'
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right'
-import Flag from 'lucide-react/dist/esm/icons/flag'
+import { ChevronLeft, ChevronRight, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export default function QuestionFooter({ current, isLastQuestion, setCurrent, markAndNext, clearResponse, saveAndNext }) {
+export interface QuestionFooterProps {
+  current: number
+  isLastQuestion: boolean
+  setCurrent: React.Dispatch<React.SetStateAction<number>>
+  markAndNext: () => void
+  clearResponse: () => void
+  saveAndNext: () => void
+}
+
+export default function QuestionFooter({ current, isLastQuestion, setCurrent, markAndNext, clearResponse, saveAndNext }: QuestionFooterProps): React.ReactElement {
   return (
     <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 border-t border-border flex-shrink-0 gap-1 bg-card text-card-foreground">
       <div className="flex items-center gap-1 sm:gap-2">

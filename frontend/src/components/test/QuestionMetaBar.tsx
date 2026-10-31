@@ -6,7 +6,13 @@ const TYPE_LABELS = {
   nat: 'NAT Numerical',
 }
 
-export default function QuestionMetaBar({ question }) {
+export interface QuestionMetaBarProps {
+  question: TestQuestion
+}
+
+import type { TestQuestion } from '@/types/api'
+
+export default function QuestionMetaBar({ question }: QuestionMetaBarProps): React.ReactElement {
   const typeLabel = TYPE_LABELS[question.question_type] ?? question.question_type
 
   return (
@@ -16,7 +22,7 @@ export default function QuestionMetaBar({ question }) {
       </span>
       <span className="text-muted-foreground">
         Marks: <strong className="text-success-text">+{question.marks}</strong>
-        {question.negative_marks > 0 && (
+        {question.negative_marks !== undefined && question.negative_marks > 0 && (
           <span className="text-destructive ml-1">/ -{question.negative_marks}</span>
         )}
       </span>

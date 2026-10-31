@@ -13,6 +13,7 @@ describe('Calculator Component - digit inputs', () => {
     const user = userEvent.setup();
     const { container, getByRole } = render(<Calculator onClose={vi.fn()} />);
     const display = container.querySelector('.text-2xl');
+    if (!display) throw new Error('Calculator display was not rendered')
     
     expect(display).toHaveTextContent('0');
 
@@ -26,6 +27,7 @@ describe('Calculator Component - digit inputs', () => {
     const user = userEvent.setup();
     const { container, getByRole } = render(<Calculator onClose={vi.fn()} />);
     const display = container.querySelector('.text-2xl');
+    if (!display) throw new Error('Calculator display was not rendered')
 
     await user.click(getByRole('button', { name: '4' }));
     await user.click(getByRole('button', { name: '2' }));
@@ -38,6 +40,7 @@ describe('Calculator Component - digit inputs', () => {
     const user = userEvent.setup();
     const { container, getByRole } = render(<Calculator onClose={vi.fn()} />);
     const display = container.querySelector('.text-2xl');
+    if (!display) throw new Error('Calculator display was not rendered')
 
     await user.click(getByRole('button', { name: '5' }));
     await user.click(getByRole('button', { name: '+' }));
@@ -58,6 +61,7 @@ describe('Calculator Component - digit inputs', () => {
     const user = userEvent.setup();
     const { container, getByRole } = render(<Calculator onClose={vi.fn()} />);
     const display = container.querySelector('.text-2xl');
+    if (!display) throw new Error('Calculator display was not rendered')
 
     await user.click(getByRole('button', { name: '2' }));
     await user.click(getByRole('button', { name: '.' }));
@@ -76,6 +80,7 @@ describe('Calculator Component - digit inputs', () => {
     const user = userEvent.setup();
     const { container, getByRole } = render(<Calculator onClose={vi.fn()} />);
     const display = container.querySelector('.text-2xl');
+    if (!display) throw new Error('Calculator display was not rendered')
 
     await user.click(getByRole('button', { name: '(' }));
     await user.click(getByRole('button', { name: '2' }));
@@ -96,6 +101,7 @@ describe('Calculator Component - digit inputs', () => {
     const dialog = getByRole('dialog', { name: 'Scientific Calculator' });
     const buttons = dialog.querySelectorAll('button');
 
+    if (buttons.length === 0) throw new Error('Calculator buttons were not rendered')
     buttons[buttons.length - 1].focus();
     await user.keyboard('{Tab}');
     expect(buttons[0]).toHaveFocus();

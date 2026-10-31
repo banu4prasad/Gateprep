@@ -1,7 +1,14 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-export default function NatInput({ value, onChange, onCommit, savedValue }) {
+export interface NatInputProps {
+  value: string
+  onChange: (value: string) => void
+  onCommit: () => void
+  savedValue?: string
+}
+
+export default function NatInput({ value, onChange, onCommit, savedValue }: NatInputProps): React.ReactElement {
   return (
     <div>
       <p className="text-xs text-success-text mb-3">Enter numerical answer. No negative marking.</p>

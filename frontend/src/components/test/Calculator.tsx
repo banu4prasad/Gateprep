@@ -1,16 +1,32 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import X from 'lucide-react/dist/esm/icons/x'
+import { X } from 'lucide-react'
 import { DEG_TO_RAD, isOperatorTail, tokenizeExpression, formatResult, evaluateExpression, SCIENTIFIC_FUNCTIONS, SCIENTIFIC_CONSTANTS } from '../../utils/calculatorEngine'
 
-const Btn = ({ label, onClick, type = 'default', wide = false }) => (
+const scientificFunctions: Record<string, (value: number, degrees?: boolean) => number> = SCIENTIFIC_FUNCTIONS
+const scientificConstants: Record<string, number> = SCIENTIFIC_CONSTANTS
+
+type CalculatorButtonType = 'default' | 'op' | 'eq' | 'clear' | 'back'
+
+interface CalculatorButtonProps {
+  label: string
+  onClick: () => void
+  type?: CalculatorButtonType
+  wide?: boolean
+}
+
+const Btn = ({ label, onClick, type = 'default', wide = false }: CalculatorButtonProps): React.ReactElement => (
   <button onClick={onClick}
     className={`calc-btn ${type === 'op' ? 'calc-btn-op' : type === 'eq' ? 'calc-btn-eq' : type === 'clear' ? 'calc-btn-clear' : type === 'back' ? 'calc-btn-backspace' : ''} ${wide ? 'col-span-2' : ''}`}>
     {label}
   </button>
 )
 
-export default function Calculator({ onClose }) {
-  const dialogRef = useRef(null)
+export interface CalculatorProps {
+  onClose: () => void
+}
+
+export default function Calculator({ onClose }: CalculatorProps): React.ReactElement {
+  const dialogRef = useRef<HTMLDivElement>(null)
   const expressionRef = useRef('')
   const [display, setDisplay] = useState('0')
   const [expression, setExpression] = useState('')
@@ -18,9 +34,7 @@ export default function Calculator({ onClose }) {
   const [isDeg, setIsDeg] = useState(true)
   const [waitingForOperand, setWaitingForOperand] = useState(false)
 
-  const getAngle = (val) => isDeg ? val * DEG_TO_RAD : val
-
-  const setExpressionText = useCallback((next) => {
+  const setExpressionText = useCallback((next: string | ((current: string) => string)) => {
     const value = typeof next === 'function' ? next(expressionRef.current) : next
     expressionRef.current = value
     setExpression(value)
@@ -31,7 +45,7 @@ export default function Calculator({ onClose }) {
     firstButton?.focus()
   }, [])
 
-  const inputDigit = (digit) => {
+  const inputDigit = (digit: string): void => {
     if (waitingForOperand) {
       setDisplay(String(digit))
       setWaitingForOperand(false)
@@ -45,7 +59,7 @@ export default function Calculator({ onClose }) {
     if (!display.includes('.')) setDisplay(display + '.')
   }
 
-  const handleOperator = (op) => {
+  const handleOperator = (op: string): void => {
     setExpressionText(prev => {
       const trimmed = prev.trim()
       if (!trimmed) return `${display} ${op}`
@@ -93,13 +107,13 @@ export default function Calculator({ onClose }) {
     } catch { setDisplay('Error') }
   }
 
-  const sciFunc = (fn) => {
-    if (fn in SCIENTIFIC_CONSTANTS) {
-      setDisplay(String(SCIENTIFIC_CONSTANTS[fn]))
+  const sciFunc = (fn: string): void => {
+    if (fn in scientificConstants) {
+      setDisplay(String(scientificConstants[fn]))
       return
     }
 
-    const compute = SCIENTIFIC_FUNCTIONS[fn]
+    const compute = scientificFunctions[fn]
     if (!compute) return
 
     try {
@@ -114,7 +128,7 @@ export default function Calculator({ onClose }) {
   const backspace = () => { setDisplay(display.length > 1 ? display.slice(0, -1) : '0') }
   const toggleSign = () => setDisplay(String(parseFloat(display) * -1))
 
-  const handleDialogKeyDown = useCallback((event) => {
+  const handleDialogKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>): void => {
     if (event.key === 'Escape') {
       event.preventDefault()
       onClose()
@@ -124,12 +138,13 @@ export default function Calculator({ onClose }) {
     if (event.key !== 'Tab') return
 
     const focusable = Array.from(
-      dialogRef.current?.querySelectorAll('button:not([disabled])') || []
+      dialogRef.current?.querySelectorAll<HTMLButtonElement>('button:not([disabled])') || []
     )
     if (focusable.length === 0) return
 
     const first = focusable[0]
     const last = focusable.at(-1)
+    if (!first || !last) return
     if (event.shiftKey && document.activeElement === first) {
       event.preventDefault()
       last.focus()
