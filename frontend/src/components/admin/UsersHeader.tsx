@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import RefreshCw from 'lucide-react/dist/esm/icons/refresh-cw'
+import { RefreshCw } from 'lucide-react'
 
 export default function UsersHeader({ totalUsers, pendingUsers, reload }) {
   return (

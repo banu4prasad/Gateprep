@@ -1,4 +1,4 @@
-import Upload from 'lucide-react/dist/esm/icons/upload'
+import { Upload } from 'lucide-react'
 
 const openImage = (url) => {
   window.open(url, '_blank')

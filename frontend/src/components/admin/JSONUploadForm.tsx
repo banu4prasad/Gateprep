@@ -1,8 +1,6 @@
 import { useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import FileJson from 'lucide-react/dist/esm/icons/file-json'
-import Upload from 'lucide-react/dist/esm/icons/upload'
-import X from 'lucide-react/dist/esm/icons/x'
+import { FileJson, Upload, X } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { ALERT_STYLE } from '../shared/alertStyles'
 

@@ -1,7 +1,4 @@
-import Eye from 'lucide-react/dist/esm/icons/eye'
-import FileJson from 'lucide-react/dist/esm/icons/file-json'
-import Pencil from 'lucide-react/dist/esm/icons/pencil'
-import Plus from 'lucide-react/dist/esm/icons/plus'
+import { Eye, FileJson, Pencil, Plus } from 'lucide-react'
 import TestMetaForm from './TestMetaForm'
 import { Button } from '@/components/ui/button'
 

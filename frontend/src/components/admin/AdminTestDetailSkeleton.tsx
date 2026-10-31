@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
+import { ArrowLeft } from 'lucide-react'
 import Layout from '../shared/Layout'
 import { SkeletonBlock } from '../shared/Skeletons'
 import { Card, CardContent } from '@/components/ui/card'

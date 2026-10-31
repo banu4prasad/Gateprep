@@ -1,5 +1,5 @@
 import { Input } from '@/components/ui/input'
-import Search from 'lucide-react/dist/esm/icons/search'
+import { Search } from 'lucide-react'
 
 export default function UsersSearchBar({ searchInput, setSearchInput }) {
   return (

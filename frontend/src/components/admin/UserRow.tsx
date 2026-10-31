@@ -1,7 +1,5 @@
 import { memo } from 'react'
-import KeyRound from 'lucide-react/dist/esm/icons/key-round'
-import UserX from 'lucide-react/dist/esm/icons/user-x'
-import UserCheck from 'lucide-react/dist/esm/icons/user-check'
+import { KeyRound, UserX, UserCheck } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

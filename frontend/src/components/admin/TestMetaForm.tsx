@@ -1,6 +1,5 @@
 import Spinner from '../shared/Spinner'
-import Save from 'lucide-react/dist/esm/icons/save'
-import X from 'lucide-react/dist/esm/icons/x'
+import { Save, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 

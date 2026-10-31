@@ -1,5 +1,4 @@
-import FileJson from 'lucide-react/dist/esm/icons/file-json'
-import Plus from 'lucide-react/dist/esm/icons/plus'
+import { FileJson, Plus } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import Save from 'lucide-react/dist/esm/icons/save'
-import X from 'lucide-react/dist/esm/icons/x'
+import { Save, X } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { OPTION_LETTERS, optionsFromQuestion } from './questionUtils'
 import { Button } from '@/components/ui/button'
