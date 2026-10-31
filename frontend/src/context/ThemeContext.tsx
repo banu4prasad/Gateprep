@@ -1,9 +1,18 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 
-const ThemeContext = createContext(null)
+type Theme = 'dark' | 'light'
+interface ThemeContextValue {
+  theme: Theme
+  toggle: () => void
+}
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark')
+const ThemeContext = createContext<ThemeContextValue | null>(null)
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setTheme] = useState<Theme>(() => {
+    // Preserve stored values at this localStorage boundary.
+    return (localStorage.getItem('theme') as Theme | null) || 'dark'
+  })
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)

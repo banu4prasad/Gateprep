@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { ReactElement } from 'react'
 import { render, screen, cleanup, act, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -13,10 +14,10 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('swr', () => ({ mutate: vi.fn() }))
 
-const mockGet = vi.fn()
-const mockPost = vi.fn()
+const mockGet = vi.fn<(...args: unknown[]) => Promise<{ data: unknown }>>()
+const mockPost = vi.fn<(...args: unknown[]) => Promise<unknown>>()
 vi.mock('../api/client', () => ({
-  default: { get: (...args) => mockGet(...args), post: (...args) => mockPost(...args) },
+  default: { get: (...args: unknown[]) => mockGet(...args), post: (...args: unknown[]) => mockPost(...args) },
   AUTH_UNAUTHORIZED_EVENT: 'gateprep:auth-unauthorized',
   startTokenRefresh: vi.fn(),
   stopTokenRefresh: vi.fn(),
@@ -36,7 +37,7 @@ function AuthConsumer() {
   )
 }
 
-function renderWithRouter(ui) {
+function renderWithRouter(ui: ReactElement) {
   return render(<MemoryRouter>{ui}</MemoryRouter>)
 }
 
