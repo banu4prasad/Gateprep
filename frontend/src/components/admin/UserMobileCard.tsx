@@ -1,14 +1,22 @@
 import { memo } from 'react'
-import KeyRound from 'lucide-react/dist/esm/icons/key-round'
-import UserX from 'lucide-react/dist/esm/icons/user-x'
-import UserCheck from 'lucide-react/dist/esm/icons/user-check'
+import { KeyRound, UserX, UserCheck } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ROLE_STYLE, ROLE_ACTION_STYLE, USER_STATUS_STYLE } from './roleStyles'
+import type { ManagedAdminUser, AdminRole } from './roleStyles'
+import type { ReactElement } from 'react'
 
-export default memo(function UserMobileCard({ user: u, updating, onChangeRole, onToggleStatus, onCreateResetLink }) {
+export interface UserMobileCardProps {
+  user: ManagedAdminUser
+  updating: Record<string | number, boolean>
+  onChangeRole: (id: number, role: AdminRole) => void
+  onToggleStatus: (id: number) => void
+  onCreateResetLink: (id: number) => void
+}
+
+export default memo(function UserMobileCard({ user: u, updating, onChangeRole, onToggleStatus, onCreateResetLink }: UserMobileCardProps): ReactElement {
   return (
     <Card>
       <CardContent className="flex flex-col gap-1.5 py-2 px-3">

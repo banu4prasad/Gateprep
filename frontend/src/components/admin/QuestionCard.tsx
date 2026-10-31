@@ -1,20 +1,20 @@
 import { memo, useState } from 'react'
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down'
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up'
-import Pencil from 'lucide-react/dist/esm/icons/pencil'
-import Trash2 from 'lucide-react/dist/esm/icons/trash-2'
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
 import ImageSlot from './ImageSlot'
 import QuestionEditForm from './QuestionEditForm'
 import MathText from '../shared/MathText'
 import { OPTION_LETTERS } from './questionUtils'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import type { KeyboardEvent, ReactElement } from 'react'
+import type { AdminQuestion, QuestionType } from './questionUtils'
+import type { QuestionIn } from '@/types/api'
 
 const typeColor = {
   mcq: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
   msq: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
   nat: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-}
+} satisfies Record<QuestionType, string>
 
 const QuestionCard = memo(function QuestionCard({
   q,
@@ -23,13 +23,13 @@ const QuestionCard = memo(function QuestionCard({
   onUpdate,
   onUploadImage,
   onDeleteImage,
-}) {
+}: QuestionCardProps): ReactElement {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const optionImages = q.option_images || {}
 
   const toggleOpen = () => setOpen(current => !current)
-  const handleKeyDown = (event) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       toggleOpen()
@@ -157,5 +157,14 @@ const QuestionCard = memo(function QuestionCard({
     </Card>
   )
 })
+
+export interface QuestionCardProps {
+  q: AdminQuestion
+  idx: number
+  onDelete: (questionId: number) => void
+  onUpdate: (questionId: number, payload: QuestionIn) => Promise<void>
+  onUploadImage: (questionId: number, file: File, target?: 'question' | 'A' | 'B' | 'C' | 'D') => Promise<void>
+  onDeleteImage: (questionId: number, target: 'question' | 'A' | 'B' | 'C' | 'D') => Promise<void>
+}
 
 export default QuestionCard

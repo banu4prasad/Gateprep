@@ -1,13 +1,22 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import Save from 'lucide-react/dist/esm/icons/save'
-import X from 'lucide-react/dist/esm/icons/x'
+import { Save, X } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { OPTION_LETTERS, optionsFromQuestion } from './questionUtils'
 import { Button } from '@/components/ui/button'
+import type { ChangeEvent, FormEvent, ReactElement } from 'react'
+import { isQuestionType } from './questionUtils'
+import type { AdminQuestion, QuestionFormState, QuestionType } from './questionUtils'
+import type { QuestionIn } from '@/types/api'
 
-export default function QuestionEditForm({ question, onSave, onCancel }) {
-  const [form, setForm] = useState(() => ({
+export interface QuestionEditFormProps {
+  question: AdminQuestion
+  onSave: (question: QuestionIn) => Promise<void>
+  onCancel: () => void
+}
+
+export default function QuestionEditForm({ question, onSave, onCancel }: QuestionEditFormProps): ReactElement {
+  const [form, setForm] = useState<QuestionFormState>(() => ({
     question_type: question.question_type || 'mcq',
     question_text: question.question_text || '',
     options: optionsFromQuestion(question.options),
@@ -21,14 +30,14 @@ export default function QuestionEditForm({ question, onSave, onCancel }) {
   const isNAT = form.question_type === 'nat'
   const isMSQ = form.question_type === 'msq'
 
-  const setOption = (idx, value) => {
+  const setOption = (idx: number, value: string): void => {
     setForm(prev => ({
       ...prev,
       options: prev.options.map((option, optionIdx) => (optionIdx === idx ? value : option)),
     }))
   }
 
-  const setType = (questionType) => {
+  const setType = (questionType: QuestionType): void => {
     setForm(prev => ({
       ...prev,
       question_type: questionType,
@@ -37,7 +46,7 @@ export default function QuestionEditForm({ question, onSave, onCancel }) {
     }))
   }
 
-  const submit = async (event) => {
+  const submit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
     const marks = Number(form.marks)
     const negativeMarks = Number(form.negative_marks)
@@ -63,10 +72,20 @@ export default function QuestionEditForm({ question, onSave, onCancel }) {
     try {
       await onSave(payload)
       toast.success('Question updated')
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to update question')
+    } catch (err: unknown) {
+      toast.error(getErrorDetail(err) || 'Failed to update question')
     } finally {
       setSaving(false)
+    }
+
+    function getErrorDetail(error: unknown): string | undefined {
+      if (!error || typeof error !== 'object') return undefined
+      const response = 'response' in error && error.response
+      if (!response || typeof response !== 'object') return undefined
+      const data = 'data' in response && response.data
+      if (!data || typeof data !== 'object') return undefined
+      const detail = 'detail' in data ? data.detail : undefined
+      return typeof detail === 'string' ? detail : undefined
     }
   }
 
@@ -75,7 +94,9 @@ export default function QuestionEditForm({ question, onSave, onCancel }) {
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="label">Type</label>
-          <select className="input" value={form.question_type} onChange={event => setType(event.target.value)}>
+          <select className="input" value={form.question_type} onChange={event => {
+            if (isQuestionType(event.target.value)) setType(event.target.value)
+          }}>
             <option value="mcq">MCQ (Single)</option>
             <option value="msq">MSQ (Multi)</option>
             <option value="nat">NAT (Numerical)</option>

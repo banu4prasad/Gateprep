@@ -1,18 +1,29 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import X from 'lucide-react/dist/esm/icons/x'
+import { X } from 'lucide-react'
 import Spinner from '../shared/Spinner'
-import { EMPTY_QUESTION, OPTION_LETTERS } from './questionUtils'
+import { EMPTY_QUESTION, isQuestionType, OPTION_LETTERS } from './questionUtils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import type { ChangeEvent, ReactElement } from 'react'
+import type { QuestionCreateFormState } from './questionUtils'
+import type { QuestionIn } from '@/types/api'
 
-export default function QuestionForm({ onAdd, onClose }) {
-  const [question, setQuestion] = useState({ ...EMPTY_QUESTION, options: ['', '', '', ''] })
+export interface QuestionFormProps {
+  onAdd: (question: QuestionIn) => Promise<void>
+  onClose: () => void
+}
+
+export default function QuestionForm({ onAdd, onClose }: QuestionFormProps): ReactElement {
+  const [question, setQuestion] = useState<QuestionCreateFormState>({
+    ...EMPTY_QUESTION,
+    options: ['', '', '', ''],
+  })
   const [loading, setLoading] = useState(false)
   const isNAT = question.question_type === 'nat'
   const isMSQ = question.question_type === 'msq'
 
-  const setOption = (idx, value) => {
+  const setOption = (idx: number, value: string): void => {
     setQuestion(prev => ({
       ...prev,
       options: prev.options.map((option, optionIdx) => (optionIdx === idx ? value : option)),
@@ -34,10 +45,20 @@ export default function QuestionForm({ onAdd, onClose }) {
       await onAdd(payload)
       setQuestion({ ...EMPTY_QUESTION, options: ['', '', '', ''] })
       toast.success('Question added')
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed')
+    } catch (err: unknown) {
+      toast.error(getErrorDetail(err) || 'Failed')
     } finally {
       setLoading(false)
+    }
+
+    function getErrorDetail(error: unknown): string | undefined {
+      if (!error || typeof error !== 'object') return undefined
+      const response = 'response' in error && error.response
+      if (!response || typeof response !== 'object') return undefined
+      const data = 'data' in response && response.data
+      if (!data || typeof data !== 'object') return undefined
+      const detail = 'detail' in data ? data.detail : undefined
+      return typeof detail === 'string' ? detail : undefined
     }
   }
 
@@ -59,7 +80,7 @@ export default function QuestionForm({ onAdd, onClose }) {
             value={question.question_type}
             onChange={event => setQuestion(prev => ({
               ...prev,
-              question_type: event.target.value,
+              question_type: isQuestionType(event.target.value) ? event.target.value : prev.question_type,
               correct_answer: '',
               negative_marks: event.target.value === 'mcq' ? 0.33 : 0,
             }))}

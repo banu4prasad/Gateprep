@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom'
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
+import { ArrowLeft } from 'lucide-react'
 import Layout from '../shared/Layout'
 import { SkeletonBlock } from '../shared/Skeletons'
 import { Card, CardContent } from '@/components/ui/card'
+import type { ReactElement } from 'react'
 
-export default function AdminTestDetailSkeleton() {
+export default function AdminTestDetailSkeleton(): ReactElement {
   return (
     <Layout>
       <div className="flex flex-col gap-6 animate-fade-in max-w-3xl">
