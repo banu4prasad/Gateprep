@@ -6,7 +6,7 @@ function Card({
   className,
   size = "default",
   ...props
-}) {
+}: React.ComponentProps<"div"> & { size?: "default" | "sm" | "lg" }) {
   return (
     <div
       data-slot="card"
@@ -22,7 +22,7 @@ function Card({
 function CardHeader({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-header"
@@ -38,7 +38,7 @@ function CardTitle({
   className,
   as: Comp = "h3",
   ...props
-}) {
+}: React.HTMLAttributes<HTMLElement> & { as?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6" }) {
   return (
     <Comp
       data-slot="card-title"
@@ -53,7 +53,7 @@ function CardTitle({
 function CardDescription({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
@@ -65,7 +65,7 @@ function CardDescription({
 function CardAction({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-action"
@@ -80,7 +80,7 @@ function CardAction({
 function CardContent({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-content"
@@ -92,7 +92,7 @@ function CardContent({
 function CardFooter({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-footer"
