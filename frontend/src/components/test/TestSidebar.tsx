@@ -2,6 +2,25 @@ import { Send } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { getQStatus, STATUS_CLASS } from '../../utils/testEngineUtils'
 import { Button } from '@/components/ui/button'
+import type { TestQuestion } from '@/types/api'
+import type { QuestionStatus } from '../../utils/testEngineUtils'
+
+export type QuestionGroup = { question: TestQuestion; index: number }
+export type QuestionGroups = Map<string, QuestionGroup[]>
+
+export interface TestSidebarProps {
+  answered: number
+  answers: Record<number, string | undefined>
+  currentQuestion?: TestQuestion
+  marked: Set<number>
+  notAnswered: number
+  onQuestionSelect: (index: number) => void
+  onSubmitClick: () => void
+  questionGroups: QuestionGroups
+  questions: TestQuestion[]
+  submitting: boolean
+  visited: Set<number>
+}
 
 export default function TestSidebar({
   answered,
@@ -15,7 +34,7 @@ export default function TestSidebar({
   questions,
   submitting,
   visited,
-}) {
+}: TestSidebarProps): React.ReactElement {
   return (
     <>
       <div className="p-3 border-b text-center border-border">
@@ -48,7 +67,12 @@ export default function TestSidebar({
                 ? 'current'
                 : !visited.has(question.id)
                   ? 'not-visited'
-                  : getQStatus(question.id, currentQuestion?.id, answers, marked)
+                  : getQStatus(
+                    String(question.id),
+                    currentQuestion ? String(currentQuestion.id) : '',
+                    Object.fromEntries(Object.entries(answers)),
+                    new Set([...marked].map(String)),
+                  )
               return (
                 <button
                   key={question.id}

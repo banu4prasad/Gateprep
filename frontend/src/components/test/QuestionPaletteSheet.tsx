@@ -1,5 +1,14 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import type { TestQuestion } from '@/types/api'
+
+export interface QuestionPaletteSheetProps {
+  children?: React.ReactNode
+  current: number
+  questions: TestQuestion[]
+  showPalette: boolean
+  setShowPalette: React.Dispatch<React.SetStateAction<boolean>>
+}
 
 export default function QuestionPaletteSheet({
   children, // The sidebar
@@ -7,7 +16,7 @@ export default function QuestionPaletteSheet({
   questions,
   showPalette,
   setShowPalette,
-}) {
+}: QuestionPaletteSheetProps): React.ReactElement {
   return (
     <Sheet open={showPalette} onOpenChange={setShowPalette}>
       <SheetTrigger asChild>

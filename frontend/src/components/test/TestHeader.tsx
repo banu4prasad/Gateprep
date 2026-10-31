@@ -3,6 +3,24 @@ import clsx from 'clsx'
 import Logo from '../shared/Logo'
 import Spinner from '../shared/Spinner'
 import TimerDisplay from './TimerDisplay'
+import type { TestDetail, TestQuestion } from '@/types/api'
+
+export interface TestHeaderProps {
+  attemptNumber: number | string | null
+  currentQuestion?: TestQuestion
+  endTimeMs: number | null
+  handleTimerExpire: () => void
+  maxAttempts: number | string
+  onSubmitClick: () => void
+  questions: TestQuestion[]
+  setCurrent: React.Dispatch<React.SetStateAction<number>>
+  setShowCalc: React.Dispatch<React.SetStateAction<boolean>>
+  showCalc: boolean
+  subjects: string[]
+  submitting: boolean
+  test: TestDetail | null
+  totalViolations: number
+}
 
 export default function TestHeader({
   attemptNumber,
@@ -19,7 +37,7 @@ export default function TestHeader({
   submitting,
   test,
   totalViolations,
-}) {
+}: TestHeaderProps): React.ReactElement {
   return (
     <div className="app-header flex items-center px-2 sm:px-4 h-12 border-b flex-shrink-0 theme-header-surface">
       <div className="flex items-center gap-2 mr-3 flex-shrink-0">

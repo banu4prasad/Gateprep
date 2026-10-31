@@ -2,6 +2,16 @@ import { Maximize } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import type { TestDetail } from '@/types/api'
+
+export interface InstructionScreenProps {
+  accepted: boolean
+  beginTest: () => Promise<void>
+  navigate: (to: string) => void
+  setAccepted: React.Dispatch<React.SetStateAction<boolean>>
+  starting: boolean
+  test: TestDetail | null
+}
 
 export default function InstructionScreen({
   accepted,
@@ -10,7 +20,7 @@ export default function InstructionScreen({
   setAccepted,
   starting,
   test,
-}) {
+}: InstructionScreenProps): React.ReactElement {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-2xl animate-fade-in border-border">

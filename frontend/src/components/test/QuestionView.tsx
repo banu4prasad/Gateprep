@@ -4,6 +4,24 @@ import McqOptions from './McqOptions'
 import MsqOptions from './MsqOptions'
 import NatInput from './NatInput'
 import QuestionFooter from './QuestionFooter'
+import type { OptionQuestion } from './McqOptions'
+import type { TestQuestion } from '@/types/api'
+
+export interface QuestionViewProps {
+  answers: Record<number, string | undefined>
+  clearResponse: () => void
+  commitNAT: () => void
+  current: number
+  markAndNext: () => void
+  natInput: string
+  question: OptionQuestion
+  questions: TestQuestion[]
+  saveAndNext: () => void
+  setCurrent: React.Dispatch<React.SetStateAction<number>>
+  setMCQ: (letter: string) => void
+  setNatInput: (value: string) => void
+  toggleMSQ: (letter: string) => void
+}
 
 export default function QuestionView({
   answers,
@@ -19,7 +37,7 @@ export default function QuestionView({
   setMCQ,
   setNatInput,
   toggleMSQ,
-}) {
+}: QuestionViewProps): React.ReactElement {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <QuestionMetaBar question={question} />
