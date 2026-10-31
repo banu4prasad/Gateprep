@@ -20,7 +20,7 @@ const api = axios.create({
 api.interceptors.response.use(
   r => r,
   err => {
-    if (err.response?.status === 401) {
+    if (axios.isAxiosError(err) && err.response?.status === 401) {
       const isAuthRoute = err.config?.url?.includes('/auth/')
       if (!isAuthRoute) {
         window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT))
@@ -34,7 +34,7 @@ api.interceptors.response.use(
 // Refreshes the httpOnly auth cookie before it expires.
 // Token lifetime is 3 hours; refresh fires every 2.5 hours.
 const REFRESH_INTERVAL_MS = 2.5 * 60 * 60 * 1000 // 2.5 hours
-let refreshTimer = null
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 export function startTokenRefresh({ refreshNow = false } = {}) {
   stopTokenRefresh()

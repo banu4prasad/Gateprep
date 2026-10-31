@@ -1,31 +1,8 @@
 import { testAPI } from '../api/api'
+import type { ResultData } from '../types/api'
 import katexCss from 'katex/dist/katex.min.css?raw'
 import katexJs from 'katex/dist/katex.min.js?raw'
 import katexAutoRenderJs from 'katex/dist/contrib/auto-render.min.js?raw'
-
-interface ResultAnswer {
-  is_correct?: boolean | null
-  options?: unknown[]
-  marks_awarded?: unknown
-  question_text?: unknown
-  selected_answer?: unknown
-  correct_answer?: unknown
-  time_spent_seconds?: unknown
-}
-
-interface ResultData {
-  test_title?: string
-  attempt_number?: unknown
-  submitted_at?: string | null
-  score?: number
-  total_marks?: unknown
-  percentage?: number
-  correct?: unknown
-  incorrect?: unknown
-  skipped?: unknown
-  attempt_id?: number | string | null
-  answers?: ResultAnswer[]
-}
 
 function escapeHtml(value: unknown): string {
   const entities: Record<string, string> = {
@@ -97,7 +74,7 @@ export function buildResultHtml(result: ResultData): string {
     <div>Attempt ${escapeHtml(result.attempt_number)} · Practice attempt · ${escapeHtml(formatDate(result.submitted_at))}</div>
     <div class="summary">
       <div class="metric"><span>Score</span><strong>${escapeHtml(result.score?.toFixed?.(2) ?? result.score)} / ${escapeHtml(result.total_marks)}</strong></div>
-      <div class="metric"><span>Percentage</span><strong>${escapeHtml(Math.round(result.percentage ?? NaN))}%</strong></div>
+      <div class="metric"><span>Percentage</span><strong>${escapeHtml(Math.round(Number(result.percentage)))}%</strong></div>
       <div class="metric"><span>Correct</span><strong>${escapeHtml(result.correct)}</strong></div>
       <div class="metric"><span>Wrong</span><strong>${escapeHtml(result.incorrect)}</strong></div>
       <div class="metric"><span>Skipped</span><strong>${escapeHtml(result.skipped)}</strong></div>

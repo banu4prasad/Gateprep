@@ -21,7 +21,7 @@ describe('API Wrappers', () => {
   describe('fetcher', () => {
     it('should call api.get and return data', async () => {
       const mockData = { message: 'success' };
-      api.get.mockResolvedValueOnce({ data: mockData });
+      vi.mocked(api.get).mockResolvedValueOnce({ data: mockData });
       
       const result = await fetcher('/test-url');
       
@@ -32,8 +32,8 @@ describe('API Wrappers', () => {
 
   describe('authAPI', () => {
     it('register should call POST /auth/register', async () => {
-      api.post.mockResolvedValueOnce({ data: 'registered' });
-      const userData = { email: 'test@example.com', password: 'password123' };
+      vi.mocked(api.post).mockResolvedValueOnce({ data: 'registered' });
+      const userData = { email: 'test@example.com', full_name: 'Test User', password: 'password123' };
       
       await authAPI.register(userData);
       
@@ -41,7 +41,7 @@ describe('API Wrappers', () => {
     });
 
     it('login should call POST /auth/login', async () => {
-      api.post.mockResolvedValueOnce({ data: 'logged_in' });
+      vi.mocked(api.post).mockResolvedValueOnce({ data: 'logged_in' });
       const credentials = { email: 'test@example.com', password: 'password123' };
       
       await authAPI.login(credentials);
@@ -50,8 +50,8 @@ describe('API Wrappers', () => {
     });
 
     it('resetPassword should call POST /auth/reset-password', async () => {
-      api.post.mockResolvedValueOnce({ data: 'reset_sent' });
-      const resetData = { email: 'test@example.com' };
+      vi.mocked(api.post).mockResolvedValueOnce({ data: 'reset_sent' });
+      const resetData = { token: 'reset-token', password: 'password123' };
       
       await authAPI.resetPassword(resetData);
       
@@ -59,7 +59,7 @@ describe('API Wrappers', () => {
     });
 
     it('logout should call POST /auth/logout', async () => {
-      api.post.mockResolvedValueOnce({ data: 'logged_out' });
+      vi.mocked(api.post).mockResolvedValueOnce({ data: 'logged_out' });
       
       await authAPI.logout();
       
@@ -67,7 +67,7 @@ describe('API Wrappers', () => {
     });
 
     it('me should call GET /auth/me', async () => {
-      api.get.mockResolvedValueOnce({ data: { id: 1, name: 'Test User' } });
+      vi.mocked(api.get).mockResolvedValueOnce({ data: { id: 1, name: 'Test User' } });
       
       await authAPI.me();
       
