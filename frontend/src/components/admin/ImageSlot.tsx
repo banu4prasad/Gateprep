@@ -1,14 +1,33 @@
 import { Upload } from 'lucide-react'
+import type { ChangeEvent, KeyboardEvent, ReactElement } from 'react'
 
-const openImage = (url) => {
+export type ImageDeleteTarget = 'question' | 'A' | 'B' | 'C' | 'D'
+
+const openImage = (url: string): void => {
   window.open(url, '_blank')
 }
 
-const imageKeyHandler = (url) => (event) => {
+const imageKeyHandler = (url: string) => (event: KeyboardEvent<HTMLImageElement>): void => {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
     openImage(url)
   }
+}
+
+export interface ImageSlotProps {
+  imageUrl: string | null
+  ariaLabel: string
+  imgAlt: string
+  maxHeight: string
+  imgExtraClass?: string
+  wrapperGap: string
+  uploadLabel: string
+  uploadIconSize: number
+  uploadPadX: string
+  onUploadImage: (file: File) => void
+  onDeleteImage: (questionId: number, target: ImageDeleteTarget) => void
+  deleteTarget: number
+  deleteExtraArg: ImageDeleteTarget
 }
 
 export default function ImageSlot({
@@ -25,7 +44,7 @@ export default function ImageSlot({
   onDeleteImage,
   deleteTarget,
   deleteExtraArg,
-}) {
+}: ImageSlotProps): ReactElement {
   return imageUrl ? (
     <div className={`flex items-start ${wrapperGap}`}>
       <img
@@ -55,7 +74,10 @@ export default function ImageSlot({
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={event => { if (event.target.files[0]) onUploadImage(event.target.files[0]) }}
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          const file = event.target.files?.[0]
+          if (file) onUploadImage(file)
+        }}
       />
     </label>
   )

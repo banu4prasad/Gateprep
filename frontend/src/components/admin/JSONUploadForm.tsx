@@ -3,9 +3,11 @@ import toast from 'react-hot-toast'
 import { FileJson, Upload, X } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { ALERT_STYLE } from '../shared/alertStyles'
+import type { ChangeEvent, ReactElement } from 'react'
+import { isQuestionType } from './questionUtils'
+import type { QuestionType } from './questionUtils'
 
-const QUESTION_TYPES = new Set(['mcq', 'msq', 'nat'])
-const OPTION_LETTERS = new Set(['A', 'B', 'C', 'D'])
+const OPTION_LETTERS: ReadonlySet<string> = new Set(['A', 'B', 'C', 'D'])
 const NAT_ANSWER_PATTERN = /^-?\d+(\.\d+)?(\s*[-:]\s*-?\d+(\.\d+)?)?$/
 
 const SAMPLE_JSON = JSON.stringify({
@@ -31,57 +33,69 @@ const SAMPLE_JSON = JSON.stringify({
   ],
 }, null, 2)
 
-const isPlainObject = (value) =>
+type JsonObject = Record<string, unknown>
+export interface ParsedQuestion extends JsonObject {
+  question_type: QuestionType
+  question_text: string
+  options: string[]
+  correct_answer: string
+  marks?: number
+  negative_marks?: number
+}
+
+const isPlainObject = (value: unknown): value is JsonObject =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
 
-const validateStringField = (question, idx, field) => {
-  if (typeof question[field] !== 'string' || !question[field].trim()) {
+const validateStringField = (question: JsonObject, idx: number, field: string): string => {
+  const value = question[field]
+  if (typeof value !== 'string' || !value.trim()) {
     throw new Error(`Question ${idx + 1} ${field} must be a non-empty string`)
   }
-  return question[field].trim()
+  return value.trim()
 }
 
-const validateNumberField = (question, idx, field) => {
-  if (question[field] === undefined) return undefined
-  if (typeof question[field] !== 'number' || !Number.isFinite(question[field])) {
+const validateNumberField = (question: JsonObject, idx: number, field: string): number | undefined => {
+  const value = question[field]
+  if (value === undefined) return undefined
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
     throw new Error(`Question ${idx + 1} ${field} must be a number`)
   }
-  return question[field]
+  return value
 }
 
-const validateMcqAnswer = (answer, idx) => {
+const validateMcqAnswer = (answer: string, idx: number): void => {
   if (!OPTION_LETTERS.has(answer)) {
     throw new Error(`Question ${idx + 1} MCQ correct_answer must be A, B, C, or D`)
   }
 }
 
-const validateMsqAnswer = (answer, idx) => {
+const validateMsqAnswer = (answer: string, idx: number): void => {
   const selected = answer.split(',').map(part => part.trim()).filter(Boolean)
   if (!selected.length || selected.some(part => !OPTION_LETTERS.has(part))) {
     throw new Error(`Question ${idx + 1} MSQ correct_answer must use option letters like A,C`)
   }
 }
 
-const validateNatAnswer = (answer, idx) => {
+const validateNatAnswer = (answer: string, idx: number): void => {
   if (!NAT_ANSWER_PATTERN.test(answer)) {
     throw new Error(`Question ${idx + 1} NAT correct_answer must be a number or range`)
   }
 }
 
-const ANSWER_VALIDATORS = {
+const ANSWER_VALIDATORS: Record<QuestionType, (answer: string, idx: number) => void> = {
   mcq: validateMcqAnswer,
   msq: validateMsqAnswer,
   nat: validateNatAnswer,
 }
 
-const validateAnswer = (questionType, answer, idx) => {
-  ANSWER_VALIDATORS[questionType]?.(answer, idx)
+const validateAnswer = (questionType: QuestionType, answer: string, idx: number): void => {
+  ANSWER_VALIDATORS[questionType](answer, idx)
 }
 
-const areAllOptionsNonEmptyStrings = (options) =>
+const areAllOptionsNonEmptyStrings = (options: unknown[]): options is string[] =>
   options.every(option => typeof option === 'string' && option.trim())
 
-const validateOptions = (question, questionType, idx) => {
+const validateOptions = (question: JsonObject, questionType: QuestionType, idx: number): string[] => {
   const options = question.options ?? []
   if (!Array.isArray(options)) {
     throw new Error(`Question ${idx + 1} options must be an array`)
@@ -96,7 +110,7 @@ const validateOptions = (question, questionType, idx) => {
   return options.map(option => option.trim())
 }
 
-const validateQuestion = (question, idx) => {
+const validateQuestion = (question: unknown, idx: number): ParsedQuestion => {
   if (!isPlainObject(question)) {
     throw new Error(`Question ${idx + 1} must be an object`)
   }
@@ -104,31 +118,32 @@ const validateQuestion = (question, idx) => {
   const questionType = typeof question.question_type === 'string'
     ? question.question_type.trim().toLowerCase()
     : ''
-  if (!QUESTION_TYPES.has(questionType)) {
+  if (!isQuestionType(questionType)) {
     throw new Error(`Question ${idx + 1} question_type must be mcq, msq, or nat`)
   }
+  const normalizedType = questionType
 
   const questionText = validateStringField(question, idx, 'question_text')
   const correctAnswer = validateStringField(question, idx, 'correct_answer').toUpperCase().replace(/\s+/g, '')
-  const options = validateOptions(question, questionType, idx)
-  validateAnswer(questionType, correctAnswer, idx)
+  const options = validateOptions(question, normalizedType, idx)
+  validateAnswer(normalizedType, correctAnswer, idx)
 
   const marks = validateNumberField(question, idx, 'marks')
   const negativeMarks = validateNumberField(question, idx, 'negative_marks')
 
   return {
     ...question,
-    question_type: questionType,
+    question_type: normalizedType,
     question_text: questionText,
     options,
     correct_answer: correctAnswer,
     ...(marks === undefined ? {} : { marks }),
-    ...(negativeMarks === undefined ? {} : { negative_marks: questionType === 'mcq' ? negativeMarks : 0 }),
+    ...(negativeMarks === undefined ? {} : { negative_marks: normalizedType === 'mcq' ? negativeMarks : 0 }),
   }
 }
 
-export function extractQuestions(parsed) {
-  let questions
+export function extractQuestions(parsed: unknown): ParsedQuestion[] {
+  let questions: unknown[]
 
   if (Array.isArray(parsed)) {
     questions = parsed
@@ -145,7 +160,7 @@ export function extractQuestions(parsed) {
   return questions.map(validateQuestion)
 }
 
-export function parseQuestionsJson(value) {
+export function parseQuestionsJson(value: string): ParsedQuestion[] {
   try {
     return extractQuestions(JSON.parse(value))
   } catch (err) {
@@ -156,16 +171,30 @@ export function parseQuestionsJson(value) {
   }
 }
 
-export function readJsonFile(file) {
-  return new Promise((resolve, reject) => {
+export function readJsonFile(file: File): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = event => resolve(event.target?.result || '')
+    reader.onload = event => {
+      const result = event.target?.result
+      resolve(typeof result === 'string' ? result : '')
+    }
     reader.onerror = () => reject(new Error('Failed to read file'))
     reader.readAsText(file)
   })
 }
 
-const formatErrorList = (errors) => {
+interface ValidationError {
+  question_index?: number
+  field?: string
+  message: string
+}
+
+interface DetailObject {
+  message?: string
+  errors: ValidationError[]
+}
+
+const formatErrorList = (errors: ValidationError[]): string[] => {
   const lines = errors.slice(0, 5).map(err => {
     const question = err.question_index ? `Q${err.question_index}` : 'Question'
     const field = err.field ? ` ${err.field}` : ''
@@ -175,61 +204,77 @@ const formatErrorList = (errors) => {
   return lines
 }
 
-const formatArrayDetail = (detail) =>
-  detail.map(item => item?.msg || item?.message || String(item)).join('; ')
+const formatArrayDetail = (detail: unknown[]): string =>
+  detail.map(item => {
+    if (isPlainObject(item)) {
+      const message = item.msg ?? item.message
+      return typeof message === 'string' ? message : String(item)
+    }
+    return String(item)
+  }).join('; ')
 
-const formatErrorsObject = (detail) => {
+const formatErrorsObject = (detail: DetailObject): string => {
   const lines = formatErrorList(detail.errors)
   return [detail.message, ...lines].filter(Boolean).join(' | ')
 }
 
-const formatServerDetail = (detail) => {
+const formatServerDetail = (detail: unknown): string => {
   if (!detail) return 'Failed to upload questions file'
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail)) return formatArrayDetail(detail)
-  if (Array.isArray(detail.errors)) return formatErrorsObject(detail)
-  return detail.message || JSON.stringify(detail)
+  if (isDetailObject(detail)) return formatErrorsObject(detail)
+  if (isPlainObject(detail) && typeof detail.message === 'string') return detail.message
+  return JSON.stringify(detail)
 }
 
-export default function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
+const isDetailObject = (value: unknown): value is DetailObject =>
+  isPlainObject(value) && Array.isArray(value.errors)
+
+export interface JSONUploadFormProps {
+  onAdd: (questions: ParsedQuestion[]) => Promise<void>
+  onUploadFile: (file: File) => Promise<{ message?: string; imported_count?: number }>
+  onClose: () => void
+}
+
+export default function JSONUploadForm({ onAdd, onUploadFile, onClose }: JSONUploadFormProps): ReactElement {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
-  const [preview, setPreview] = useState(null)
+  const [preview, setPreview] = useState<ParsedQuestion[] | null>(null)
   const [error, setError] = useState('')
-  const [selectedFile, setSelectedFile] = useState(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileLoading, setFileLoading] = useState(false)
   const [fileMessage, setFileMessage] = useState('')
   const [fileError, setFileError] = useState('')
-  const fileRef = useRef()
-  const uploadFileRef = useRef()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const uploadFileRef = useRef<HTMLInputElement>(null)
 
-  const validate = (value) => {
+  const validate = (value: string): void => {
     setError('')
     setPreview(null)
     if (!value.trim()) return
 
     try {
       setPreview(parseQuestionsJson(value))
-    } catch (err) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to parse JSON')
     }
   }
 
-  const handleChange = (value) => {
+  const handleChange = (value: string): void => {
     setText(value)
     validate(value)
   }
 
-  const loadFile = async (event) => {
-    const file = event.target.files[0]
+  const loadFile = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = event.target.files?.[0]
     if (!file) return
 
     try {
       const content = await readJsonFile(file)
       setText(content)
       validate(content)
-    } catch (err) {
-      const message = err.message || 'Failed to read JSON file'
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to read JSON file'
       setError(message)
       toast.error(message)
     }
@@ -240,8 +285,8 @@ export default function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
     validate(SAMPLE_JSON)
   }
 
-  const handleUploadFileChange = (event) => {
-    const file = event.target.files[0] || null
+  const handleUploadFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const file = event.target.files?.[0] || null
     setSelectedFile(file)
     setFileMessage('')
     setFileError('')
@@ -261,8 +306,8 @@ export default function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
       setSelectedFile(null)
       if (uploadFileRef.current) uploadFileRef.current.value = ''
       toast.success(message)
-    } catch (err) {
-      const message = formatServerDetail(err.response?.data?.detail)
+    } catch (err: unknown) {
+      const message = formatServerDetail(getErrorDetail(err))
       setFileError(message)
       toast.error(message)
     } finally {
@@ -279,13 +324,14 @@ export default function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
       await onAdd(preview)
       toast.success(`${preview.length} questions added!`)
       onClose()
-    } catch (err) {
-      const message = formatServerDetail(err.response?.data?.detail) || 'Failed to add questions'
+    } catch (err: unknown) {
+      const message = formatServerDetail(getErrorDetail(err)) || 'Failed to add questions'
       setError(message)
       toast.error(message)
     } finally {
       setLoading(false)
     }
+
   }
 
   return (
@@ -391,4 +437,13 @@ export default function JSONUploadForm({ onAdd, onUploadFile, onClose }) {
       </div>
     </div>
   )
+}
+
+function getErrorDetail(error: unknown): unknown {
+  if (!error || typeof error !== 'object') return undefined
+  const response = 'response' in error ? error.response : undefined
+  if (!response || typeof response !== 'object') return undefined
+  const data = 'data' in response ? response.data : undefined
+  if (!data || typeof data !== 'object') return undefined
+  return 'detail' in data ? data.detail : undefined
 }
