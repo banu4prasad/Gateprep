@@ -1,4 +1,9 @@
-export default function Spinner({ size = 24, className = '' }) {
+interface SpinnerProps {
+  size?: number
+  className?: string
+}
+
+export default function Spinner({ size = 24, className = '' }: SpinnerProps) {
   return (
     <svg
       width={size} height={size}
@@ -11,7 +16,7 @@ export default function Spinner({ size = 24, className = '' }) {
   )
 }
 
-export function PageLoader() {
+export function PageLoader(): React.ReactElement {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
       <div className="flex flex-col items-center gap-4">

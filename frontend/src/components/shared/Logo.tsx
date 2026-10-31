@@ -1,3 +1,8 @@
+interface LogoProps {
+  size?: keyof typeof sizeMap
+  className?: string
+}
+
 const sizeMap = {
   xs: 'h-6 w-6 text-xs rounded',
   sm: 'h-7 w-7 text-sm rounded-md',
@@ -5,7 +10,7 @@ const sizeMap = {
   lg: 'h-9 w-9 text-lg rounded',
 }
 
-export default function Logo({ size = 'md', className = '' }) {
+export default function Logo({ size = 'md', className = '' }: LogoProps) {
   const sizeClasses = sizeMap[size] || sizeMap.md
 
   return (

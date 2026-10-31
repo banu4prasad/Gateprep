@@ -30,6 +30,7 @@ describe('Skeletons', () => {
     const card = container.querySelector('[data-slot="card"]')
 
     expect(card).toBeInTheDocument()
+    if (!card) throw new Error('Test card skeleton was not rendered')
     const content = card.querySelector('[data-slot="card-content"]')
     expect(content).toHaveClass('p-5', 'flex', 'flex-col', 'gap-3')
     expect(container.querySelectorAll('.animate-pulse')).not.toHaveLength(0)

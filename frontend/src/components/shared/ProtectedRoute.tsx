@@ -2,7 +2,14 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { PageLoader } from './Spinner'
 
-export function ProtectedRoute({ children, role }) {
+type RouteRole = 'admin' | 'aspirant'
+
+interface RouteProps {
+  children: React.ReactNode
+  role?: RouteRole
+}
+
+export function ProtectedRoute({ children, role }: RouteProps) {
   const { user, loading } = useAuth()
   if (loading) return <PageLoader />
   if (!user) return <Navigate to="/login" replace />
@@ -11,7 +18,7 @@ export function ProtectedRoute({ children, role }) {
   return children
 }
 
-export function GuestRoute({ children }) {
+export function GuestRoute({ children }: Pick<RouteProps, 'children'>) {
   const { user, loading } = useAuth()
   if (loading) return <PageLoader />
   if (user) {

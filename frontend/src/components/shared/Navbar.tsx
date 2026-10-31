@@ -2,30 +2,41 @@ import { Link, useLocation } from 'react-router-dom'
 import Logo from './Logo'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import LogOut from 'lucide-react/dist/esm/icons/log-out'
-import Sun from 'lucide-react/dist/esm/icons/sun'
-import Moon from 'lucide-react/dist/esm/icons/moon'
-import LayoutDashboard from 'lucide-react/dist/esm/icons/layout-dashboard'
-import FlaskConical from 'lucide-react/dist/esm/icons/flask-conical'
-import Users from 'lucide-react/dist/esm/icons/users'
-import BookOpen from 'lucide-react/dist/esm/icons/book-open'
-import ClipboardList from 'lucide-react/dist/esm/icons/clipboard-list'
-import Bookmark from 'lucide-react/dist/esm/icons/bookmark'
+import {
+  LogOut,
+  Sun,
+  Moon,
+  LayoutDashboard,
+  FlaskConical,
+  Users,
+  BookOpen,
+  ClipboardList,
+  Bookmark,
+} from 'lucide-react'
 import clsx from 'clsx'
+import type { LucideIcon } from 'lucide-react'
 
-export default function Navbar() {
+interface NavItem {
+  to: string
+  label: string
+  icon: LucideIcon
+}
+
+export default function Navbar(): React.ReactElement | null {
   const { user, logout, loading } = useAuth()
-  const { theme, toggle } = useTheme()
+  const themeContext = useTheme()
+  if (!themeContext) return null
+  const { theme, toggle } = themeContext
   const location = useLocation()
   const isAdmin = user?.role === 'admin'
 
-  const adminLinks = [
+  const adminLinks: NavItem[] = [
     { to: '/admin',           label: 'Dashboard', icon: LayoutDashboard },
     { to: '/admin/tests',     label: 'Tests',     icon: FlaskConical },
     { to: '/admin/users',     label: 'Users',     icon: Users },
   ]
 
-  const aspirantLinks = [
+  const aspirantLinks: NavItem[] = [
     { to: '/dashboard',  label: 'Dashboard', icon: LayoutDashboard },
     { to: '/tests',      label: 'Tests',     icon: BookOpen },
     { to: '/results',    label: 'Results',   icon: ClipboardList },
@@ -34,7 +45,7 @@ export default function Navbar() {
 
   const links = isAdmin ? adminLinks : aspirantLinks
 
-  const isActive = (to) =>
+  const isActive = (to: string): boolean =>
     location.pathname === to || (to !== '/admin' && to !== '/dashboard' && location.pathname.startsWith(to))
 
   return (
