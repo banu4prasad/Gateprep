@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import type { ChangeEvent, FormEvent, ReactElement } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
+import { getApiErrorDetail } from '../lib/apiError'
 import toast from 'react-hot-toast'
 import Spinner from '../components/shared/Spinner'
 import Logo from '../components/shared/Logo'
@@ -9,24 +11,31 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
-import Eye from 'lucide-react/dist/esm/icons/eye'
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off'
-import LogIn from 'lucide-react/dist/esm/icons/log-in'
-import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2'
-import ListChecks from 'lucide-react/dist/esm/icons/list-checks'
-import Hash from 'lucide-react/dist/esm/icons/hash'
+import { CheckCircle2, Eye, EyeOff, Hash, ListChecks, LogIn } from 'lucide-react'
+
+interface LoginForm {
+  email: string
+  password: string
+}
+
+const featureCards: Array<[string, string, ReactElement]> = [
+  ['MCQ', 'Single correct', <CheckCircle2 size={16} />],
+  ['MSQ', 'Multi-select', <ListChecks size={16} />],
+  ['NAT', 'Numerical', <Hash size={16} />],
+]
 
 export default function LoginPage() {
   const { saveUser } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState<LoginForm>({ email: '', password: '' })
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const handle = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
+  const handle = (key: keyof LoginForm) => (event: ChangeEvent<HTMLInputElement>): void =>
+    setForm(formState => ({ ...formState, [key]: event.target.value }))
 
-  const submit = async e => {
-    e.preventDefault()
+  const submit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
     setLoading(true)
     try {
       const res = await authAPI.login({ email: form.email, password: form.password })
@@ -35,9 +44,10 @@ export default function LoginPage() {
       if (user.role === 'admin') navigate('/admin', { replace: true })
       else if (user.role === 'aspirant') navigate('/dashboard', { replace: true })
       else navigate('/pending', { replace: true })
-    } catch (err) {
-      const errMsg = err.response 
-        ? (err.response.data?.detail || 'Invalid email or password')
+    } catch (err: unknown) {
+      const hasResponse = err && typeof err === 'object' && 'response' in err && Boolean(err.response)
+      const errMsg = hasResponse
+        ? getApiErrorDetail(err) || 'Invalid email or password'
         : 'Network Error: Could not connect to the server.'
       toast.error(errMsg)
     } finally { setLoading(false) }
@@ -61,11 +71,7 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          {[
-            ['MCQ', 'Single correct', <CheckCircle2 size={16} />],
-            ['MSQ', 'Multi-select', <ListChecks size={16} />],
-            ['NAT', 'Numerical', <Hash size={16} />]
-          ].map(([t, d, icon]) => (
+          {featureCards.map(([t, d, icon]) => (
             <div key={t} className="p-4 rounded-lg border border-[var(--border)] bg-bg hover:bg-bg-secondary dark:bg-bg-secondary flex flex-col items-start transition-colors shadow-sm hover:shadow">
               <div className="text-primary mb-2">{icon}</div>
               <p className="font-bold text-primary">{t}</p>
@@ -93,7 +99,7 @@ export default function LoginPage() {
 
           <Card
             className="border border-border/80 shadow-sm"
-            style={{ background: 'var(--bg-card)', '--card-spacing': '1.5rem' }}
+            style={Object.assign({ background: 'var(--bg-card)' }, { '--card-spacing': '1.5rem' })}
           >
             <CardContent>
               <form onSubmit={submit} className="flex flex-col gap-6">

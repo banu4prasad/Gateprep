@@ -1,11 +1,10 @@
 import { useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
-import Eye from 'lucide-react/dist/esm/icons/eye'
-import EyeOff from 'lucide-react/dist/esm/icons/eye-off'
-import KeyRound from 'lucide-react/dist/esm/icons/key-round'
+import { ArrowLeft, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { authAPI } from '../api/api'
+import { getApiErrorDetail } from '../lib/apiError'
 import Spinner from '../components/shared/Spinner'
 import Logo from '../components/shared/Logo'
 import { Button } from '../components/ui/button'
@@ -17,15 +16,16 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token') || ''
-  const [form, setForm] = useState({ password: '', confirm: '' })
+  const [form, setForm] = useState<{ password: string; confirm: string }>({ password: '', confirm: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const handle = k => e => setForm(f => ({ ...f, [k]: e.target.value }))
+  const handle = (key: 'password' | 'confirm') => (event: ChangeEvent<HTMLInputElement>): void =>
+    setForm(formState => ({ ...formState, [key]: event.target.value }))
 
-  const submit = async e => {
-    e.preventDefault()
+  const submit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
+    event.preventDefault()
     if (!token) { toast.error('Invalid reset link'); return }
     if (form.password !== form.confirm) { toast.error('Passwords do not match'); return }
     if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return }
@@ -35,11 +35,12 @@ export default function ResetPasswordPage() {
       await authAPI.resetPassword({ token, password: form.password })
       toast.success('Password updated. Sign in again.')
       navigate('/login', { replace: true })
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Password reset failed')
+    } catch (err: unknown) {
+      toast.error(getApiErrorDetail(err) || 'Password reset failed')
     } finally {
       setLoading(false)
     }
+
   }
 
   return (
@@ -55,7 +56,7 @@ export default function ResetPasswordPage() {
 
         <Card
           className="border border-border/80 shadow-sm"
-          style={{ background: 'var(--bg-card)', '--card-spacing': '1.5rem' }}
+          style={Object.assign({ background: 'var(--bg-card)' }, { '--card-spacing': '1.5rem' })}
         >
           <CardContent>
           {!token ? (
