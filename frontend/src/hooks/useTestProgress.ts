@@ -1,5 +1,25 @@
 import { useCallback, useMemo } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
+import type { TestQuestion } from '@/types/api'
 
+export interface TestProgressParams {
+  questions: TestQuestion[]
+  answers: Record<number, string | undefined>
+  current: number
+  currentQuestion: TestQuestion | undefined
+  setCurrent: Dispatch<SetStateAction<number>>
+  commitNAT: () => void
+  setMarked: Dispatch<SetStateAction<Set<number>>>
+  setVisited: Dispatch<SetStateAction<Set<number>>>
+}
+export interface TestProgressResult {
+  saveAndNext: () => void
+  markAndNext: () => void
+  questionGroups: Map<string, { question: TestQuestion; index: number }[]>
+  subjects: string[]
+  answered: number
+  notAnswered: number
+}
 export default function useTestProgress({
   questions,
   answers,
@@ -9,7 +29,7 @@ export default function useTestProgress({
   commitNAT,
   setMarked,
   setVisited,
-}) {
+}: TestProgressParams): TestProgressResult {
   const saveAndNext = useCallback(() => {
     if (currentQuestion?.question_type === 'nat') commitNAT()
     if (current < questions.length - 1) setCurrent(c => c + 1)
@@ -27,11 +47,11 @@ export default function useTestProgress({
   }, [commitNAT, current, currentQuestion, questions.length, setMarked, setCurrent])
 
   const questionGroups = useMemo(() => {
-    const map = new Map()
+    const map = new Map<string, { question: TestQuestion; index: number }[]>()
     questions.forEach((q, idx) => {
       const subject = q.subject || 'General'
       if (!map.has(subject)) map.set(subject, [])
-      map.get(subject).push({ question: q, index: idx })
+      map.get(subject)?.push({ question: q, index: idx })
     })
     return map
   }, [questions])

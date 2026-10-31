@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { testAPI } from '../api/api'
 import useTestSubmission from './useTestSubmission'
+import type { AxiosResponse } from 'axios'
 
 vi.mock('../api/api', () => ({
   testAPI: { submitTest: vi.fn() },
@@ -17,14 +18,14 @@ describe('useTestSubmission NAT answers', () => {
     const commitNAT = vi.fn(() => {
       answersRef.current = { ...answersRef.current, 1: '42' }
     })
-    testAPI.submitTest.mockResolvedValueOnce({ data: { id: 9 } })
+    vi.mocked(testAPI.submitTest).mockResolvedValueOnce({ data: { id: 9 } } as AxiosResponse)
 
     const { result } = renderHook(() => useTestSubmission({
       isPreview: false,
       navigate: vi.fn(),
       attemptRef: { current: { id: 3 } },
       answersRef,
-      questionsRef: { current: [{ id: 1 }] },
+      questionsRef: { current: [{ id: 1, question_type: 'nat' }] },
       timingsRef: { current: {} },
       testIdRef: { current: 7 },
       autoSaveRef: { current: null },

@@ -1,15 +1,41 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import { adminAPI, fetcher } from '../api/api'
+import type { Dispatch, SetStateAction } from 'react'
+import type { AdminUser, AdminUsersResponse, PasswordResetResponse } from '@/types/api'
 
-export default function useAdminUsers() {
+export interface AdminUsersResult {
+  pageIndex: number
+  users: AdminUser[]
+  loading: boolean
+  totalUsers: number
+  pendingUsers: number
+  searchInput: string
+  setSearchInput: Dispatch<SetStateAction<string>>
+  updating: Record<string | number, boolean>
+  resetLink: PasswordResetResponse | null
+  setResetLink: Dispatch<SetStateAction<PasswordResetResponse | null>>
+  reload: () => Promise<AdminUsersResponse | undefined>
+  changeRole: (userId: number, role: string) => Promise<void>
+  toggleStatus: (userId: number) => Promise<void>
+  createResetLink: (userId: number) => Promise<void>
+  copyResetLink: () => Promise<void>
+  goToPreviousPage: () => void
+  goToNextPage: () => void
+  showingFrom: number
+  showingTo: number
+  hasPagination: boolean
+  hasMore: boolean
+}
+export default function useAdminUsers(): AdminUsersResult {
   const [pageIndex, setPageIndex] = useState(0)
-  const [pageCursors, setPageCursors] = useState([null])
+  const [pageCursors, setPageCursors] = useState<(string | null)[]>([null])
   const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [updating, setUpdating] = useState({})
-  const [resetLink, setResetLink] = useState(null)
+  const [updating, setUpdating] = useState<Record<string | number, boolean>>({})
+  const [resetLink, setResetLink] = useState<PasswordResetResponse | null>(null)
 
   const limit = 50
 
@@ -29,7 +55,7 @@ export default function useAdminUsers() {
   if (currentCursor) params.set('cursor', currentCursor)
   if (searchQuery) params.set('q', searchQuery)
 
-  const { data: usersData, isLoading: loading, mutate } = useSWR(`/admin/users?${params.toString()}`, fetcher)
+  const { data: usersData, isLoading: loading, mutate } = useSWR<AdminUsersResponse>(`/admin/users?${params.toString()}`, fetcher)
   const safeUsersData = usersData || {}
   const users = usersData?.items || []
   const usersById = useMemo(() => new Map(users.map(user => [user.id, user])), [users])
@@ -43,7 +69,7 @@ export default function useAdminUsers() {
 
   const reload = useCallback(() => mutate(), [mutate])
 
-  const changeRole = useCallback(async (userId, role) => {
+  const changeRole = useCallback(async (userId: number, role: string) => {
     const oldRole = usersById.get(userId)?.role
     setUpdating(u => ({ ...u, [userId]: true }))
     try {
@@ -60,25 +86,28 @@ export default function useAdminUsers() {
         newAspirants--
       }
 
-      mutate({
-        ...safeUsersData,
+      mutate((previous) => previous ? {
+        ...previous,
         items: users.map(u => (u.id === userId ? { ...u, role } : u)),
         pending_count: newPending,
         aspirants_count: newAspirants,
-      }, false)
+      } : previous, false)
       toast.success(`Role updated to ${role}`)
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed')
+      toast.error(axios.isAxiosError(err) ? err.response?.data?.detail || 'Failed' : 'Failed')
     } finally {
       setUpdating(u => ({ ...u, [userId]: false }))
     }
   }, [usersById, pendingUsers, aspirantsCount, usersData, users, mutate])
 
-  const toggleStatus = useCallback(async (userId) => {
+  const toggleStatus = useCallback(async (userId: number) => {
     setUpdating(u => ({ ...u, [userId]: true }))
     try {
       await adminAPI.toggleStatus(userId)
-      mutate({ ...safeUsersData, items: users.map(u => (u.id === userId ? { ...u, is_active: !u.is_active } : u)) }, false)
+      mutate((previous) => previous ? {
+        ...previous,
+        items: users.map(u => (u.id === userId ? { ...u, is_active: !u.is_active } : u)),
+      } : previous, false)
       toast.success('Status updated')
     } catch {
       toast.error('Failed')
@@ -87,7 +116,7 @@ export default function useAdminUsers() {
     }
   }, [usersData, users, mutate])
 
-  const createResetLink = useCallback(async (userId) => {
+  const createResetLink = useCallback(async (userId: number) => {
     const key = `reset-${userId}`
     setUpdating(u => ({ ...u, [key]: true }))
     try {
@@ -101,7 +130,7 @@ export default function useAdminUsers() {
         toast.success('Reset link created — copy it from the dialog')
       }
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to create reset link')
+      toast.error(axios.isAxiosError(err) ? err.response?.data?.detail || 'Failed to create reset link' : 'Failed to create reset link')
     } finally {
       setUpdating(u => ({ ...u, [key]: false }))
     }

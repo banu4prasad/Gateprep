@@ -1,6 +1,20 @@
 import { useEffect, useRef } from 'react'
 import { testAPI } from '../api/api'
+import type { MutableRefObject } from 'react'
+import type { AttemptStart } from '@/types/api'
+type AttemptRefValue = { id: string | number }
 
+export interface TestAutosaveParams {
+  attempt: AttemptRefValue | null
+  isPreview: boolean
+  answersRef: MutableRefObject<Record<number, string | undefined>>
+  timingsRef: MutableRefObject<Record<number, number>>
+  attemptRef: MutableRefObject<AttemptRefValue | null>
+  testIdRef: MutableRefObject<string | number | undefined>
+}
+export interface TestAutosaveResult {
+  autoSaveRef: MutableRefObject<ReturnType<typeof setInterval> | null>
+}
 export default function useTestAutosave({
   attempt,
   isPreview,
@@ -8,8 +22,8 @@ export default function useTestAutosave({
   timingsRef,
   attemptRef,
   testIdRef,
-}) {
-  const autoSaveRef = useRef(null)
+}: TestAutosaveParams): TestAutosaveResult {
+  const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     if (!attempt || isPreview) return
@@ -21,9 +35,11 @@ export default function useTestAutosave({
           selected_answer: sel,
           time_spent_seconds: timingsRef.current[+qid] || 0,
         }))
-      testAPI.saveAnswers(testIdRef.current, attemptRef.current?.id, ans).catch(() => {})
+      testAPI.saveAnswers(testIdRef.current ?? '', attemptRef.current?.id ?? '', ans).catch(() => {})
     }, 30000)
-    return () => clearInterval(autoSaveRef.current)
+    return () => {
+      if (autoSaveRef.current) clearInterval(autoSaveRef.current)
+    }
   }, [attempt, isPreview, answersRef, timingsRef, attemptRef, testIdRef])
 
   return { autoSaveRef }

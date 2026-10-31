@@ -4,15 +4,15 @@ import { describe, expect, it } from 'vitest'
 import useTestAnswerState from './useTestAnswerState'
 import useTestProgress from './useTestProgress'
 
-const questions = [
+const questions: { id: number; question_type: 'nat' | 'mcq' }[] = [
   { id: 1, question_type: 'nat' },
   { id: 2, question_type: 'mcq' },
 ]
 
 function useTestNavigationState() {
   const [current, setCurrent] = useState(0)
-  const answersRef = useRef({})
-  const timingsRef = useRef({})
+  const answersRef = useRef<Record<number, string | undefined>>({})
+  const timingsRef = useRef<Record<number, number>>({})
   const answerState = useTestAnswerState({
     current,
     questions,

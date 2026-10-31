@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import { testAPI } from '../api/api'
+import type { TestDetail } from '@/types/api'
 
-export default function useTestLoader({ testId, navigate }) {
-  const [test, setTest] = useState(null)
+export interface TestLoaderParams { testId: string | number | undefined; navigate: (to: string) => void }
+export interface TestLoaderResult { test: TestDetail | null; loading: boolean }
+
+export default function useTestLoader({ testId, navigate }: TestLoaderParams): TestLoaderResult {
+  const [test, setTest] = useState<TestDetail | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -14,11 +19,11 @@ export default function useTestLoader({ testId, navigate }) {
       setTest(null)
 
       try {
-        const testRes = await testAPI.getTest(testId)
+        const testRes = await testAPI.getTest(testId ?? '')
         if (cancelled) return
         setTest(testRes.data)
       } catch (err) {
-        toast.error(err.response?.data?.detail || 'Failed to load test')
+        toast.error(axios.isAxiosError(err) ? err.response?.data?.detail || 'Failed to load test' : 'Failed to load test')
         navigate('/tests')
       } finally {
         if (!cancelled) setLoading(false)

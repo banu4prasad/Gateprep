@@ -1,7 +1,53 @@
 import { useCallback, useState } from 'react'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import { adminAPI, testAPI } from '../api/api'
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
+import type { AttemptStart, TestQuestion } from '@/types/api'
 
+export interface AttemptLifecycleParams {
+  testId: string | number | undefined
+  isPreview: boolean
+  navigate: (to: string) => void
+  attemptRef: MutableRefObject<AttemptStart | PreviewAttempt | null>
+  questionsRef: MutableRefObject<TestQuestion[]>
+  answersRef: MutableRefObject<Record<number, string | undefined>>
+  timingsRef: MutableRefObject<Record<number, number>>
+  loadedRef: MutableRefObject<boolean>
+  setQuestions: Dispatch<SetStateAction<TestQuestion[]>>
+  setAnswers: Dispatch<SetStateAction<Record<number, string | undefined>>>
+  setTimings: Dispatch<SetStateAction<Record<number, number>>>
+  setMarked: Dispatch<SetStateAction<Set<number>>>
+  setVisited: Dispatch<SetStateAction<Set<number>>>
+  setCurrent: Dispatch<SetStateAction<number>>
+  setNatInput: (value: string) => void
+  setTabViolations: Dispatch<SetStateAction<number>>
+  setFsViolations: Dispatch<SetStateAction<number>>
+  setShowFsWarning: Dispatch<SetStateAction<boolean>>
+  tabViolRef: MutableRefObject<number>
+  fsViolRef: MutableRefObject<number>
+  setStarted: Dispatch<SetStateAction<boolean>>
+}
+interface PreviewAttempt {
+  id: string
+  attempt_number: string
+  max_attempts: string
+  started_at: string
+  server_time: string
+  answers?: AttemptStart['answers']
+  tab_violations?: number
+  fullscreen_violations?: number
+}
+export type LifecycleAttempt = AttemptStart | PreviewAttempt
+export interface AttemptLifecycleResult {
+  attempt: LifecycleAttempt | null
+  attemptNumber: number | string | null
+  maxAttempts: number | string
+  starting: boolean
+  accepted: boolean
+  setAccepted: Dispatch<SetStateAction<boolean>>
+  beginTest: () => Promise<void>
+}
 export default function useAttemptLifecycle({
   testId,
   isPreview,
@@ -24,10 +70,10 @@ export default function useAttemptLifecycle({
   tabViolRef,
   fsViolRef,
   setStarted,
-}) {
-  const [attempt, setAttempt] = useState(null)
-  const [attemptNumber, setAttemptNumber] = useState(null)
-  const [maxAttempts, setMaxAttempts] = useState(6)
+}: AttemptLifecycleParams): AttemptLifecycleResult {
+  const [attempt, setAttempt] = useState<LifecycleAttempt | null>(null)
+  const [attemptNumber, setAttemptNumber] = useState<number | string | null>(null)
+  const [maxAttempts, setMaxAttempts] = useState<number | string>(6)
   const [starting, setStarting] = useState(false)
   const [accepted, setAccepted] = useState(false)
 
@@ -57,12 +103,12 @@ export default function useAttemptLifecycle({
           started_at: new Date().toISOString(),
           server_time: new Date().toISOString(),
         }
-        const qRes = await adminAPI.getQuestions(testId)
+        const qRes = await adminAPI.getQuestions(testId ?? '')
         qData = qRes.data
       } else {
-        const attemptRes = await testAPI.startTest(testId)
+        const attemptRes = await testAPI.startTest(testId ?? '')
         attemptData = attemptRes.data
-        const qRes = await testAPI.getQuestions(testId, attemptData.id)
+        const qRes = await testAPI.getQuestions(testId ?? '', attemptData.id)
         qData = qRes.data
       }
 
@@ -71,10 +117,10 @@ export default function useAttemptLifecycle({
       setAttemptNumber(attemptData.attempt_number || 1)
       setMaxAttempts(attemptData.max_attempts || 6)
 
-      const restoredAnswers = Object.fromEntries(
+      const restoredAnswers: Record<number, string | undefined> = Object.fromEntries(
         (attemptData.answers || [])
           .filter(answer => answer.selected_answer)
-          .map(answer => [answer.question_id, answer.selected_answer])
+          .map(answer => [answer.question_id, answer.selected_answer ?? undefined])
       )
       const restoredTimings = Object.fromEntries(
         (attemptData.answers || []).map(answer => [
@@ -111,7 +157,7 @@ export default function useAttemptLifecycle({
       }, 2000)
     } catch (err) {
       console.error('TestEngine beginTest error:', err)
-      toast.error(err.response?.data?.detail || 'Failed to start test')
+      toast.error(axios.isAxiosError(err) ? err.response?.data?.detail || 'Failed to start test' : 'Failed to start test')
       navigate('/tests')
     } finally {
       setStarting(false)

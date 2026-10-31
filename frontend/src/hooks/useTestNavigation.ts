@@ -1,11 +1,25 @@
 import { useState, useMemo } from 'react'
 import { SERIES_LABELS, TYPE_LABELS } from '../utils/constants'
 
-export function useTestNavigation(tests) {
-  const [nav, setNav] = useState([])
+import type { TestCatalogItem } from '@/types/api'
 
-  const push = (type, value) => setNav(n => [...n, { type, value }])
-  const goBack = (idx) => setNav(n => n.slice(0, idx))
+export type NavigationType = 'category' | 'series' | 'type' | 'subject'
+export interface NavigationStep { type: NavigationType; value: string }
+export interface TestNavigationParams { tests: TestCatalogItem[] }
+export interface TestNavigationResult {
+  nav: NavigationStep[]
+  currentNav: NavigationStep | undefined
+  push: (type: NavigationType, value: string) => void
+  goBack: (idx: number) => void
+  filteredTests: TestCatalogItem[]
+  breadcrumbs: string[]
+}
+
+export function useTestNavigation(tests: TestCatalogItem[]): TestNavigationResult {
+  const [nav, setNav] = useState<NavigationStep[]>([])
+
+  const push = (type: NavigationType, value: string) => setNav(n => [...n, { type, value }])
+  const goBack = (idx: number) => setNav(n => n.slice(0, idx))
 
   const filteredTests = useMemo(() => {
     let filtered = tests
@@ -20,8 +34,8 @@ export function useTestNavigation(tests) {
 
   const breadcrumbs = useMemo(() => ['Tests', ...nav.map(s => {
     if (s.type === 'category') return s.value === 'weekly_quiz' ? 'Weekly Quiz' : 'Test Series'
-    if (s.type === 'series')   return SERIES_LABELS[s.value] || s.value
-    if (s.type === 'type')     return TYPE_LABELS[s.value] || s.value
+    if (s.type === 'series')   return Object.entries(SERIES_LABELS).find(([key]) => key === s.value)?.[1] || s.value
+    if (s.type === 'type')     return Object.entries(TYPE_LABELS).find(([key]) => key === s.value)?.[1] || s.value
     if (s.type === 'subject')  return s.value
     return s.value
   })], [nav])

@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import useAntiCheat from './useAntiCheat'
+import type { AntiCheatParams } from './useAntiCheat'
 
 vi.mock('../api/api', () => ({
   testAPI: { updateViolations: vi.fn(() => Promise.resolve()) },
@@ -10,7 +11,7 @@ vi.mock('react-hot-toast', () => ({
   default: Object.assign(vi.fn(), { error: vi.fn() }),
 }))
 
-function createOptions(attemptRef) {
+function createOptions(attemptRef: AntiCheatParams['attemptRef']): AntiCheatParams {
   return {
     attemptRef,
     doSubmitRef: { current: vi.fn() },

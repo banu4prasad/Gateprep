@@ -2,6 +2,9 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { adminAPI, testAPI } from '../api/api'
 import useAttemptLifecycle from './useAttemptLifecycle'
+import type { AttemptLifecycleParams } from './useAttemptLifecycle'
+import type { TestQuestion } from '@/types/api'
+import type { AxiosResponse } from 'axios'
 
 vi.mock('../api/api', () => ({
   adminAPI: { getQuestions: vi.fn() },
@@ -24,11 +27,11 @@ afterEach(() => {
 describe('useAttemptLifecycle resume', () => {
   it('restores autosaved answers, timings, and violations from the active attempt', async () => {
     vi.useFakeTimers()
-    const attemptRef = { current: null }
+    const attemptRef: AttemptLifecycleParams['attemptRef'] = { current: null }
     const answersRef = { current: {} }
     const timingsRef = { current: {} }
-    const qData = [{ id: 5, question_type: 'nat' }]
-    testAPI.startTest.mockResolvedValueOnce({
+    const qData: TestQuestion[] = [{ id: 5, question_type: 'nat' }]
+    vi.mocked(testAPI.startTest).mockResolvedValueOnce({
       data: {
         id: 20,
         status: 'in_progress',
@@ -43,8 +46,8 @@ describe('useAttemptLifecycle resume', () => {
         tab_violations: 1,
         fullscreen_violations: 2,
       },
-    })
-    testAPI.getQuestions.mockResolvedValueOnce({ data: qData })
+    } as AxiosResponse)
+    vi.mocked(testAPI.getQuestions).mockResolvedValueOnce({ data: qData } as AxiosResponse)
 
     const { result } = renderHook(() => useAttemptLifecycle({
       testId: 7,
@@ -73,7 +76,7 @@ describe('useAttemptLifecycle resume', () => {
     act(() => result.current.setAccepted(true))
     await act(async () => result.current.beginTest())
 
-    expect(attemptRef.current.id).toBe(20)
+    expect(attemptRef.current?.id).toBe(20)
     expect(answersRef.current).toEqual({ 5: '123.5' })
     expect(timingsRef.current).toEqual({ 5: 48 })
   })

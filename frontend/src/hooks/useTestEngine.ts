@@ -8,22 +8,77 @@ import useTestProgress from './useTestProgress'
 import useTestAutosave from './useTestAutosave'
 import useAttemptLifecycle from './useAttemptLifecycle'
 import useTestSubmission from './useTestSubmission'
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
+import type { TestDetail, TestQuestion, AttemptStart } from '@/types/api'
+import type { AttemptLifecycleResult, LifecycleAttempt } from './useAttemptLifecycle'
+import type { TestAnswerStateResult } from './useTestAnswerState'
+import type { TestProgressResult } from './useTestProgress'
+import type { TestSubmissionResult } from './useTestSubmission'
+import type { TestLoaderResult } from './useTestLoader'
 
-export default function useTestEngine() {
-  const { testId } = useParams()
+export interface TestEngineResult {
+  accepted: boolean
+  answered: number
+  answers: Record<number, string | undefined>
+  attemptNumber: number | string | null
+  beginTest: () => Promise<void>
+  clearResponse: () => void
+  commitNAT: () => void
+  current: number
+  currentQuestion: TestQuestion | undefined
+  doSubmit: (auto?: boolean) => void
+  endTimeMs: number | null
+  fsViolations: number
+  handleTimerExpire: () => void
+  loading: boolean
+  markAndNext: () => void
+  marked: Set<number>
+  maxAttempts: number | string
+  natInput: string
+  updateNatInput: (value: string) => void
+  navigate: (to: string) => void
+  notAnswered: number
+  questions: TestQuestion[]
+  saveAndNext: () => void
+  setAccepted: Dispatch<SetStateAction<boolean>>
+  setCurrent: Dispatch<SetStateAction<number>>
+  setNatInput: (value: string) => void
+  setShowCalc: Dispatch<SetStateAction<boolean>>
+  setShowConfirm: Dispatch<SetStateAction<boolean>>
+  setShowFsWarning: Dispatch<SetStateAction<boolean>>
+  setShowPalette: Dispatch<SetStateAction<boolean>>
+  setMCQ: (letter: string) => void
+  showCalc: boolean
+  showConfirm: boolean
+  showFsWarning: boolean
+  showPalette: boolean
+  started: boolean
+  starting: boolean
+  questionGroups: TestProgressResult['questionGroups']
+  subjects: string[]
+  submitting: boolean
+  tabViolations: number
+  test: TestDetail | null
+  toggleMSQ: (letter: string) => void
+  totalViolations: number
+  visited: Set<number>
+}
+
+export default function useTestEngine(): TestEngineResult {
+  const { testId } = useParams<{ testId: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isPreview = searchParams.get('preview') === 'true'
 
   // --- shared refs (owned by orchestrator, passed to sub-hooks) ---
   const submitLockRef = useRef(false)
-  const autoSaveRef = useRef(null)
+  const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const tabViolRef = useRef(0)
   const fsViolRef = useRef(0)
-  const attemptRef = useRef(null)
-  const answersRef = useRef({})
-  const questionsRef = useRef([])
-  const timingsRef = useRef({})
+  const attemptRef = useRef<LifecycleAttempt | null>(null)
+  const answersRef = useRef<Record<number, string | undefined>>({})
+  const questionsRef = useRef<TestQuestion[]>([])
+  const timingsRef = useRef<Record<number, number>>({})
   const testIdRef = useRef(testId)
   const loadedRef = useRef(false)
 
@@ -36,7 +91,7 @@ export default function useTestEngine() {
   const [started, setStarted] = useState(false)
 
   // --- shared state: questions + current (needed by multiple hooks) ---
-  const [questions, setQuestions] = useState([])
+  const [questions, setQuestions] = useState<TestQuestion[]>([])
   const [current, setCurrent] = useState(0)
 
   // --- test loading ---

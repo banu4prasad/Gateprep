@@ -1,7 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import { testAPI } from '../api/api'
+import type { MutableRefObject } from 'react'
+import type { TestQuestion } from '@/types/api'
+type AttemptRefValue = { id: string | number }
 
+export interface TestSubmissionParams {
+  isPreview: boolean
+  navigate: (to: string, options?: { state?: unknown }) => void
+  attemptRef: MutableRefObject<AttemptRefValue | null>
+  answersRef: MutableRefObject<Record<number, string | undefined>>
+  questionsRef: MutableRefObject<TestQuestion[]>
+  timingsRef: MutableRefObject<Record<number, number>>
+  testIdRef: MutableRefObject<string | number | undefined>
+  autoSaveRef: MutableRefObject<ReturnType<typeof setInterval> | null>
+  commitNAT: () => void
+}
+export interface TestSubmissionResult {
+  submitting: boolean
+  showConfirm: boolean
+  setShowConfirm: React.Dispatch<React.SetStateAction<boolean>>
+  submitLockRef: MutableRefObject<boolean>
+  doSubmit: (auto?: boolean) => void
+  doSubmitRef: MutableRefObject<(auto?: boolean) => Promise<void>>
+  handleTimerExpire: () => void
+}
 export default function useTestSubmission({
   isPreview,
   navigate,
@@ -12,16 +36,16 @@ export default function useTestSubmission({
   testIdRef,
   autoSaveRef,
   commitNAT,
-}) {
+}: TestSubmissionParams): TestSubmissionResult {
   const [submitting, setSubmitting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const submitLockRef = useRef(false)
+  const submitLockRef = useRef<boolean>(false)
 
   const doSubmitCore = useCallback(async (auto = false) => {
     if (submitLockRef.current) return
     submitLockRef.current = true
     setSubmitting(true)
-    clearInterval(autoSaveRef.current)
+    if (autoSaveRef.current) clearInterval(autoSaveRef.current)
 
     try {
       if (document.fullscreenElement) await document.exitFullscreen()
@@ -55,7 +79,7 @@ export default function useTestSubmission({
         selected_answer: currentAnswers[q.id] || null,
         time_spent_seconds: currentTimings[q.id] || 0,
       }))
-      const res = await testAPI.submitTest(testIdRef.current, currentAttempt.id, ans)
+      const res = await testAPI.submitTest(testIdRef.current ?? '', currentAttempt.id, ans)
       if (auto) toast('Time up! Auto-submitted.', { duration: 5000 })
       else toast.success('Test submitted successfully!')
 
@@ -69,13 +93,13 @@ export default function useTestSubmission({
 
       navigate(`/results/${res.data.id}`)
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Submit failed. Please try again.')
+      toast.error(axios.isAxiosError(err) ? err.response?.data?.detail || 'Submit failed. Please try again.' : 'Submit failed. Please try again.')
       submitLockRef.current = false
       setSubmitting(false)
     }
   }, [isPreview, navigate, attemptRef, answersRef, questionsRef, timingsRef, testIdRef, autoSaveRef, commitNAT])
 
-  const doSubmitRef = useRef(doSubmitCore)
+  const doSubmitRef = useRef<(auto?: boolean) => Promise<void>>(doSubmitCore)
   useEffect(() => { doSubmitRef.current = doSubmitCore }, [doSubmitCore])
 
   const doSubmit = useCallback((auto = false) => doSubmitRef.current(auto), [])
