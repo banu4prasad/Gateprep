@@ -2,8 +2,18 @@ import Spinner from '../shared/Spinner'
 import { Save, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import type { FormEvent, ReactElement } from 'react'
+import type { TestForm } from '@/hooks/useTestFormEditor'
 
-export default function TestMetaForm({ testForm, setTestForm, onSave, onCancel, savingTest }) {
+export interface TestMetaFormProps {
+  testForm: TestForm
+  setTestForm: React.Dispatch<React.SetStateAction<TestForm>>
+  onSave: (event: FormEvent<HTMLFormElement>) => Promise<void>
+  onCancel: () => void
+  savingTest: boolean
+}
+
+export default function TestMetaForm({ testForm, setTestForm, onSave, onCancel, savingTest }: TestMetaFormProps): ReactElement {
   return (
     <Card className="flex-1">
       <CardContent className="p-4">

@@ -1,6 +1,27 @@
 import { Eye, FileJson, Pencil, Plus } from 'lucide-react'
 import TestMetaForm from './TestMetaForm'
 import { Button } from '@/components/ui/button'
+import type { ReactElement } from 'react'
+import type { TestDetail } from '@/types/api'
+import type { TestForm } from '@/hooks/useTestFormEditor'
+
+export type AdminFormMode = 'json' | 'manual' | null
+
+export interface TestHeaderProps {
+  test: TestDetail | null
+  questionsCount: number
+  isEditingTest: boolean
+  testForm: TestForm
+  setTestForm: React.Dispatch<React.SetStateAction<TestForm>>
+  savingTest: boolean
+  onStartEdit: () => void
+  onSaveTest: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
+  onCancelEdit: () => void
+  mode: AdminFormMode
+  onPreview: () => void
+  onToggleJson: () => void
+  onToggleManual: () => void
+}
 
 export default function TestHeader({
   test,
@@ -16,7 +37,7 @@ export default function TestHeader({
   onPreview,
   onToggleJson,
   onToggleManual
-}) {
+}: TestHeaderProps): ReactElement {
   return (
     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
       {isEditingTest ? (
