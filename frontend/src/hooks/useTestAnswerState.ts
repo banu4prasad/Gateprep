@@ -1,24 +1,51 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
+import type { TestQuestion } from '@/types/api'
 
+export interface TestAnswerStateParams {
+  current: number
+  questions: TestQuestion[]
+  currentQuestion: TestQuestion | undefined
+  answersRef: MutableRefObject<Record<number, string | undefined>>
+  timingsRef: MutableRefObject<Record<number, number>>
+}
+export interface TestAnswerStateResult {
+  answers: Record<number, string | undefined>
+  setAnswers: Dispatch<SetStateAction<Record<number, string | undefined>>>
+  timings: Record<number, number>
+  setTimings: Dispatch<SetStateAction<Record<number, number>>>
+  marked: Set<number>
+  setMarked: Dispatch<SetStateAction<Set<number>>>
+  visited: Set<number>
+  setVisited: Dispatch<SetStateAction<Set<number>>>
+  natInput: string
+  setNatInput: (value: string) => void
+  updateNatInput: (value: string) => void
+  setMCQ: (letter: string) => void
+  toggleMSQ: (letter: string) => void
+  commitNAT: () => void
+  clearResponse: () => void
+  questionStartRef: MutableRefObject<number>
+}
 export default function useTestAnswerState({
   current,
   questions,
   currentQuestion,
   answersRef,
   timingsRef,
-}) {
-  const [answers, setAnswers] = useState({})
-  const [timings, setTimings] = useState({})
-  const [marked, setMarked] = useState(new Set())
-  const [visited, setVisited] = useState(new Set())
+}: TestAnswerStateParams): TestAnswerStateResult {
+  const [answers, setAnswers] = useState<Record<number, string | undefined>>({})
+  const [timings, setTimings] = useState<Record<number, number>>({})
+  const [marked, setMarked] = useState<Set<number>>(new Set())
+  const [visited, setVisited] = useState<Set<number>>(new Set())
   const [natInput, setNatInputState] = useState('')
   const natInputRef = useRef('')
-  const setNatInput = useCallback((value) => {
+  const setNatInput = useCallback((value: string) => {
     natInputRef.current = value
     setNatInputState(value)
   }, [])
 
-  const updateNatInput = useCallback((value) => {
+  const updateNatInput = useCallback((value: string) => {
     setNatInput(value)
 
     const question = questions[current]
@@ -65,7 +92,7 @@ export default function useTestAnswerState({
     }
   }, [current, questions, answers, setNatInput])
 
-  const setMCQ = useCallback((letter) => {
+  const setMCQ = useCallback((letter: string) => {
     if (!currentQuestion) return
     setAnswers(a => {
       const updated = { ...a, [currentQuestion.id]: a[currentQuestion.id] === letter ? undefined : letter }
@@ -74,7 +101,7 @@ export default function useTestAnswerState({
     })
   }, [currentQuestion, answersRef])
 
-  const toggleMSQ = useCallback((letter) => {
+  const toggleMSQ = useCallback((letter: string) => {
     if (!currentQuestion) return
     setAnswers(a => {
       const cur = (a[currentQuestion.id] || '').split(',').filter(Boolean)

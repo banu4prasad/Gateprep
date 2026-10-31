@@ -1,7 +1,18 @@
 import { useState, useCallback } from 'react'
 
-export function useQuestionFormMode() {
-  const [mode, setMode] = useState(null)
+export type QuestionFormMode = 'json' | 'manual' | null
+export interface QuestionFormModeParams {}
+export interface QuestionFormModeResult {
+  mode: QuestionFormMode
+  closeMode: () => void
+  openJsonMode: () => void
+  openManualMode: () => void
+  toggleJsonMode: () => void
+  toggleManualMode: () => void
+}
+
+export function useQuestionFormMode(_params?: QuestionFormModeParams): QuestionFormModeResult {
+  const [mode, setMode] = useState<QuestionFormMode>(null)
 
   const closeMode = useCallback(() => setMode(null), [])
   const openJsonMode = useCallback(() => setMode('json'), [])

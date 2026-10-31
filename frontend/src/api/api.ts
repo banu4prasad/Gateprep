@@ -31,6 +31,11 @@ import type {
   TestQuestion,
   AttemptStart,
   ViolationUpdateResponse,
+  AdminUsersResponse,
+  AdminUser,
+  PasswordResetResponse,
+  BookmarkIdsResponse,
+  BookmarkToggleResponse,
 } from '../types/api'
 
 export const fetcher = <T = unknown>(url: string): Promise<T> => api.get<T>(url).then(res => res.data)
@@ -46,22 +51,22 @@ export const authAPI = {
 
 // ── Admin ─────────────────────────────────────────────────────────
 export const adminAPI = {
-  getUsers:         (): Promise<ApiResponse<AdminResponse>>              => api.get('/admin/users'),
-  updateRole:       (id: string | number, role: RoleUpdate['role']): Promise<ApiResponse<AdminResponse>>      => api.patch(`/admin/users/${id}/role`, { role }),
-  toggleStatus:     (id: string | number): Promise<ApiResponse<AdminResponse>>            => api.patch(`/admin/users/${id}/status`),
-  createPasswordReset: (id: string | number): Promise<ApiResponse<AdminResponse>>         => api.post(`/admin/users/${id}/password-reset`),
+  getUsers:         (): Promise<ApiResponse<AdminUsersResponse>>              => api.get('/admin/users'),
+  updateRole:       (id: string | number, role: RoleUpdate['role']): Promise<ApiResponse<AdminUser>>      => api.patch(`/admin/users/${id}/role`, { role }),
+  toggleStatus:     (id: string | number): Promise<ApiResponse<AdminUser>>            => api.patch(`/admin/users/${id}/status`),
+  createPasswordReset: (id: string | number): Promise<ApiResponse<PasswordResetResponse>>         => api.post(`/admin/users/${id}/password-reset`),
   getTests:         (): Promise<ApiResponse<AdminResponse>>          => api.get('/admin/tests'),
-  getTest:           (id: string | number): Promise<ApiResponse<AdminResponse>>           => api.get(`/admin/tests/${id}`),
+  getTest:           (id: string | number): Promise<ApiResponse<TestDetail>>           => api.get(`/admin/tests/${id}`),
   createTest:       (data: TestCreate): Promise<ApiResponse<AdminResponse>>          => api.post('/admin/tests', data),
   deleteTest:        (id: string | number): Promise<ApiResponse<AdminResponse>>        => api.delete(`/admin/tests/${id}`),
-  updateTest:       (id: string | number, data: TestPatch): Promise<ApiResponse<AdminResponse>>       => api.patch(`/admin/tests/${id}`, data),
-  getQuestions:     (testId: string | number): Promise<ApiResponse<AdminResponse>>       => api.get(`/admin/tests/${testId}/questions`),
-  addQuestions:     (testId: string | number, qs: QuestionsBulk['questions']): Promise<ApiResponse<AdminResponse>>    => api.post(`/admin/tests/${testId}/questions`, { questions: qs }),
-  updateQuestion:   (testId: string | number, qId: string | number, data: QuestionIn): Promise<ApiResponse<AdminResponse>> => api.patch(`/admin/tests/${testId}/questions/${qId}`, data),
-  uploadQuestionsFile: (testId: string | number, form: FormData): Promise<ApiResponse<AdminResponse>> => api.post(`/admin/tests/${testId}/questions/upload-file`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  deleteQuestion:   (testId: string | number, qId: string | number): Promise<ApiResponse<AdminResponse>>   => api.delete(`/admin/tests/${testId}/questions/${qId}`),
-  uploadQImage:     (qId: string | number, form: FormData, target: 'question' | 'A' | 'B' | 'C' | 'D' = 'question'): Promise<ApiResponse<AdminResponse>> => api.post(`/admin/questions/${qId}/image?target=${encodeURIComponent(target)}`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  deleteQImage:     (qId: string | number, target: 'question' | 'A' | 'B' | 'C' | 'D'): Promise<ApiResponse<AdminResponse>>   => api.delete(`/admin/questions/${qId}/image?target=${encodeURIComponent(target)}`),
+  updateTest:       (id: string | number, data: TestPatch): Promise<ApiResponse<TestDetail>>       => api.patch(`/admin/tests/${id}`, data),
+  getQuestions:     (testId: string | number): Promise<ApiResponse<TestQuestion[]>>       => api.get(`/admin/tests/${testId}/questions`),
+  addQuestions:     (testId: string | number, qs: QuestionsBulk['questions']): Promise<ApiResponse<unknown>>    => api.post(`/admin/tests/${testId}/questions`, { questions: qs }),
+  updateQuestion:   (testId: string | number, qId: string | number, data: QuestionIn): Promise<ApiResponse<unknown>> => api.patch(`/admin/tests/${testId}/questions/${qId}`, data),
+  uploadQuestionsFile: (testId: string | number, form: FormData): Promise<ApiResponse<unknown>> => api.post(`/admin/tests/${testId}/questions/upload-file`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteQuestion:   (testId: string | number, qId: string | number): Promise<ApiResponse<unknown>>   => api.delete(`/admin/tests/${testId}/questions/${qId}`),
+  uploadQImage:     (qId: string | number, form: FormData, target: 'question' | 'A' | 'B' | 'C' | 'D' = 'question'): Promise<ApiResponse<unknown>> => api.post(`/admin/questions/${qId}/image?target=${encodeURIComponent(target)}`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteQImage:     (qId: string | number, target: 'question' | 'A' | 'B' | 'C' | 'D'): Promise<ApiResponse<unknown>>   => api.delete(`/admin/questions/${qId}/image?target=${encodeURIComponent(target)}`),
 }
 
 // ── Tests ─────────────────────────────────────────────────────────
@@ -82,9 +87,9 @@ export const testAPI = {
 
 // ── Bookmarks ─────────────────────────────────────────────────────
 export const bookmarkAPI = {
-  toggle:     (questionId: string | number, note: BookmarkNote['note']): Promise<ApiResponse<BookmarkResponse>> => api.post(`/bookmarks/${questionId}/toggle`, { note }),
+  toggle:     (questionId: string | number, note?: BookmarkNote['note']): Promise<ApiResponse<BookmarkToggleResponse>> => api.post(`/bookmarks/${questionId}/toggle`, { note }),
   getAll:     (): Promise<ApiResponse<BookmarkResponse>>                 => api.get('/bookmarks'),
-  getIds:     (): Promise<ApiResponse<BookmarkResponse>>                 => api.get('/bookmarks/ids'),
+  getIds:     (): Promise<ApiResponse<BookmarkIdsResponse>>                 => api.get('/bookmarks/ids'),
   updateNote: (questionId: string | number, note: BookmarkNote['note']): Promise<ApiResponse<BookmarkResponse>> => api.patch(`/bookmarks/${questionId}/note`, { note }),
 }
 

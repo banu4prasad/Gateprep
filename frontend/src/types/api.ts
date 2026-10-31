@@ -33,6 +33,41 @@ export interface TestDetail {
   created_at: string
 }
 
+// TODO(response_model): fields consumed by admin user management.
+export interface AdminUser {
+  id: number
+  email: string
+  full_name: string
+  role: string
+  is_active: boolean
+}
+
+export interface AdminUsersResponse {
+  items: AdminUser[]
+  total: number
+  pending_count: number
+  aspirants_count: number
+  has_more: boolean
+  next_cursor: string | null
+}
+
+// TODO(response_model): fields consumed by admin password reset.
+export interface PasswordResetResponse {
+  reset_url: string
+}
+
+export interface BookmarkIdsResponse { ids: number[] }
+export interface BookmarkToggleResponse { bookmarked: boolean }
+
+// TODO(response_model): fields consumed by admin test editing.
+export interface AdminTestQuestion extends TestQuestion {
+  question_type: 'mcq' | 'msq' | 'nat'
+}
+
+export interface AdminTestResponse extends TestDetail {
+  questions?: AdminTestQuestion[]
+}
+
 export type LoginRequest = components['schemas']['LoginRequest']
 export type RegisterRequest = components['schemas']['RegisterRequest']
 export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest']
@@ -72,15 +107,15 @@ export interface AttemptStart {
 export interface TestQuestion {
   id: number
   question_type: 'mcq' | 'msq' | 'nat'
-  question_text: string
-  question_image_url: string | null
-  options: unknown[] | Record<string, unknown>
-  option_images: Record<string, unknown> | null
-  order_index: number
-  marks: number
-  negative_marks: number
-  subject: string | null
-  topic: string | null
+  question_text?: string
+  question_image_url?: string | null
+  options?: unknown[] | Record<string, unknown>
+  option_images?: Record<string, unknown> | null
+  order_index?: number
+  marks?: number
+  negative_marks?: number
+  subject?: string | null
+  topic?: string | null
 }
 
 export interface SaveAnswersResponse {
@@ -120,6 +155,7 @@ export interface ResultData {
   incorrect?: unknown
   skipped?: unknown
   attempt_id?: number | string | null
+  client_result_id?: string | null
   answers?: ResultAnswer[]
 }
 

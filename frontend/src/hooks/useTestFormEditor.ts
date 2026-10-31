@@ -1,7 +1,28 @@
 import { useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
+import axios from 'axios'
+import type { FormEvent, Dispatch, SetStateAction } from 'react'
+import type { TestDetail, TestPatch } from '@/types/api'
 
-export function getTestFormValidationError(testForm) {
+export interface TestForm {
+  title: string
+  description: string
+  duration_minutes: number | string
+}
+export interface TestFormEditorParams {
+  test: TestDetail | null
+  updateTestDetails: (payload: TestPatch) => Promise<unknown>
+}
+export interface TestFormEditorResult {
+  isEditingTest: boolean
+  testForm: TestForm
+  setTestForm: Dispatch<SetStateAction<TestForm>>
+  savingTest: boolean
+  startEditingTest: () => void
+  saveTest: (event: FormEvent<HTMLFormElement>) => Promise<void>
+  cancelEditingTest: () => void
+}
+export function getTestFormValidationError(testForm: TestForm): string | null {
   if (!testForm.title.trim()) return 'Title required'
   const durationMinutes = Number(testForm.duration_minutes)
   const isDurationValid = Number.isFinite(durationMinutes) && durationMinutes >= 5 && durationMinutes <= 360
@@ -9,9 +30,9 @@ export function getTestFormValidationError(testForm) {
   return null
 }
 
-export function useTestFormEditor(test, updateTestDetails) {
+export function useTestFormEditor(test: TestDetail | null, updateTestDetails: TestFormEditorParams['updateTestDetails']): TestFormEditorResult {
   const [isEditingTest, setIsEditingTest] = useState(false)
-  const [testForm, setTestForm] = useState({ title: '', description: '', duration_minutes: 180 })
+  const [testForm, setTestForm] = useState<TestForm>({ title: '', description: '', duration_minutes: 180 })
   const [savingTest, setSavingTest] = useState(false)
 
   const startEditingTest = useCallback(() => {
@@ -23,7 +44,7 @@ export function useTestFormEditor(test, updateTestDetails) {
     setIsEditingTest(true)
   }, [test])
 
-  const saveTest = useCallback(async (event) => {
+  const saveTest = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const validationError = getTestFormValidationError(testForm)
     if (validationError) { toast.error(validationError); return }
@@ -39,7 +60,7 @@ export function useTestFormEditor(test, updateTestDetails) {
       setIsEditingTest(false)
       toast.success('Test updated')
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to update test')
+      toast.error(axios.isAxiosError(err) ? err.response?.data?.detail || 'Failed to update test' : 'Failed to update test')
     } finally {
       setSavingTest(false)
     }
