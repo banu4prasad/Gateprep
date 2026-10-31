@@ -1,4 +1,4 @@
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle'
+import { AlertTriangle } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { Button } from '@/components/ui/button'
 import {

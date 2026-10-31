@@ -1,5 +1,4 @@
-import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle'
-import Maximize from 'lucide-react/dist/esm/icons/maximize'
+import { AlertTriangle, Maximize } from 'lucide-react'
 import TimerDisplay from './TimerDisplay'
 import { Button } from '@/components/ui/button'
 import {

@@ -1,4 +1,4 @@
-import Send from 'lucide-react/dist/esm/icons/send'
+import { Send } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { getQStatus, STATUS_CLASS } from '../../utils/testEngineUtils'
 import { Button } from '@/components/ui/button'

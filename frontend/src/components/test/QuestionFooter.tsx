@@ -1,6 +1,4 @@
-import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left'
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right'
-import Flag from 'lucide-react/dist/esm/icons/flag'
+import { ChevronLeft, ChevronRight, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function QuestionFooter({ current, isLastQuestion, setCurrent, markAndNext, clearResponse, saveAndNext }) {

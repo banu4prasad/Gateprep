@@ -1,5 +1,4 @@
-import CalcIcon from 'lucide-react/dist/esm/icons/calculator'
-import Send from 'lucide-react/dist/esm/icons/send'
+import { Calculator as CalcIcon, Send } from 'lucide-react'
 import clsx from 'clsx'
 import Logo from '../shared/Logo'
 import Spinner from '../shared/Spinner'

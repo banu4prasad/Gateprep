@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import X from 'lucide-react/dist/esm/icons/x'
+import { X } from 'lucide-react'
 import { DEG_TO_RAD, isOperatorTail, tokenizeExpression, formatResult, evaluateExpression, SCIENTIFIC_FUNCTIONS, SCIENTIFIC_CONSTANTS } from '../../utils/calculatorEngine'
 
 const Btn = ({ label, onClick, type = 'default', wide = false }) => (

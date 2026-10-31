@@ -1,4 +1,4 @@
-import Maximize from 'lucide-react/dist/esm/icons/maximize'
+import { Maximize } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
