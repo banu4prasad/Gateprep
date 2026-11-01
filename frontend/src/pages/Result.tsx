@@ -1,5 +1,5 @@
 import { useState, useMemo, memo, useCallback } from 'react'
-import type { CSSProperties, Dispatch, ReactNode, SetStateAction } from 'react'
+import type { CSSProperties, Dispatch, SetStateAction } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { testAPI } from '../api/api'
@@ -48,12 +48,11 @@ function AnswerStatusIcon({ qa }: AnswerStatusIconProps) {
 }
 
 function getOptionState(qa: PersistedResultAnswer, letter: string | undefined) {
-  // String.includes(undefined) coerces to "undefined" in JavaScript; keep that legacy edge case.
-  // @ts-expect-error Keep the existing direct includes call for a missing option letter.
+  // @ts-expect-error TODO(null-safety): letter may be undefined; String.includes(undefined) searches for "undefined".
   const isCorrect = qa.correct_answer?.includes(letter)
-  // @ts-expect-error Keep the existing direct includes call for a missing option letter.
+  // @ts-expect-error TODO(null-safety): letter may be undefined; String.includes(undefined) searches for "undefined".
   const isSelected = qa.selected_answer?.includes(letter)
-  // @ts-expect-error Keep the existing direct includes call for a missing option letter.
+  // @ts-expect-error TODO(null-safety): letter may be undefined; String.includes(undefined) searches for "undefined".
   const isTopperPick = qa.topper_answer?.includes(letter)
   return { isCorrect, isSelected, isTopperPick }
 }
@@ -87,25 +86,24 @@ export interface McqOptionsGridProps {
 function McqOptionsGrid({ qa }: McqOptionsGridProps) {
   // The backend model permits dict options, but this page has always used array length/map.
   // Keep that existing runtime behavior while retaining the model's list-or-dict type.
-  // @ts-expect-error Question.options is list | dict in backend/app/models/models.py:137.
+  // @ts-expect-error TODO(null-safety): options may be a dict; its length value remains untyped and is compared as before.
   if (!(qa.options?.length > 0)) return null
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
       {
-        // @ts-expect-error The legacy page maps options directly; the backend also permits dict JSON.
+        // @ts-expect-error TODO(null-safety): options may be a dict without map; preserve the existing array-only rendering path.
         qa.options.map((o: unknown, i: number) => {
         const letter = 'ABCD'[i]
         const { isCorrect, isSelected, isTopperPick } = getOptionState(qa, letter)
-        // @ts-expect-error Preserve the legacy rendering path for arbitrary option JSON.
-        const optionText: ReactNode = o
-        // @ts-expect-error Preserve direct pass-through of unknown optimizer values to OptionImage.
-        const optionImageSource: string | null | undefined = qa.option_images?.[letter]
-        const optionImageLetter: string = letter
         return (
           <div key={i} className={clsx('px-3 py-2 rounded text-xs', getOptionClassName(isCorrect, isSelected))}>
             <span className="font-mono font-semibold mr-1">{letter}.</span>
-            <MathText>{optionText}</MathText>
-            <OptionImage src={optionImageSource} letter={optionImageLetter} />
+            { // @ts-expect-error TODO(null-safety): option JSON may contain a non-renderable value; preserve direct React child behavior.
+              <MathText>{o}</MathText>
+            }
+            { // @ts-expect-error TODO(null-safety): optimizer preserves non-string image values; OptionImage expects a URL string.
+              <OptionImage src={qa.option_images?.[letter]} letter={letter} />
+            }
             <OptionMarkers isCorrect={isCorrect} isSelected={isSelected} isTopperPick={isTopperPick} />
           </div>
         )
@@ -174,8 +172,7 @@ const QUESTION_TYPE_CLASS: Record<string, string> = {
   default: 'bg-muted text-muted-foreground border-border',
 }
 
-function questionTypeClass(questionType: string | undefined) {
-  // @ts-expect-error Preserve JavaScript's undefined-to-property-key conversion.
+function questionTypeClass(questionType: string) {
   return QUESTION_TYPE_CLASS[questionType] ?? QUESTION_TYPE_CLASS.default
 }
 
@@ -244,8 +241,7 @@ export interface ResultSummary {
 
 function useResultSummary(result: Partial<PersistedResult>): ResultSummary {
   return useMemo(() => {
-    // Preserve Math.round(undefined) when called with the existing empty-object fallback.
-    // @ts-expect-error The result is deliberately partial before the loading/null branches.
+    // @ts-expect-error TODO(null-safety): the loading fallback has no percentage; Math.round(undefined) is NaN.
     const pct = Math.round(result.percentage)
     const grade = pct >= 75 ? 'Excellent' : pct >= 50 ? 'Good' : 'Needs Work'
     const gradeColor = pct >= 75 ? 'text-success-text' : pct >= 50 ? 'text-warning-text' : 'text-destructive'
@@ -385,7 +381,7 @@ const AttemptHistory = memo(function AttemptHistory({ attempts, currentAttemptId
           {attempts.map(a => (
             <div key={a.attempt_id} className={clsx('flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2 rounded border border-border',
               a.attempt_id === (
-                // @ts-expect-error Keep parseInt(undefined) returning NaN as before.
+                // @ts-expect-error TODO(null-safety): currentAttemptId may be undefined; parseInt(undefined) is NaN.
                 parseInt(currentAttemptId)
               ) && 'result-current-attempt')}>
               <div className="flex items-center gap-2">
@@ -397,7 +393,7 @@ const AttemptHistory = memo(function AttemptHistory({ attempts, currentAttemptId
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-card-foreground">{a.score?.toFixed(1)}/{a.total_marks} ({a.percentage}%)</span>
                 {a.attempt_id !== (
-                  // @ts-expect-error Keep parseInt(undefined) returning NaN as before.
+                  // @ts-expect-error TODO(null-safety): currentAttemptId may be undefined; parseInt(undefined) is NaN.
                   parseInt(currentAttemptId)
                 ) && (
                   <Link to={`/results/${a.attempt_id}`} className="text-xs text-primary">View →</Link>
@@ -485,18 +481,17 @@ export default function ResultPage() {
 
   const reattempt = useCallback(() => {
     // The button is rendered only after the existing !result return below.
-    // @ts-expect-error Keep the callback's existing access without adding a runtime guard.
+    // @ts-expect-error TODO(null-safety): result may be null in this closure; attempts_remaining access would throw.
     if (result.attempts_remaining <= 0) {
       toast.error('Maximum attempts reached for this test')
       return
     }
-    // @ts-expect-error Keep the callback's existing access without adding a runtime guard.
+    // @ts-expect-error TODO(null-safety): result may be null in this closure; test_id access would throw.
     navigate(`/tests/${result.test_id}`)
   }, [result, navigate])
 
   const handleDownload = useCallback(async () => {
     try {
-      // @ts-expect-error The report helper accepts array options; preserve the existing call for dict JSON results.
       await downloadResultReport(result)
       toast.success('Result downloaded')
     } catch {

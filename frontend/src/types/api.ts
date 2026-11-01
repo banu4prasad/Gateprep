@@ -158,7 +158,7 @@ export interface ResultAnswer {
   topper_answer?: string | null
   topper_time_seconds?: number
   is_correct?: boolean | null
-  options?: unknown[]
+  options?: unknown[] | Record<string, unknown>
   marks_awarded?: number
   question_text?: string
   selected_answer?: string | null
@@ -208,7 +208,7 @@ export interface ResultData {
 }
 
 // TODO(response_model): response shape for GET /tests/attempt/{id}/result.
-export interface PersistedResult extends Omit<ResultData, 'answers'> {
+export interface PersistedResult extends ResultData {
   attempt_id: number
   attempt_number: number
   client_result_id: string | null

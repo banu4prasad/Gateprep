@@ -65,9 +65,8 @@ export default function MyResults() {
           <div className="flex flex-col gap-2">
             {history.map(a => {
               const t   = tests[a.test_id]
-              const pct = a.total_marks
-                // @ts-expect-error: preserve existing JavaScript null-to-zero score arithmetic.
-                ? Math.round(a.score / a.total_marks * 100) : 0
+              // @ts-expect-error TODO(null-safety): score may be null before submit; Math.round(null / total_marks * 100) is 0.
+              const pct = a.total_marks ? Math.round(a.score / a.total_marks * 100) : 0
               const color = pct >= 75 ? 'text-success-text' : pct >= 50 ? 'text-warning-text' : 'text-destructive'
               const bg    = pct >= 75 ? 'color-mix(in srgb, var(--success-text) 10%, transparent)' : pct >= 50 ? 'color-mix(in srgb, var(--warning-text) 10%, transparent)' : 'color-mix(in srgb, var(--danger-text) 10%, transparent)'
               return (
@@ -83,10 +82,10 @@ export default function MyResults() {
                       </p>
                       <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                         Score: {a.score?.toFixed(1)} / {a.total_marks} ·{' '}
-                        {new Date(
-                          // @ts-expect-error: preserve existing Date(null) behavior for nullable API timestamps.
-                          a.submitted_at
-                        ).toLocaleDateString('en-IN')}
+                        {
+                          // @ts-expect-error TODO(null-safety): submitted_at may be null; Date(null) displays the epoch date as before.
+                          new Date(a.submitted_at).toLocaleDateString('en-IN')
+                        }
                       </p>
                     </div>
                     <Button asChild size="sm" variant="ghost">

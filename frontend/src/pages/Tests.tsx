@@ -30,10 +30,12 @@ function TestCardFooter({ done, attempt, test }: TestCardFooterProps) {
     <CardFooter className="border-t-0 bg-transparent p-4 pt-0">
       {done ? (
         <Button asChild className="w-full h-8 text-xs">
-          {/* @ts-expect-error: done is derived from this same attempt's submitted status, so attempt is defined here. */}
-          <Link to={`/results/${attempt.id}`}>
-            View Result <ArrowRight size={12} className="ml-1.5" />
-          </Link>
+          {
+            // @ts-expect-error TODO(null-safety): done implies attempt exists; if that correlation breaks, reading id would throw.
+            <Link to={`/results/${attempt.id}`}>
+              View Result <ArrowRight size={12} className="ml-1.5" />
+            </Link>
+          }
         </Button>
       ) : (
         <Button asChild className="w-full h-8 text-xs">
@@ -54,7 +56,7 @@ export interface TestCardProps {
 function TestCard({ test, attempt }: TestCardProps) {
   const done = attempt?.status === 'submitted'
   const pct = done && attempt?.total_marks
-    // @ts-expect-error: this preserves JavaScript's null-to-zero arithmetic while done requires a submitted attempt.
+    // @ts-expect-error TODO(null-safety): score may be null before submit; Math.round(null / total_marks * 100) is 0.
     ? Math.round(attempt.score / attempt.total_marks * 100) : null
 
   return (
@@ -74,10 +76,10 @@ function TestCard({ test, attempt }: TestCardProps) {
         {pct !== null && (
           <div className={clsx('text-xs px-2.5 py-1.5 rounded', scoreBadgeClass(pct))}>
             Score: {
-              // @ts-expect-error: pct is non-null only when the same attempt exists.
+              // @ts-expect-error TODO(null-safety): pct implies a present attempt; without one, score access would throw.
               attempt.score?.toFixed(1)
             }/{
-              // @ts-expect-error: pct is non-null only when the same attempt exists and has truthy total_marks.
+              // @ts-expect-error TODO(null-safety): pct implies a present attempt with truthy total_marks; otherwise access would throw.
               attempt.total_marks
             } ({pct}%)
           </div>

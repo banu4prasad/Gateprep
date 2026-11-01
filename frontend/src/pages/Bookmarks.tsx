@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { bookmarkAPI, fetcher } from '../api/api'
@@ -219,6 +220,10 @@ export interface BookmarkCardProps {
 function BookmarkCard({ bm, onRemove }: BookmarkCardProps) {
   const [open, setOpen] = useState(false)
   const [removing, setRemoving] = useState(false)
+  const cardStyle: CSSProperties & { [key: `--${string}`]: string } = {
+    background: 'var(--bg-card)',
+    '--card-spacing': '1rem',
+  }
 
   const remove = async () => {
     setRemoving(true)
@@ -237,11 +242,7 @@ function BookmarkCard({ bm, onRemove }: BookmarkCardProps) {
 
   return (
     <Card className="overflow-hidden border border-border/80 shadow-sm"
-      style={{
-        background: 'var(--bg-card)',
-        // @ts-expect-error: React.CSSProperties does not include this supported CSS custom property.
-        '--card-spacing': '1rem',
-      }}>
+      style={cardStyle}>
       <CardContent className="px-(--card-spacing) py-(--card-spacing)">
         <BookmarkHeader bm={bm} open={open} onToggle={toggle} onRemove={remove} removing={removing} />
         {open && <BookmarkDetails bm={bm} />}

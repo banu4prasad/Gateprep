@@ -110,10 +110,10 @@ function DashboardTestCard({ testItem, attempt, done, percentage }: DashboardTes
         {percentage !== null && (
           <div className={clsx('px-2.5 py-1.5 rounded-md border text-xs', resultTone)}>
             Score: {
-              // @ts-expect-error: percentage is non-null only when the same attempt exists.
+              // @ts-expect-error TODO(null-safety): percentage implies a present attempt; without one, score access would throw.
               attempt.score?.toFixed(1)
             } / {
-              // @ts-expect-error: percentage is non-null only when the same attempt exists and has truthy total_marks.
+              // @ts-expect-error TODO(null-safety): percentage implies a present attempt with truthy total_marks; otherwise access would throw.
               attempt.total_marks
             } ({percentage}%)
           </div>
@@ -122,10 +122,12 @@ function DashboardTestCard({ testItem, attempt, done, percentage }: DashboardTes
       <CardFooter className="border-t-0 bg-transparent p-3 pt-1">
         {done ? (
           <Button asChild variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/10">
-            {/* @ts-expect-error: done is derived from this same attempt's submitted status, so attempt is defined here. */}
-            <Link to={`/results/${attempt.id}`}>
-              View Result <ArrowRight size={16} className="ml-2" />
-            </Link>
+            {
+              // @ts-expect-error TODO(null-safety): done implies attempt exists; if that correlation breaks, reading id would throw.
+              <Link to={`/results/${attempt.id}`}>
+                View Result <ArrowRight size={16} className="ml-2" />
+              </Link>
+            }
           </Button>
         ) : (
           <Button asChild className="w-full">
