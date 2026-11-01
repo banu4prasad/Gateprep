@@ -48,6 +48,26 @@ echo "VITE_API_URL=http://localhost:8000" > .env
 npm run dev
 ```
 
+### Checks
+```bash
+cd frontend
+npm run typecheck
+npm test
+npm run build  # runs tsc --noEmit, then vite build
+```
+
+### API types
+Install backend dependencies from `backend/requirements.txt`, then regenerate the committed OpenAPI types:
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cd ../frontend
+npm run gen:api
+git diff --exit-code -- src/api/schema.d.ts
+```
+
 ---
 
 ## Environment Variables (backend/.env)

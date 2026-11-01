@@ -28,6 +28,15 @@ jobs:
         working-directory: ./frontend
         run: npm run typecheck
 
+      - name: Check TypeScript suppressions
+        env:
+          TS_SUPPRESSION_BUDGET: 26
+        run: |
+          count=$(grep -rn "@ts-expect-error" frontend/src --include='*.ts' --include='*.tsx' | wc -l)
+          test "$count" -le "$TS_SUPPRESSION_BUDGET"
+          ! grep -rn "@ts-expect-error" frontend/src --include='*.ts' --include='*.tsx' | grep -v 'TODO(null-safety)'
+          ! grep -rn "@ts-ignore" frontend/src --include='*.ts' --include='*.tsx'
+
       - name: Run frontend tests
         working-directory: ./frontend
         run: npm test
@@ -180,4 +189,3 @@ jobs:
       - name: Run contrast audit
         working-directory: ./frontend
         run: npm run audit:contrast
-
