@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import axios from 'axios'
 import { adminAPI, fetcher } from '../api/api'
 import type { Dispatch, SetStateAction } from 'react'
-import type { AdminUser, AdminUsersResponse, PasswordResetResponse } from '@/types/api'
+import type { AdminRole, AdminUser, AdminUsersResponse, PasswordResetResponse } from '@/types/api'
 
 export interface AdminUsersResult {
   pageIndex: number
@@ -18,7 +18,7 @@ export interface AdminUsersResult {
   resetLink: PasswordResetResponse | null
   setResetLink: Dispatch<SetStateAction<PasswordResetResponse | null>>
   reload: () => Promise<AdminUsersResponse | undefined>
-  changeRole: (userId: number, role: string) => Promise<void>
+  changeRole: (userId: number, role: AdminRole) => Promise<void>
   toggleStatus: (userId: number) => Promise<void>
   createResetLink: (userId: number) => Promise<void>
   copyResetLink: () => Promise<void>
@@ -69,7 +69,7 @@ export default function useAdminUsers(): AdminUsersResult {
 
   const reload = useCallback(() => mutate(), [mutate])
 
-  const changeRole = useCallback(async (userId: number, role: string) => {
+  const changeRole = useCallback(async (userId: number, role: AdminRole) => {
     const oldRole = usersById.get(userId)?.role
     setUpdating(u => ({ ...u, [userId]: true }))
     try {

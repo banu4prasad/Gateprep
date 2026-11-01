@@ -6,6 +6,7 @@ import { ALERT_STYLE } from '../shared/alertStyles'
 import type { ChangeEvent, ReactElement } from 'react'
 import { isQuestionType } from './questionUtils'
 import type { QuestionType } from './questionUtils'
+import type { QuestionIn, QuestionsUploadResponse } from '@/types/api'
 
 const OPTION_LETTERS: ReadonlySet<string> = new Set(['A', 'B', 'C', 'D'])
 const NAT_ANSWER_PATTERN = /^-?\d+(\.\d+)?(\s*[-:]\s*-?\d+(\.\d+)?)?$/
@@ -34,13 +35,9 @@ const SAMPLE_JSON = JSON.stringify({
 }, null, 2)
 
 type JsonObject = Record<string, unknown>
-export interface ParsedQuestion extends JsonObject {
+export type ParsedQuestion = Omit<QuestionIn, 'question_type' | 'options'> & JsonObject & {
   question_type: QuestionType
-  question_text: string
   options: string[]
-  correct_answer: string
-  marks?: number
-  negative_marks?: number
 }
 
 const isPlainObject = (value: unknown): value is JsonObject =>
@@ -232,7 +229,7 @@ const isDetailObject = (value: unknown): value is DetailObject =>
 
 export interface JSONUploadFormProps {
   onAdd: (questions: ParsedQuestion[]) => Promise<void>
-  onUploadFile: (file: File) => Promise<{ message?: string; imported_count?: number }>
+  onUploadFile: (file: File) => Promise<QuestionsUploadResponse>
   onClose: () => void
 }
 

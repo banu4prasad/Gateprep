@@ -6,6 +6,8 @@ export type ApiJson = Record<string, unknown>
 export type ApiId = number
 
 export type TestStatus = 'in_progress' | 'submitted'
+// TODO(response_model): backend UserRole enum is defined in app/models/models.py.
+export type AdminRole = 'admin' | 'aspirant' | 'user'
 
 // TODO(response_model): response shape for GET /tests.
 export interface TestCatalogItem {
@@ -21,6 +23,19 @@ export interface TestCatalogItem {
   series_name: string | null
   test_type: string | null
   subject: string | null
+}
+
+// TODO(response_model): response shape for GET /admin/tests/{id}/questions.
+export interface AdminQuestion extends TestQuestion {
+  question_text: string
+  options: string[]
+  correct_answer: string
+  marks: number
+  negative_marks: number
+  order_index: number
+  subject: string | null
+  topic: string | null
+  option_images: Record<string, string | null> | null
 }
 
 export interface TestDetail {
@@ -39,8 +54,9 @@ export interface AdminUser {
   id: number
   email: string
   full_name: string
-  role: string
+  role: AdminRole
   is_active: boolean
+  created_at: string
 }
 
 export interface AdminUsersResponse {
@@ -54,7 +70,31 @@ export interface AdminUsersResponse {
 
 // TODO(response_model): fields consumed by admin password reset.
 export interface PasswordResetResponse {
+  user_id: number
+  email: string
+  full_name: string
   reset_url: string
+  is_local_url: boolean
+  expires_at: string
+}
+
+// TODO(response_model): response shape for GET /admin/tests.
+export interface AdminTestListItem extends TestCatalogItem {
+  is_published: boolean
+}
+
+// TODO(response_model): response shape for POST /admin/tests.
+export interface AdminTestCreateResponse {
+  id: number
+  title: string
+  question_count: number
+  total_marks: number
+}
+
+// TODO(response_model): response shape for POST /admin/tests/{id}/questions/upload-file.
+export interface QuestionsUploadResponse {
+  message?: string
+  imported_count?: number
 }
 
 // TODO(response_model): response shape for GET /bookmarks/ids.
@@ -82,9 +122,7 @@ export interface BookmarkItem {
 }
 
 // TODO(response_model): fields consumed by admin test editing.
-export interface AdminTestQuestion extends TestQuestion {
-  question_type: 'mcq' | 'msq' | 'nat'
-}
+export type AdminTestQuestion = AdminQuestion
 
 export interface AdminTestResponse extends TestDetail {
   questions?: AdminTestQuestion[]
@@ -95,10 +133,22 @@ export type RegisterRequest = components['schemas']['RegisterRequest']
 export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest']
 export type AuthUserResponse = components['schemas']['AuthUserResponse']
 export type RoleUpdate = components['schemas']['RoleUpdate']
-export type TestCreate = components['schemas']['TestCreate']
+export type TestCreate = Omit<components['schemas']['TestCreate'], 'series_order'> & {
+  series_order?: number
+}
 export type TestPatch = components['schemas']['TestPatch']
-export type QuestionIn = components['schemas']['QuestionIn']
-export type QuestionsBulk = components['schemas']['QuestionsBulk']
+export type QuestionIn = Omit<
+  components['schemas']['QuestionIn'],
+  'question_type' | 'options' | 'marks' | 'negative_marks'
+> & {
+  question_type?: string
+  options?: string[]
+  marks?: number
+  negative_marks?: number
+}
+export interface QuestionsBulk {
+  questions: QuestionIn[]
+}
 export type SeriesCreate = components['schemas']['SeriesCreate']
 export type BookmarkNote = components['schemas']['BookmarkNote']
 export type AnswerSubmit = components['schemas']['AnswerSubmit']

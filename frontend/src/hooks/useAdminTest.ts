@@ -3,18 +3,18 @@ import toast from 'react-hot-toast'
 import axios from 'axios'
 import { adminAPI } from '../api/api'
 import type { Dispatch, SetStateAction } from 'react'
-import type { TestDetail, TestQuestion, TestPatch, QuestionIn } from '@/types/api'
+import type { AdminQuestion, QuestionsUploadResponse, TestDetail, TestPatch, QuestionIn } from '@/types/api'
 
 export interface AdminTestParams { testId: string | number }
 export interface AdminTestResult {
   test: TestDetail | null
-  questions: TestQuestion[]
+  questions: AdminQuestion[]
   loading: boolean
   load: () => Promise<void>
   updateTestDetails: (payload: TestPatch) => Promise<void>
   addQuestion: (question: QuestionIn) => Promise<void>
   addQuestionsJSON: (questions: QuestionIn[]) => Promise<void>
-  uploadQuestionsFile: (file: File) => Promise<unknown>
+  uploadQuestionsFile: (file: File) => Promise<QuestionsUploadResponse>
   deleteQuestion: (questionId: string | number) => Promise<void>
   updateQuestion: (questionId: string | number, payload: QuestionIn) => Promise<void>
   uploadImage: (questionId: string | number, file: File, target?: 'question' | 'A' | 'B' | 'C' | 'D') => Promise<void>
@@ -22,7 +22,7 @@ export interface AdminTestResult {
 }
 export function useAdminTest(testId: string | number): AdminTestResult {
   const [test, setTest] = useState<TestDetail | null>(null)
-  const [questions, setQuestions] = useState<TestQuestion[]>([])
+  const [questions, setQuestions] = useState<AdminQuestion[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -68,7 +68,7 @@ export function useAdminTest(testId: string | number): AdminTestResult {
     await load()
   }, [load, testId])
 
-  const uploadQuestionsFile = useCallback(async (file: File): Promise<unknown> => {
+  const uploadQuestionsFile = useCallback(async (file: File): Promise<QuestionsUploadResponse> => {
     const formData = new FormData()
     formData.append('file', file)
     const response = await adminAPI.uploadQuestionsFile(testId, formData)

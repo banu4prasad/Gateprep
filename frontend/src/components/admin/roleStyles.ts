@@ -1,6 +1,7 @@
 import type { AdminUser } from '@/types/api'
 
-export type AdminRole = 'admin' | 'aspirant' | 'user'
+export type { AdminRole } from '@/types/api'
+import type { AdminRole } from '@/types/api'
 export type ManagedAdminUser = Omit<AdminUser, 'role'> & { role: AdminRole; created_at: string }
 
 export const ROLE_STYLE = {

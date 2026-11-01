@@ -9,12 +9,7 @@ import {
 import type { PasswordResetResponse } from '@/types/api'
 import type { ReactElement } from 'react'
 
-export interface ResetLink extends PasswordResetResponse {
-  full_name: string
-  email: string
-  is_local_url?: boolean
-  expires_at: string
-}
+export type ResetLink = PasswordResetResponse
 
 export interface ResetLinkDialogProps {
   resetLink: ResetLink | null
