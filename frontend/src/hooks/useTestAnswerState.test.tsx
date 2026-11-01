@@ -3,10 +3,35 @@ import { useRef, useState } from 'react'
 import { describe, expect, it } from 'vitest'
 import useTestAnswerState from './useTestAnswerState'
 import useTestProgress from './useTestProgress'
+import type { TestQuestion } from '@/types/api'
 
-const questions: { id: number; question_type: 'nat' | 'mcq' }[] = [
-  { id: 1, question_type: 'nat' },
-  { id: 2, question_type: 'mcq' },
+const questions: TestQuestion[] = [
+  {
+    id: 1,
+    question_type: 'nat',
+    question_text: 'NAT',
+    question_image_url: null,
+    options: [],
+    option_images: null,
+    order_index: 0,
+    marks: 1,
+    negative_marks: 0,
+    subject: null,
+    topic: null,
+  },
+  {
+    id: 2,
+    question_type: 'mcq',
+    question_text: 'MCQ',
+    question_image_url: null,
+    options: ['A', 'B'],
+    option_images: null,
+    order_index: 1,
+    marks: 1,
+    negative_marks: 0,
+    subject: null,
+    topic: null,
+  },
 ]
 
 function useTestNavigationState() {

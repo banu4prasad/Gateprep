@@ -67,7 +67,19 @@ describe('useAttemptLifecycle resume', () => {
     const attemptRef: AttemptLifecycleParams['attemptRef'] = { current: null }
     const answersRef = { current: {} }
     const timingsRef = { current: {} }
-    const qData: TestQuestion[] = [{ id: 5, question_type: 'nat' }]
+    const qData: TestQuestion[] = [{
+      id: 5,
+      question_type: 'nat',
+      question_text: 'NAT',
+      question_image_url: null,
+      options: [],
+      option_images: null,
+      order_index: 0,
+      marks: 1,
+      negative_marks: 0,
+      subject: null,
+      topic: null,
+    }]
     const attemptData: AttemptStart = {
       id: 20,
       test_id: 7,

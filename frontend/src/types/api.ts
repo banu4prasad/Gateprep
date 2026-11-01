@@ -153,49 +153,11 @@ export type BookmarkNote = components['schemas']['BookmarkNote']
 export type AnswerSubmit = components['schemas']['AnswerSubmit']
 export type ViolationUpdate = components['schemas']['ViolationUpdate']
 
-export interface AttemptAnswer {
-  question_id: number
-  selected_answer: string | null
-  time_spent_seconds: number
-}
-
-export interface AttemptStart {
-  id: number
-  test_id: number
-  status: TestStatus
-  started_at: string | null
-  submitted_at: string | null
-  score: number | null
-  total_marks: number | null
-  tab_violations: number
-  fullscreen_violations: number
-  server_time: string
-  answers: AttemptAnswer[]
-  attempt_number: number
-  max_attempts: number
-}
-
-export interface TestQuestion {
-  id: number
-  question_type: 'mcq' | 'msq' | 'nat'
-  question_text?: string
-  question_image_url?: string | null
-  options?: unknown[] | Record<string, unknown>
-  option_images?: Record<string, unknown> | null
-  order_index?: number
-  marks?: number
-  negative_marks?: number
-  subject?: string | null
-  topic?: string | null
-}
-
-export interface SaveAnswersResponse {
-  message: string
-}
-
-export interface ViolationUpdateResponse {
-  message: string
-}
+export type AttemptAnswer = components['schemas']['AttemptAnswerResponse']
+export type AttemptStart = components['schemas']['AttemptStartResponse']
+export type TestQuestion = components['schemas']['TestQuestionResponse']
+export type SaveAnswersResponse = components['schemas']['MessageResponse']
+export type ViolationUpdateResponse = components['schemas']['MessageResponse']
 
 export interface ResultAnswer {
   question_id?: number
@@ -236,24 +198,17 @@ export interface ResultData {
 
 export type PersistedResult = components['schemas']['PersistedResultResponse']
 
-export interface PracticeResult {
-  id: string
-  persisted: false
-  result: ResultData & { attempt_id: string }
-}
+// FastAPI's OpenAPI literal schema is emitted as "True"/"False"; runtime JSON
+// uses boolean values, so preserve the wire type while retaining generated fields.
+export type SubmittedAttempt = Omit<
+  components['schemas']['PersistedSubmitResponse'],
+  'persisted'
+> & { persisted: true }
 
-export interface SubmittedAttempt {
-  id: number
-  test_id: number
-  status: TestStatus
-  started_at: string | null
-  submitted_at: string | null
-  score: number | null
-  total_marks: number | null
-  tab_violations: number
-  fullscreen_violations: number
-  persisted: true
-}
+export type PracticeResult = Omit<
+  components['schemas']['PracticeSubmitResponse'],
+  'persisted'
+> & { persisted: false }
 
 export type SubmitResult = SubmittedAttempt | PracticeResult
 

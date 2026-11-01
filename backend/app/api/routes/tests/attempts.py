@@ -19,7 +19,14 @@ from app.api.routes.tests.helpers import (
     _set_practice_count,
     _submitted_attempts_query,
 )
-from app.api.routes.tests.schemas import BulkAnswerSubmit, ViolationUpdate
+from app.api.routes.tests.schemas import (
+    AttemptStartResponse,
+    BulkAnswerSubmit,
+    MessageResponse,
+    SubmitResponse,
+    TestQuestionResponse,
+    ViolationUpdate,
+)
 from app.api.routes.tests.result_builder import _evaluate_submission, _result_payload
 
 router = APIRouter()
@@ -232,7 +239,7 @@ def _handle_practice_submission(
 # ---------------------------------------------------------------------------
 
 
-@router.post("/{test_id}/start")
+@router.post("/{test_id}/start", response_model=AttemptStartResponse)
 def start_test(
     test_id: int, db: Session = Depends(get_db), current_user=Depends(require_aspirant)
 ):
@@ -289,7 +296,10 @@ def start_test(
     }
 
 
-@router.get("/{test_id}/attempt/{attempt_id}/questions")
+@router.get(
+    "/{test_id}/attempt/{attempt_id}/questions",
+    response_model=list[TestQuestionResponse],
+)
 def get_questions(
     test_id: int,
     attempt_id: int,
@@ -325,7 +335,10 @@ def get_questions(
     ]
 
 
-@router.patch("/{test_id}/attempt/{attempt_id}/violations")
+@router.patch(
+    "/{test_id}/attempt/{attempt_id}/violations",
+    response_model=MessageResponse,
+)
 def update_violations(
     test_id: int,
     attempt_id: int,
@@ -345,7 +358,10 @@ def update_violations(
     return {"message": "Updated"}
 
 
-@router.post("/{test_id}/attempt/{attempt_id}/save")
+@router.post(
+    "/{test_id}/attempt/{attempt_id}/save",
+    response_model=MessageResponse,
+)
 def save_answers(
     test_id: int,
     attempt_id: int,
@@ -365,7 +381,10 @@ def save_answers(
     return {"message": "Saved"}
 
 
-@router.post("/{test_id}/attempt/{attempt_id}/submit")
+@router.post(
+    "/{test_id}/attempt/{attempt_id}/submit",
+    response_model=SubmitResponse,
+)
 def submit_test(
     test_id: int,
     attempt_id: int,

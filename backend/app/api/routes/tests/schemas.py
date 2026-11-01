@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any, List, Literal, Optional
 
 from pydantic import PlainSerializer
 
@@ -136,6 +136,95 @@ class PersistedResultResponse(BaseModel):
     total_participants: int
     topper: ResultTopperResponse | None
     answers: list[ResultAnswerResponse]
+
+
+class AttemptAnswerResponse(BaseModel):
+    question_id: int
+    selected_answer: str | None
+    time_spent_seconds: int
+
+
+class AttemptStartResponse(BaseModel):
+    id: int
+    test_id: int
+    status: TestStatus
+    started_at: LegacyDatetime | None
+    submitted_at: LegacyDatetime | None
+    score: int | float | None
+    total_marks: int | float | None
+    tab_violations: int
+    fullscreen_violations: int
+    server_time: LegacyDatetime
+    answers: list[AttemptAnswerResponse]
+    attempt_number: int
+    max_attempts: int
+
+
+class TestQuestionResponse(BaseModel):
+    id: int
+    question_type: QuestionType
+    question_text: str
+    question_image_url: str | None
+    options: list[Any] | dict[str, Any]
+    option_images: dict[str, Any] | None
+    order_index: int
+    marks: int | float
+    negative_marks: int | float
+    subject: str | None
+    topic: str | None
+
+
+class MessageResponse(BaseModel):
+    message: str
+
+
+class PersistedSubmitResponse(BaseModel):
+    id: int
+    test_id: int
+    status: TestStatus
+    started_at: LegacyDatetime | None
+    submitted_at: LegacyDatetime | None
+    score: int | float | None
+    total_marks: int | float | None
+    tab_violations: int
+    fullscreen_violations: int
+    persisted: Literal[True]
+
+
+class PracticeResultResponse(BaseModel):
+    attempt_id: str
+    client_result_id: str | None
+    attempt_number: int
+    attempts_remaining: int
+    max_attempts: int
+    counts_for_leaderboard: bool
+    persisted: Literal[False]
+    test_id: int
+    test_title: str
+    score: int | float
+    total_marks: int | float
+    percentage: int | float
+    correct: int
+    incorrect: int
+    skipped: int
+    submitted_at: LegacyDatetime | None
+    tab_violations: int
+    rank: int | None
+    total_participants: int
+    topper: ResultTopperResponse | None
+    answers: list[ResultAnswerResponse]
+
+
+class PracticeSubmitResponse(BaseModel):
+    id: str
+    persisted: Literal[False]
+    result: PracticeResultResponse
+
+
+SubmitResponse = Annotated[
+    PersistedSubmitResponse | PracticeSubmitResponse,
+    Field(discriminator="persisted"),
+]
 
 
 class AnswerSubmit(BaseModel):
