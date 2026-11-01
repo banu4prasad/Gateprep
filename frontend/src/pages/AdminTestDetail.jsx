@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
+import { ArrowLeft } from 'lucide-react'
 import { useAdminTest } from '../hooks/useAdminTest'
 import { useTestFormEditor } from '../hooks/useTestFormEditor'
 import { useQuestionFormMode } from '../hooks/useQuestionFormMode'
