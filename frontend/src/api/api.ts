@@ -2,6 +2,8 @@ import api from './client'
 import type { AxiosResponse } from 'axios'
 import type {
   AdminResponse,
+  AdminTestCreateResponse,
+  AdminTestListItem,
   AdminQuestion,
   AnswerSubmit,
   ApiResponse,
@@ -58,9 +60,9 @@ export const adminAPI = {
   updateRole:       (id: string | number, role: AdminRole): Promise<ApiResponse<AdminUser>>      => api.patch(`/admin/users/${id}/role`, { role }),
   toggleStatus:     (id: string | number): Promise<ApiResponse<AdminUser>>            => api.patch(`/admin/users/${id}/status`),
   createPasswordReset: (id: string | number): Promise<ApiResponse<PasswordResetResponse>>         => api.post(`/admin/users/${id}/password-reset`),
-  getTests:         (): Promise<ApiResponse<AdminResponse>>          => api.get('/admin/tests'),
+  getTests:         (): Promise<ApiResponse<AdminTestListItem[]>>          => api.get('/admin/tests'),
   getTest:           (id: string | number): Promise<ApiResponse<TestDetail>>           => api.get(`/admin/tests/${id}`),
-  createTest:       (data: TestCreate): Promise<ApiResponse<AdminResponse>>          => api.post('/admin/tests', data),
+  createTest:       (data: TestCreate): Promise<ApiResponse<AdminTestCreateResponse>>          => api.post('/admin/tests', data),
   deleteTest:        (id: string | number): Promise<ApiResponse<AdminResponse>>        => api.delete(`/admin/tests/${id}`),
   updateTest:       (id: string | number, data: TestPatch): Promise<ApiResponse<TestDetail>>       => api.patch(`/admin/tests/${id}`, data),
   getQuestions:     (testId: string | number): Promise<ApiResponse<AdminQuestion[]>>       => api.get(`/admin/tests/${testId}/questions`),

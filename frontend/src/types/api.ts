@@ -78,6 +78,19 @@ export interface PasswordResetResponse {
   expires_at: string
 }
 
+// TODO(response_model): response shape for GET /admin/tests.
+export interface AdminTestListItem extends TestCatalogItem {
+  is_published: boolean
+}
+
+// TODO(response_model): response shape for POST /admin/tests.
+export interface AdminTestCreateResponse {
+  id: number
+  title: string
+  question_count: number
+  total_marks: number
+}
+
 // TODO(response_model): response shape for POST /admin/tests/{id}/questions/upload-file.
 export interface QuestionsUploadResponse {
   message?: string
@@ -120,7 +133,9 @@ export type RegisterRequest = components['schemas']['RegisterRequest']
 export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest']
 export type AuthUserResponse = components['schemas']['AuthUserResponse']
 export type RoleUpdate = components['schemas']['RoleUpdate']
-export type TestCreate = components['schemas']['TestCreate']
+export type TestCreate = Omit<components['schemas']['TestCreate'], 'series_order'> & {
+  series_order?: number
+}
 export type TestPatch = components['schemas']['TestPatch']
 export type QuestionIn = Omit<
   components['schemas']['QuestionIn'],
