@@ -33,6 +33,7 @@ import type {
   ViolationUpdateResponse,
   AdminUsersResponse,
   AdminUser,
+  AdminRole,
   PasswordResetResponse,
   BookmarkIdsResponse,
   BookmarkToggleResponse,
@@ -52,7 +53,7 @@ export const authAPI = {
 // ── Admin ─────────────────────────────────────────────────────────
 export const adminAPI = {
   getUsers:         (): Promise<ApiResponse<AdminUsersResponse>>              => api.get('/admin/users'),
-  updateRole:       (id: string | number, role: RoleUpdate['role']): Promise<ApiResponse<AdminUser>>      => api.patch(`/admin/users/${id}/role`, { role }),
+  updateRole:       (id: string | number, role: AdminRole): Promise<ApiResponse<AdminUser>>      => api.patch(`/admin/users/${id}/role`, { role }),
   toggleStatus:     (id: string | number): Promise<ApiResponse<AdminUser>>            => api.patch(`/admin/users/${id}/status`),
   createPasswordReset: (id: string | number): Promise<ApiResponse<PasswordResetResponse>>         => api.post(`/admin/users/${id}/password-reset`),
   getTests:         (): Promise<ApiResponse<AdminResponse>>          => api.get('/admin/tests'),

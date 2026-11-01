@@ -6,6 +6,8 @@ export type ApiJson = Record<string, unknown>
 export type ApiId = number
 
 export type TestStatus = 'in_progress' | 'submitted'
+// TODO(response_model): backend UserRole enum is defined in app/models/models.py.
+export type AdminRole = 'admin' | 'aspirant' | 'user'
 
 // TODO(response_model): response shape for GET /tests.
 export interface TestCatalogItem {
@@ -39,8 +41,9 @@ export interface AdminUser {
   id: number
   email: string
   full_name: string
-  role: string
+  role: AdminRole
   is_active: boolean
+  created_at: string
 }
 
 export interface AdminUsersResponse {
@@ -54,7 +57,12 @@ export interface AdminUsersResponse {
 
 // TODO(response_model): fields consumed by admin password reset.
 export interface PasswordResetResponse {
+  user_id: number
+  email: string
+  full_name: string
   reset_url: string
+  is_local_url: boolean
+  expires_at: string
 }
 
 // TODO(response_model): response shape for GET /bookmarks/ids.
