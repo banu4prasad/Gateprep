@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { testAPI } from '../api/api'
 import useTestSubmission from './useTestSubmission'
 import type { ApiResponse, SubmitResult } from '@/types/api'
+import type { TestQuestion } from '@/types/api'
 import type { TestSubmissionParams } from './useTestSubmission'
 
 vi.mock('../api/api', () => ({
@@ -71,7 +72,21 @@ describe('useTestSubmission NAT answers', () => {
       navigate: vi.fn(),
       attemptRef: { current: { id: 3 } },
       answersRef,
-      questionsRef: { current: [{ id: 1, question_type: 'nat' }] },
+      questionsRef: {
+        current: [{
+          id: 1,
+          question_type: 'nat',
+          question_text: 'NAT',
+          question_image_url: null,
+          options: [],
+          option_images: null,
+          order_index: 0,
+          marks: 1,
+          negative_marks: 0,
+          subject: null,
+          topic: null,
+        } satisfies TestQuestion],
+      },
       timingsRef: { current: {} },
       testIdRef: { current: 7 },
       autoSaveRef: { current: null },
