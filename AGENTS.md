@@ -4,7 +4,7 @@ This file defines how AI assistants should work in this repository.
 
 Gateprep is a full-stack GATE exam preparation platform with:
 - `backend/` — FastAPI, SQLAlchemy, Alembic, PostgreSQL/Supabase
-- `frontend/` — React 18, Vite, Tailwind CSS, TypeScript/TSX migration in progress
+- `frontend/` — React 18, Vite, Tailwind CSS, strict TypeScript/TSX
 - root Docker files for local and deployment workflows
 
 Read this file first, then load only the relevant files from `.agents/rules/`, `.agents/workflows/`, and `.agents/skills/` for the task at hand.
@@ -25,7 +25,7 @@ When repository files disagree with these notes, trust the actual code and updat
 ### Frontend
 
 - React 18 with Vite
-- TypeScript/TSX for migrated files; existing JavaScript/JSX remains during the migration
+- `frontend/src` is strict TypeScript only. Retained JavaScript is intentionally limited to `vite.config.js`, `postcss.config.js`, `api/proxy.js`, and `api/proxy.test.js` (tooling and the Vercel API proxy, outside the `tsconfig.json` `include`). Do not convert them without updating `tsconfig.json` and the build.
 - Tailwind CSS
 - SWR for some data fetching
 - React Router
@@ -73,7 +73,7 @@ Run commands from the repository root unless a `cd` is shown.
 
 - Run with Docker: `docker compose up --build`
 
-The frontend `npm run typecheck` and `npm test` scripts are required checks. Do not assume a lint script exists unless confirmed in `frontend/package.json`.
+The frontend `npm run build` runs `tsc --noEmit` before `vite build`; `npm run typecheck` and `npm test` are required checks. There is no frontend lint script.
 
 ## How AI Should Work Here
 
@@ -92,10 +92,13 @@ Do not load unrelated rule files just because they exist.
 
 ### 2. Match the real stack
 
-- Use TypeScript for migrated frontend files and keep the compiler strict.
+- Use TypeScript throughout `frontend/src` and keep the compiler strict.
 - Use `unknown` with narrowing instead of `any`.
-- Use `@ts-expect-error` with a reason when a temporary suppression is verified; never use `@ts-ignore`.
-- Migration PRs must not change runtime behavior or include unrelated changes.
+- Never use `@ts-ignore`.
+- Avoid `as` casts except `as const`; use generated API types and runtime guards at external boundaries.
+- `@ts-expect-error` is allowed only as `// @ts-expect-error TODO(null-safety): <exact case and runtime result>`. CI fails if the total in `frontend/src` exceeds the budget set in `.github/workflows/e2e.yml`. Lower the budget whenever you remove one; never raise it.
+- API types: `frontend/src/api/schema.d.ts` is generated from the backend OpenAPI schema and committed. After changing a backend route, response model, or request model, run `cd frontend && npm run gen:api` and commit the result; CI fails if it is stale. Routes without a response model use hand-typed shapes in `frontend/src/types/api.ts` marked `// TODO(response_model)`; replace them by adding a backend response model.
+- Keep behavior changes and refactors in separate PRs.
 - Prefer existing patterns in the touched area over generic framework advice
 - Do not introduce a new state management or form library without a clear need
 - Treat listed agents/workflows as guidance unless the active AI harness actually provides them as callable tools
@@ -128,8 +131,9 @@ Available commands:
 - `cd frontend && npm test`
 
 Notes:
+- `npm run build` runs `tsc --noEmit` before `vite build`
 - `npm run typecheck` and `npm test` are required frontend checks
-- There is no guaranteed frontend lint script
+- There is no frontend lint script
 - For UI changes, build verification is the default minimum check
 
 ### Backend
