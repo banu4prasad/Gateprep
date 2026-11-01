@@ -677,6 +677,43 @@ export interface components {
              */
             time_spent_seconds: number;
         };
+        /** AttemptAnswerResponse */
+        AttemptAnswerResponse: {
+            /** Question Id */
+            question_id: number;
+            /** Selected Answer */
+            selected_answer: string | null;
+            /** Time Spent Seconds */
+            time_spent_seconds: number;
+        };
+        /** AttemptStartResponse */
+        AttemptStartResponse: {
+            /** Answers */
+            answers: components["schemas"]["AttemptAnswerResponse"][];
+            /** Attempt Number */
+            attempt_number: number;
+            /** Fullscreen Violations */
+            fullscreen_violations: number;
+            /** Id */
+            id: number;
+            /** Max Attempts */
+            max_attempts: number;
+            /** Score */
+            score: number | null;
+            /** Server Time */
+            server_time: string;
+            /** Started At */
+            started_at: string | null;
+            status: components["schemas"]["TestStatus"];
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Tab Violations */
+            tab_violations: number;
+            /** Test Id */
+            test_id: number;
+            /** Total Marks */
+            total_marks: number | null;
+        };
         /** AuthUserResponse */
         AuthUserResponse: {
             /**
@@ -871,6 +908,11 @@ export interface components {
              */
             password: string;
         };
+        /** MessageResponse */
+        MessageResponse: {
+            /** Message */
+            message: string;
+        };
         /** MyAttemptResponse */
         MyAttemptResponse: {
             /** Attempt Id */
@@ -938,6 +980,89 @@ export interface components {
             total_marks: number;
             /** Total Participants */
             total_participants: number;
+        };
+        /** PersistedSubmitResponse */
+        PersistedSubmitResponse: {
+            /** Fullscreen Violations */
+            fullscreen_violations: number;
+            /** Id */
+            id: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            persisted: "True";
+            /** Score */
+            score: number | null;
+            /** Started At */
+            started_at: string | null;
+            status: components["schemas"]["TestStatus"];
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Tab Violations */
+            tab_violations: number;
+            /** Test Id */
+            test_id: number;
+            /** Total Marks */
+            total_marks: number | null;
+        };
+        /** PracticeResultResponse */
+        PracticeResultResponse: {
+            /** Answers */
+            answers: components["schemas"]["ResultAnswerResponse"][];
+            /** Attempt Id */
+            attempt_id: string;
+            /** Attempt Number */
+            attempt_number: number;
+            /** Attempts Remaining */
+            attempts_remaining: number;
+            /** Client Result Id */
+            client_result_id: string | null;
+            /** Correct */
+            correct: number;
+            /** Counts For Leaderboard */
+            counts_for_leaderboard: boolean;
+            /** Incorrect */
+            incorrect: number;
+            /** Max Attempts */
+            max_attempts: number;
+            /** Percentage */
+            percentage: number;
+            /**
+             * Persisted
+             * @constant
+             */
+            persisted: false;
+            /** Rank */
+            rank: number | null;
+            /** Score */
+            score: number;
+            /** Skipped */
+            skipped: number;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Tab Violations */
+            tab_violations: number;
+            /** Test Id */
+            test_id: number;
+            /** Test Title */
+            test_title: string;
+            topper: components["schemas"]["ResultTopperResponse"] | null;
+            /** Total Marks */
+            total_marks: number;
+            /** Total Participants */
+            total_participants: number;
+        };
+        /** PracticeSubmitResponse */
+        PracticeSubmitResponse: {
+            /** Id */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            persisted: "False";
+            result: components["schemas"]["PracticeResultResponse"];
         };
         /** QuestionIn */
         QuestionIn: {
@@ -1115,6 +1240,34 @@ export interface components {
             test_type?: string | null;
             /** Title */
             title?: string | null;
+        };
+        /** TestQuestionResponse */
+        TestQuestionResponse: {
+            /** Id */
+            id: number;
+            /** Marks */
+            marks: number;
+            /** Negative Marks */
+            negative_marks: number;
+            /** Option Images */
+            option_images: {
+                [key: string]: unknown;
+            } | null;
+            /** Options */
+            options: unknown[] | {
+                [key: string]: unknown;
+            };
+            /** Order Index */
+            order_index: number;
+            /** Question Image Url */
+            question_image_url: string | null;
+            /** Question Text */
+            question_text: string;
+            question_type: components["schemas"]["QuestionType"];
+            /** Subject */
+            subject: string | null;
+            /** Topic */
+            topic: string | null;
         };
         /**
          * TestStatus
@@ -2251,7 +2404,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["TestQuestionResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -2287,7 +2440,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2323,7 +2476,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["PersistedSubmitResponse"] | components["schemas"]["PracticeSubmitResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2359,7 +2512,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2455,7 +2608,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AttemptStartResponse"];
                 };
             };
             /** @description Validation Error */
