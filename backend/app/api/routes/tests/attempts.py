@@ -19,7 +19,12 @@ from app.api.routes.tests.helpers import (
     _set_practice_count,
     _submitted_attempts_query,
 )
-from app.api.routes.tests.schemas import BulkAnswerSubmit, ViolationUpdate
+from app.api.routes.tests.schemas import (
+    AttemptStartResponse,
+    BulkAnswerSubmit,
+    TestQuestionResponse,
+    ViolationUpdate,
+)
 from app.api.routes.tests.result_builder import _evaluate_submission, _result_payload
 
 router = APIRouter()
@@ -232,7 +237,7 @@ def _handle_practice_submission(
 # ---------------------------------------------------------------------------
 
 
-@router.post("/{test_id}/start")
+@router.post("/{test_id}/start", response_model=AttemptStartResponse)
 def start_test(
     test_id: int, db: Session = Depends(get_db), current_user=Depends(require_aspirant)
 ):
@@ -289,7 +294,10 @@ def start_test(
     }
 
 
-@router.get("/{test_id}/attempt/{attempt_id}/questions")
+@router.get(
+    "/{test_id}/attempt/{attempt_id}/questions",
+    response_model=list[TestQuestionResponse],
+)
 def get_questions(
     test_id: int,
     attempt_id: int,

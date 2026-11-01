@@ -138,6 +138,42 @@ class PersistedResultResponse(BaseModel):
     answers: list[ResultAnswerResponse]
 
 
+class AttemptAnswerResponse(BaseModel):
+    question_id: int
+    selected_answer: str | None
+    time_spent_seconds: int
+
+
+class AttemptStartResponse(BaseModel):
+    id: int
+    test_id: int
+    status: TestStatus
+    started_at: LegacyDatetime | None
+    submitted_at: LegacyDatetime | None
+    score: int | float | None
+    total_marks: int | float | None
+    tab_violations: int
+    fullscreen_violations: int
+    server_time: LegacyDatetime
+    answers: list[AttemptAnswerResponse]
+    attempt_number: int
+    max_attempts: int
+
+
+class TestQuestionResponse(BaseModel):
+    id: int
+    question_type: QuestionType
+    question_text: str
+    question_image_url: str | None
+    options: list[Any] | dict[str, Any]
+    option_images: dict[str, Any] | None
+    order_index: int
+    marks: int | float
+    negative_marks: int | float
+    subject: str | None
+    topic: str | None
+
+
 class AnswerSubmit(BaseModel):
     question_id: int
     selected_answer: Optional[str] = None
