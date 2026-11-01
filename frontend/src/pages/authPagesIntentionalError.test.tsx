@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentProps, ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import LoginPage from './Login'
 import RegisterPage from './Register'
@@ -20,15 +21,15 @@ vi.mock('react-hot-toast', () => ({ default: { success: vi.fn(), error: vi.fn() 
 vi.mock('../components/shared/Spinner', () => ({ default: () => null }))
 vi.mock('../components/shared/Logo', () => ({ default: () => null }))
 vi.mock('../components/ui/button', () => ({
-  Button: ({ children, ...props }) => <button {...props}>{children}</button>,
+  Button: ({ children, ...props }: ComponentProps<'button'>) => <button {...props}>{children}</button>,
 }))
 vi.mock('../components/ui/card', () => ({
-  Card: ({ children }) => <div>{children}</div>,
-  CardContent: ({ children }) => <div>{children}</div>,
+  Card: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  CardContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
-vi.mock('../components/ui/input', () => ({ Input: props => <input {...props} /> }))
+vi.mock('../components/ui/input', () => ({ Input: (props: ComponentProps<'input'>) => <input {...props} /> }))
 vi.mock('../components/ui/label', () => ({
-  Label: ({ children, ...props }) => <label {...props}>{children}</label>,
+  Label: ({ children, ...props }: ComponentProps<'label'>) => <label {...props}>{children}</label>,
 }))
 
 const mockedUseAuth = vi.mocked(useAuth)
@@ -48,13 +49,15 @@ beforeEach(() => {
 
 afterEach(() => cleanup())
 
-function renderPage(page) {
+type AuthPage = 'login' | 'register' | 'reset'
+
+function renderPage(page: AuthPage): void {
   const entry = page === 'reset' ? '/reset-password?token=token' : '/'
   const Page = page === 'login' ? LoginPage : page === 'register' ? RegisterPage : ResetPasswordPage
   render(<MemoryRouter initialEntries={[entry]}><Page /></MemoryRouter>)
 }
 
-function fillPage(page) {
+function fillPage(page: AuthPage): void {
   if (page === 'login') {
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'user@example.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
@@ -69,7 +72,7 @@ function fillPage(page) {
   }
 }
 
-async function submitPage(page) {
+async function submitPage(page: AuthPage): Promise<void> {
   const request = page === 'login'
     ? mockedAuthAPI.login
     : page === 'register'
@@ -82,11 +85,13 @@ async function submitPage(page) {
   await vi.waitFor(() => expect(mockedToast.error).toHaveBeenCalled())
 }
 
-describe.each([
+const intentionalErrorCases: ReadonlyArray<readonly [AuthPage, string]> = [
   ['login', 'Invalid email or password'],
   ['register', 'Registration failed'],
   ['reset', 'Password reset failed'],
-])('%s intentional 422 handling', (page, fallback) => {
+]
+
+describe.each(intentionalErrorCases)('%s intentional 422 handling', (page, fallback) => {
   it('intentional: non-string detail shows fallback', async () => {
     await submitPage(page)
     expect(mockedToast.error).toHaveBeenCalledWith(fallback)

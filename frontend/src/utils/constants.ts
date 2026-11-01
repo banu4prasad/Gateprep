@@ -32,13 +32,13 @@ export const CATEGORIES = [
   { value: 'test_series', label: 'Test Series' },
 ]
 
-export const SERIES_LABELS = {
+export const SERIES_LABELS: Record<string, string> = {
   made_easy:  'Made Easy',
   go_classes: 'GO Classes',
 }
 
-export const TYPE_LABELS = {
+export const TYPE_LABELS: Record<string, string> = {
   subject_wise: 'Subject Wise',
   topic_wise:   'Topic Wise',
   full_length:  'Full Length',
-} as const
+}

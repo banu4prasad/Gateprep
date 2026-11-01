@@ -133,8 +133,10 @@ export type RegisterRequest = components['schemas']['RegisterRequest']
 export type ResetPasswordRequest = components['schemas']['ResetPasswordRequest']
 export type AuthUserResponse = components['schemas']['AuthUserResponse']
 export type RoleUpdate = components['schemas']['RoleUpdate']
-export type TestCreate = Omit<components['schemas']['TestCreate'], 'series_order'> & {
+// Pydantic lax mode (schemas.py:15-24, int = Field(180, gt=0)) coerces numeric strings; the create form sends the input value (number default, string after editing, '' when cleared -> 422)
+export type TestCreate = Omit<components['schemas']['TestCreate'], 'series_order' | 'duration_minutes'> & {
   series_order?: number
+  duration_minutes: number | string
 }
 export type TestPatch = components['schemas']['TestPatch']
 export type QuestionIn = Omit<
