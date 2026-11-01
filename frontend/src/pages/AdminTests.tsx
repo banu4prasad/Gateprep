@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { BADGE_COLORS } from '@/utils/badgeStyles'
+import { getApiErrorDetail } from '@/lib/apiError'
 import ConfirmDialog from '../components/admin/ConfirmDialog'
 import type { AdminTestCreateResponse, AdminTestListItem } from '@/types/api'
 
@@ -109,10 +110,7 @@ function CreateTestModal({ onClose, onCreated }: CreateTestModalProps) {
       toast.success('Test created!')
       onCreated(res.data)
     } catch (err) {
-      const response = typeof err === 'object' && err !== null && 'response' in err ? err.response : undefined
-      const data = typeof response === 'object' && response !== null && 'data' in response ? response.data : undefined
-      const detail = typeof data === 'object' && data !== null && 'detail' in data ? data.detail : undefined
-      toast.error(typeof detail === 'string' && detail ? detail : 'Failed to create test')
+      toast.error(getApiErrorDetail(err) || 'Failed to create test')
     } finally { setLoading(false) }
   }
 
