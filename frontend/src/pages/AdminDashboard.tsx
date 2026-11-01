@@ -8,11 +8,13 @@ import { StatCardSkeleton } from '../components/shared/Skeletons'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { BADGE_COLORS } from '@/utils/badgeStyles'
+import type { ReactElement } from 'react'
+import type { AdminTestListItem, AdminUser, AdminUsersResponse } from '@/types/api'
 
-export default function AdminDashboard() {
-  const { data: usersData, isLoading: usersLoading } = useSWR('/admin/users?limit=1', fetcher)
-  const { data: pendingUsersData, isLoading: pendingUsersLoading } = useSWR('/admin/users?role=user&is_active=true&limit=3', fetcher)
-  const { data: testsData, isLoading: testsLoading } = useSWR('/admin/tests', fetcher)
+export default function AdminDashboard(): ReactElement {
+  const { data: usersData, isLoading: usersLoading } = useSWR<AdminUsersResponse>('/admin/users?limit=1', fetcher)
+  const { data: pendingUsersData, isLoading: pendingUsersLoading } = useSWR<{ items: AdminUser[] }>('/admin/users?role=user&is_active=true&limit=3', fetcher)
+  const { data: testsData, isLoading: testsLoading } = useSWR<AdminTestListItem[]>('/admin/tests', fetcher)
   
   const pendingUsers = pendingUsersData?.items || []
   const tests = testsData || []
