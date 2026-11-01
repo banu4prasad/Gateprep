@@ -23,6 +23,7 @@ from app.api.routes.tests.schemas import (
     AttemptStartResponse,
     BulkAnswerSubmit,
     MessageResponse,
+    SubmitResponse,
     TestQuestionResponse,
     ViolationUpdate,
 )
@@ -380,7 +381,10 @@ def save_answers(
     return {"message": "Saved"}
 
 
-@router.post("/{test_id}/attempt/{attempt_id}/submit")
+@router.post(
+    "/{test_id}/attempt/{attempt_id}/submit",
+    response_model=SubmitResponse,
+)
 def submit_test(
     test_id: int,
     attempt_id: int,

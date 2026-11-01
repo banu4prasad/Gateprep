@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any, List, Literal, Optional
 
 from pydantic import PlainSerializer
 
@@ -176,6 +176,55 @@ class TestQuestionResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+class PersistedSubmitResponse(BaseModel):
+    id: int
+    test_id: int
+    status: TestStatus
+    started_at: LegacyDatetime | None
+    submitted_at: LegacyDatetime | None
+    score: int | float | None
+    total_marks: int | float | None
+    tab_violations: int
+    fullscreen_violations: int
+    persisted: Literal[True]
+
+
+class PracticeResultResponse(BaseModel):
+    attempt_id: str
+    client_result_id: str | None
+    attempt_number: int
+    attempts_remaining: int
+    max_attempts: int
+    counts_for_leaderboard: bool
+    persisted: Literal[False]
+    test_id: int
+    test_title: str
+    score: int | float
+    total_marks: int | float
+    percentage: int | float
+    correct: int
+    incorrect: int
+    skipped: int
+    submitted_at: LegacyDatetime | None
+    tab_violations: int
+    rank: int | None
+    total_participants: int
+    topper: ResultTopperResponse | None
+    answers: list[ResultAnswerResponse]
+
+
+class PracticeSubmitResponse(BaseModel):
+    id: str
+    persisted: Literal[False]
+    result: PracticeResultResponse
+
+
+SubmitResponse = Annotated[
+    PersistedSubmitResponse | PracticeSubmitResponse,
+    Field(discriminator="persisted"),
+]
 
 
 class AnswerSubmit(BaseModel):
