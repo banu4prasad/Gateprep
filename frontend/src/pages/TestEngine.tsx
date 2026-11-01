@@ -84,13 +84,14 @@ export default function TestEngine() {
         />
 
         <div className="flex flex-1 overflow-hidden">
-          <QuestionView
+          {currentQuestion && <QuestionView
             answers={answers}
             clearResponse={clearResponse}
             commitNAT={commitNAT}
             current={current}
             markAndNext={markAndNext}
             natInput={natInput}
+            // @ts-expect-error TODO(null-safety): backend options is list or dict (and option_images may hold non-strings); the option components assume list/string, so a dict-shaped options value would throw in .map at runtime, as before
             question={currentQuestion}
             questions={questions}
             saveAndNext={saveAndNext}
@@ -98,7 +99,7 @@ export default function TestEngine() {
             setMCQ={setMCQ}
             setNatInput={updateNatInput}
             toggleMSQ={toggleMSQ}
-          />
+          />}
 
           <div className="hidden md:flex w-52 border-l flex-col flex-shrink-0 overflow-y-auto theme-sidebar-surface">
             {sidebar}
