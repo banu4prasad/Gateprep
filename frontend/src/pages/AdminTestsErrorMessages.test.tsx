@@ -116,3 +116,23 @@ it('characterizes a cleared duration payload', async () => {
   const payload = await submitAndReadDuration('')
   expect(payload?.duration_minutes).toBe('')
 })
+
+it('intentional: non-string detail shows the create-test fallback', async () => {
+  mockedCreateTest.mockRejectedValueOnce({
+    response: { data: { detail: [{ msg: 'duration must be greater than 0' }] } },
+  })
+  render(<MemoryRouter><AdminTests /></MemoryRouter>)
+  fireEvent.click(screen.getByRole('button', { name: 'New Test' }))
+  const modal = screen.getByRole('dialog')
+  fireEvent.change(within(modal).getByPlaceholderText('e.g. DBMS Weekly Quiz #3'), {
+    target: { value: 'Test title' },
+  })
+  fireEvent.change(within(modal).getByRole('spinbutton'), { target: { value: '' } })
+  fireEvent.click(within(modal).getByRole('button', { name: 'Weekly Quiz' }))
+  fireEvent.change(within(modal).getByRole('combobox'), {
+    target: { value: 'Engineering Mathematics' },
+  })
+  fireEvent.click(within(modal).getByRole('button', { name: 'Create Test' }))
+
+  await vi.waitFor(() => expect(mockedToast.error).toHaveBeenCalledWith('Failed to create test'))
+})
