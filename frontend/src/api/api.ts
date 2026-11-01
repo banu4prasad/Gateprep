@@ -2,6 +2,7 @@ import api from './client'
 import type { AxiosResponse } from 'axios'
 import type {
   AdminResponse,
+  AdminQuestion,
   AnswerSubmit,
   ApiResponse,
   AuthUserResponse,
@@ -37,6 +38,7 @@ import type {
   PasswordResetResponse,
   BookmarkIdsResponse,
   BookmarkToggleResponse,
+  QuestionsUploadResponse,
 } from '../types/api'
 
 export const fetcher = <T = unknown>(url: string): Promise<T> => api.get<T>(url).then(res => res.data)
@@ -61,10 +63,10 @@ export const adminAPI = {
   createTest:       (data: TestCreate): Promise<ApiResponse<AdminResponse>>          => api.post('/admin/tests', data),
   deleteTest:        (id: string | number): Promise<ApiResponse<AdminResponse>>        => api.delete(`/admin/tests/${id}`),
   updateTest:       (id: string | number, data: TestPatch): Promise<ApiResponse<TestDetail>>       => api.patch(`/admin/tests/${id}`, data),
-  getQuestions:     (testId: string | number): Promise<ApiResponse<TestQuestion[]>>       => api.get(`/admin/tests/${testId}/questions`),
+  getQuestions:     (testId: string | number): Promise<ApiResponse<AdminQuestion[]>>       => api.get(`/admin/tests/${testId}/questions`),
   addQuestions:     (testId: string | number, qs: QuestionsBulk['questions']): Promise<ApiResponse<unknown>>    => api.post(`/admin/tests/${testId}/questions`, { questions: qs }),
   updateQuestion:   (testId: string | number, qId: string | number, data: QuestionIn): Promise<ApiResponse<unknown>> => api.patch(`/admin/tests/${testId}/questions/${qId}`, data),
-  uploadQuestionsFile: (testId: string | number, form: FormData): Promise<ApiResponse<unknown>> => api.post(`/admin/tests/${testId}/questions/upload-file`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadQuestionsFile: (testId: string | number, form: FormData): Promise<ApiResponse<QuestionsUploadResponse>> => api.post(`/admin/tests/${testId}/questions/upload-file`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteQuestion:   (testId: string | number, qId: string | number): Promise<ApiResponse<unknown>>   => api.delete(`/admin/tests/${testId}/questions/${qId}`),
   uploadQImage:     (qId: string | number, form: FormData, target: 'question' | 'A' | 'B' | 'C' | 'D' = 'question'): Promise<ApiResponse<unknown>> => api.post(`/admin/questions/${qId}/image?target=${encodeURIComponent(target)}`, form, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteQImage:     (qId: string | number, target: 'question' | 'A' | 'B' | 'C' | 'D'): Promise<ApiResponse<unknown>>   => api.delete(`/admin/questions/${qId}/image?target=${encodeURIComponent(target)}`),

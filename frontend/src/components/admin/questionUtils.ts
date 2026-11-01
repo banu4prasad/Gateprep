@@ -4,19 +4,7 @@ export type QuestionType = 'mcq' | 'msq' | 'nat'
 export const isQuestionType = (value: string): value is QuestionType =>
   value === 'mcq' || value === 'msq' || value === 'nat'
 
-export interface AdminQuestion {
-  id: number
-  question_type: QuestionType
-  question_text: string
-  options: string[]
-  correct_answer: string
-  marks: number
-  negative_marks: number
-  subject: string | null
-  topic: string | null
-  question_image_url?: string | null
-  option_images?: Record<string, string | null> | null
-}
+export type { AdminQuestion } from '@/types/api'
 
 export interface QuestionFormState {
   question_type: QuestionType

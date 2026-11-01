@@ -25,6 +25,19 @@ export interface TestCatalogItem {
   subject: string | null
 }
 
+// TODO(response_model): response shape for GET /admin/tests/{id}/questions.
+export interface AdminQuestion extends TestQuestion {
+  question_text: string
+  options: string[]
+  correct_answer: string
+  marks: number
+  negative_marks: number
+  order_index: number
+  subject: string | null
+  topic: string | null
+  option_images: Record<string, string | null> | null
+}
+
 export interface TestDetail {
   id: number
   title: string
@@ -65,6 +78,12 @@ export interface PasswordResetResponse {
   expires_at: string
 }
 
+// TODO(response_model): response shape for POST /admin/tests/{id}/questions/upload-file.
+export interface QuestionsUploadResponse {
+  message?: string
+  imported_count?: number
+}
+
 // TODO(response_model): response shape for GET /bookmarks/ids.
 export interface BookmarkIdsResponse { ids: number[] }
 // TODO(response_model): response shape for POST /bookmarks/{id}/toggle.
@@ -90,9 +109,7 @@ export interface BookmarkItem {
 }
 
 // TODO(response_model): fields consumed by admin test editing.
-export interface AdminTestQuestion extends TestQuestion {
-  question_type: 'mcq' | 'msq' | 'nat'
-}
+export type AdminTestQuestion = AdminQuestion
 
 export interface AdminTestResponse extends TestDetail {
   questions?: AdminTestQuestion[]
@@ -105,8 +122,18 @@ export type AuthUserResponse = components['schemas']['AuthUserResponse']
 export type RoleUpdate = components['schemas']['RoleUpdate']
 export type TestCreate = components['schemas']['TestCreate']
 export type TestPatch = components['schemas']['TestPatch']
-export type QuestionIn = components['schemas']['QuestionIn']
-export type QuestionsBulk = components['schemas']['QuestionsBulk']
+export type QuestionIn = Omit<
+  components['schemas']['QuestionIn'],
+  'question_type' | 'options' | 'marks' | 'negative_marks'
+> & {
+  question_type?: string
+  options?: string[]
+  marks?: number
+  negative_marks?: number
+}
+export interface QuestionsBulk {
+  questions: QuestionIn[]
+}
 export type SeriesCreate = components['schemas']['SeriesCreate']
 export type BookmarkNote = components['schemas']['BookmarkNote']
 export type AnswerSubmit = components['schemas']['AnswerSubmit']
