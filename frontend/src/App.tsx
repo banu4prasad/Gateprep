@@ -69,3 +69,4 @@ export default function App() {
     </ThemeProvider>
   )
 }
+const brokenTypeTest: number = 'must fail typecheck';
