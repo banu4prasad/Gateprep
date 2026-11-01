@@ -749,10 +749,114 @@ export interface components {
             /** Answers */
             answers: components["schemas"]["AnswerSubmit"][];
         };
+        /** CatalogResponse */
+        CatalogResponse: {
+            /** Category */
+            category: string | null;
+            /** Created At */
+            created_at: string;
+            /** Description */
+            description: string | null;
+            /** Duration Minutes */
+            duration_minutes: number;
+            /** Id */
+            id: number;
+            /** Question Count */
+            question_count: number;
+            /** Series Id */
+            series_id: number | null;
+            /** Series Name */
+            series_name: string | null;
+            /** Subject */
+            subject: string | null;
+            /** Test Type */
+            test_type: string | null;
+            /** Title */
+            title: string;
+            /** Total Marks */
+            total_marks: number;
+        };
+        /** DetailResponse */
+        DetailResponse: {
+            /** Created At */
+            created_at: string;
+            /** Description */
+            description: string | null;
+            /** Duration Minutes */
+            duration_minutes: number;
+            /** Id */
+            id: number;
+            /** Question Count */
+            question_count: number;
+            /** Series Id */
+            series_id: number | null;
+            /** Title */
+            title: string;
+            /** Total Marks */
+            total_marks: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HistoryResponse */
+        HistoryResponse: {
+            /** Fullscreen Violations */
+            fullscreen_violations: number;
+            /** Id */
+            id: number;
+            /** Score */
+            score: number | null;
+            /** Started At */
+            started_at: string | null;
+            status: components["schemas"]["TestStatus"];
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Tab Violations */
+            tab_violations: number;
+            /** Test Id */
+            test_id: number;
+            /** Total Marks */
+            total_marks: number | null;
+        };
+        /** LeaderboardEntryResponse */
+        LeaderboardEntryResponse: {
+            /** Full Name */
+            full_name: string;
+            /** Is Current User */
+            is_current_user: boolean;
+            /** Percentage */
+            percentage: number;
+            /** Rank */
+            rank: number;
+            /** Score */
+            score: number | null;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Tab Violations */
+            tab_violations: number;
+            /** Total Marks */
+            total_marks: number | null;
+            /** User Id */
+            user_id: number;
+        };
+        /** LeaderboardResponse */
+        LeaderboardResponse: {
+            /** Current User Rank */
+            current_user_rank: number | null;
+            /** Leaderboard */
+            leaderboard: components["schemas"]["LeaderboardEntryResponse"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Test Id */
+            test_id: number;
+            /** Test Title */
+            test_title: string;
+            /** Total Participants */
+            total_participants: number;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -766,6 +870,74 @@ export interface components {
              * @description Maximum 72 UTF-8 bytes for bcrypt compatibility.
              */
             password: string;
+        };
+        /** MyAttemptResponse */
+        MyAttemptResponse: {
+            /** Attempt Id */
+            attempt_id: number;
+            /** Attempt Number */
+            attempt_number: number;
+            /** Attempts Remaining */
+            attempts_remaining: number;
+            /** Counts For Leaderboard */
+            counts_for_leaderboard: boolean;
+            /** Is First */
+            is_first: boolean;
+            /** Percentage */
+            percentage: number;
+            /** Score */
+            score: number | null;
+            /** Started At */
+            started_at: string | null;
+            status: components["schemas"]["TestStatus"];
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Total Marks */
+            total_marks: number | null;
+        };
+        /** PersistedResultResponse */
+        PersistedResultResponse: {
+            /** Answers */
+            answers: components["schemas"]["ResultAnswerResponse"][];
+            /** Attempt Id */
+            attempt_id: number;
+            /** Attempt Number */
+            attempt_number: number;
+            /** Attempts Remaining */
+            attempts_remaining: number;
+            /** Client Result Id */
+            client_result_id: string | null;
+            /** Correct */
+            correct: number;
+            /** Counts For Leaderboard */
+            counts_for_leaderboard: boolean;
+            /** Incorrect */
+            incorrect: number;
+            /** Max Attempts */
+            max_attempts: number;
+            /** Percentage */
+            percentage: number;
+            /** Persisted */
+            persisted: boolean;
+            /** Rank */
+            rank: number | null;
+            /** Score */
+            score: number;
+            /** Skipped */
+            skipped: number;
+            /** Submitted At */
+            submitted_at: string | null;
+            /** Tab Violations */
+            tab_violations: number;
+            /** Test Id */
+            test_id: number;
+            /** Test Title */
+            test_title: string;
+            topper: components["schemas"]["ResultTopperResponse"] | null;
+            /** Total Marks */
+            total_marks: number;
+            /** Total Participants */
+            total_participants: number;
         };
         /** QuestionIn */
         QuestionIn: {
@@ -798,6 +970,11 @@ export interface components {
             /** Topic */
             topic?: string | null;
         };
+        /**
+         * QuestionType
+         * @enum {string}
+         */
+        QuestionType: "mcq" | "msq" | "nat";
         /** QuestionsBulk */
         QuestionsBulk: {
             /** Questions */
@@ -827,6 +1004,55 @@ export interface components {
             password: string;
             /** Token */
             token: string;
+        };
+        /** ResultAnswerResponse */
+        ResultAnswerResponse: {
+            /** Correct Answer */
+            correct_answer: string;
+            /** Is Correct */
+            is_correct: boolean | null;
+            /** Marks */
+            marks: number;
+            /** Marks Awarded */
+            marks_awarded: number;
+            /** Negative Marks */
+            negative_marks: number;
+            /** Option Images */
+            option_images: {
+                [key: string]: unknown;
+            } | null;
+            /** Options */
+            options: unknown[] | {
+                [key: string]: unknown;
+            };
+            /** Question Id */
+            question_id: number;
+            /** Question Image Url */
+            question_image_url: string | null;
+            /** Question Text */
+            question_text: string;
+            question_type: components["schemas"]["QuestionType"];
+            /** Selected Answer */
+            selected_answer: string | null;
+            /** Time Spent Seconds */
+            time_spent_seconds: number;
+            /** Topper Answer */
+            topper_answer: string | null;
+            /** Topper Time Seconds */
+            topper_time_seconds: number;
+        };
+        /** ResultTopperResponse */
+        ResultTopperResponse: {
+            /** Full Name */
+            full_name: string;
+            /** Percentage */
+            percentage: number;
+            /** Score */
+            score: number | null;
+            /** Total Marks */
+            total_marks: number | null;
+            /** User Id */
+            user_id: number;
         };
         /** RoleUpdate */
         RoleUpdate: {
@@ -890,6 +1116,11 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /**
+         * TestStatus
+         * @enum {string}
+         */
+        TestStatus: "in_progress" | "submitted";
         /**
          * UserRole
          * @enum {string}
@@ -1884,7 +2115,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["CatalogResponse"][];
                 };
             };
         };
@@ -1906,7 +2137,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["PersistedResultResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1966,7 +2197,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["HistoryResponse"][];
                 };
             };
         };
@@ -1988,7 +2219,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DetailResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2162,7 +2393,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["LeaderboardResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2193,7 +2424,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["MyAttemptResponse"][];
                 };
             };
             /** @description Validation Error */

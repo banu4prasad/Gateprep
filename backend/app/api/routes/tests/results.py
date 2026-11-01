@@ -11,6 +11,7 @@ from app.api.routes.tests.helpers import (
     _submitted_attempts_query,
 )
 from app.api.routes.tests.result_builder import _attempt_answer_details, _result_payload
+from app.api.routes.tests.schemas import PersistedResultResponse
 from app.services.html_report_service import generate_result_html
 
 router = APIRouter()
@@ -61,7 +62,7 @@ def _load_attempt_result(attempt_id: int, current_user, db: Session) -> dict:
     )
 
 
-@router.get("/attempt/{attempt_id}/result")
+@router.get("/attempt/{attempt_id}/result", response_model=PersistedResultResponse)
 def get_result(
     attempt_id: int,
     db: Session = Depends(get_db),
