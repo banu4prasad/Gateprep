@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useAdminTest } from '../hooks/useAdminTest'
 import { useTestFormEditor } from '../hooks/useTestFormEditor'
@@ -11,9 +11,14 @@ import AdminTestDetailSkeleton from '../components/admin/AdminTestDetailSkeleton
 import TestHeader from '../components/admin/TestHeader'
 import QuestionsList from '../components/admin/QuestionsList'
 import ConfirmDialog from '../components/admin/ConfirmDialog'
+import type { ReactElement } from 'react'
+import type { QuestionIn } from '@/types/api'
 
-export default function AdminTestDetail() {
-  const { testId } = useParams()
+interface AdminTestDetailContentProps {
+  testId: string
+}
+
+function AdminTestDetailContent({ testId }: AdminTestDetailContentProps): ReactElement {
   const navigate = useNavigate()
   const {
     test,
@@ -31,16 +36,17 @@ export default function AdminTestDetail() {
 
   const { isEditingTest, testForm, setTestForm, savingTest, startEditingTest, saveTest, cancelEditingTest } = useTestFormEditor(test, updateTestDetails)
   const { mode, closeMode, openJsonMode, openManualMode, toggleJsonMode, toggleManualMode } = useQuestionFormMode()
-  const [questionToDelete, setQuestionToDelete] = useState(null)
+  const [questionToDelete, setQuestionToDelete] = useState<number | null>(null)
 
   const previewTest = useCallback(() => navigate(`/tests/${testId}?preview=true`), [navigate, testId])
 
-  const handleAddQuestion = useCallback(async (question) => {
+  const handleAddQuestion = useCallback(async (question: QuestionIn) => {
     await addQuestion(question)
     closeMode()
   }, [addQuestion, closeMode])
 
   const confirmDeleteQuestion = useCallback(async () => {
+    if (questionToDelete === null) return
     await deleteQuestion(questionToDelete)
     setQuestionToDelete(null)
   }, [deleteQuestion, questionToDelete])
@@ -97,4 +103,10 @@ export default function AdminTestDetail() {
       />
     </Layout>
   )
+}
+
+export default function AdminTestDetail(): ReactElement {
+  const { testId } = useParams()
+  if (testId === undefined) return <Navigate to="/admin/tests" replace />
+  return <AdminTestDetailContent testId={testId} />
 }
