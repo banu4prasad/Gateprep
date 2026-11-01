@@ -174,6 +174,10 @@ class TestQuestionResponse(BaseModel):
     topic: str | None
 
 
+class MessageResponse(BaseModel):
+    message: str
+
+
 class AnswerSubmit(BaseModel):
     question_id: int
     selected_answer: Optional[str] = None

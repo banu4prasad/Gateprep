@@ -22,6 +22,7 @@ from app.api.routes.tests.helpers import (
 from app.api.routes.tests.schemas import (
     AttemptStartResponse,
     BulkAnswerSubmit,
+    MessageResponse,
     TestQuestionResponse,
     ViolationUpdate,
 )
@@ -333,7 +334,10 @@ def get_questions(
     ]
 
 
-@router.patch("/{test_id}/attempt/{attempt_id}/violations")
+@router.patch(
+    "/{test_id}/attempt/{attempt_id}/violations",
+    response_model=MessageResponse,
+)
 def update_violations(
     test_id: int,
     attempt_id: int,
@@ -353,7 +357,10 @@ def update_violations(
     return {"message": "Updated"}
 
 
-@router.post("/{test_id}/attempt/{attempt_id}/save")
+@router.post(
+    "/{test_id}/attempt/{attempt_id}/save",
+    response_model=MessageResponse,
+)
 def save_answers(
     test_id: int,
     attempt_id: int,
