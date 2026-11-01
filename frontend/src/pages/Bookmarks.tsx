@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { bookmarkAPI, fetcher } from '../api/api'
+import type { BookmarkIdsResponse, BookmarkItem } from '../types/api'
 import useSWR, { mutate as globalMutate } from 'swr'
 import toast from 'react-hot-toast'
 import { Button } from '../components/ui/button'
@@ -9,14 +11,7 @@ import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { Input } from '../components/ui/input'
 import { Textarea } from '../components/ui/textarea'
-import Bookmark from 'lucide-react/dist/esm/icons/bookmark'
-import BookmarkX from 'lucide-react/dist/esm/icons/bookmark-x'
-import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down'
-import ChevronUp from 'lucide-react/dist/esm/icons/chevron-up'
-import Search from 'lucide-react/dist/esm/icons/search'
-import StickyNote from 'lucide-react/dist/esm/icons/sticky-note'
-import X from 'lucide-react/dist/esm/icons/x'
-import Check from 'lucide-react/dist/esm/icons/check'
+import { Bookmark, BookmarkX, ChevronDown, ChevronUp, Search, StickyNote, X, Check } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
 import MathText from '../components/shared/MathText'
 import OptionImage from '../components/test/OptionImage'
@@ -24,14 +19,14 @@ import clsx from 'clsx'
 
 // --- Helpers (pure, no complexity cost) ---
 
-const QUESTION_TYPE_CLASS = {
+const QUESTION_TYPE_CLASS: Record<string, string> = {
   mcq: 'bg-sky-500/10 text-sky-600 border-sky-500/20 dark:text-sky-400',
   msq: 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:text-amber-400',
   nat: 'bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400',
   default: 'bg-muted text-muted-foreground border-border',
 }
 
-function typeClass(questionType) {
+function typeClass(questionType: string): string {
   return QUESTION_TYPE_CLASS[questionType] ?? QUESTION_TYPE_CLASS.default
 }
 
@@ -39,7 +34,13 @@ const OPTION_LETTERS = ['A', 'B', 'C', 'D']
 
 // --- Extracted: options grid ---
 
-function BookmarkOptions({ options, correctAnswer, optionImages }) {
+export interface BookmarkOptionsProps {
+  options: BookmarkItem['options']
+  correctAnswer?: BookmarkItem['correct_answer']
+  optionImages?: BookmarkItem['option_images']
+}
+
+function BookmarkOptions({ options, correctAnswer, optionImages }: BookmarkOptionsProps) {
   if (!options?.length) return null
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -64,7 +65,11 @@ function BookmarkOptions({ options, correctAnswer, optionImages }) {
 
 // --- Extracted: NAT answer row ---
 
-function NatAnswer({ correctAnswer }) {
+export interface NatAnswerProps {
+  correctAnswer: BookmarkItem['correct_answer']
+}
+
+function NatAnswer({ correctAnswer }: NatAnswerProps) {
   if (!correctAnswer) return null
   return (
     <div className="px-3 py-2 rounded-lg result-stat-correct text-success-text text-xs">
@@ -75,7 +80,11 @@ function NatAnswer({ correctAnswer }) {
 
 // --- Extracted: note editor (owns its own state) ---
 
-function BookmarkNoteEditor({ bm }) {
+export interface BookmarkNoteEditorProps {
+  bm: BookmarkItem
+}
+
+function BookmarkNoteEditor({ bm }: BookmarkNoteEditorProps) {
   const [editing, setEditing] = useState(false)
   const [note, setNote] = useState(bm.note || '')
   const [saving, setSaving] = useState(false)
@@ -84,7 +93,7 @@ function BookmarkNoteEditor({ bm }) {
     setSaving(true)
     try {
       await bookmarkAPI.updateNote(bm.question_id, note)
-      globalMutate('/bookmarks', (prev) =>
+      globalMutate('/bookmarks', (prev: BookmarkItem[] | undefined) =>
         prev ? prev.map(b => b.question_id === bm.question_id ? { ...b, note } : b) : prev, false)
       toast.success('Note saved')
       setEditing(false)
@@ -128,7 +137,15 @@ function BookmarkNoteEditor({ bm }) {
 
 // --- Extracted: header (question summary + toggle/remove) ---
 
-function BookmarkHeader({ bm, open, onToggle, onRemove, removing }) {
+export interface BookmarkHeaderProps {
+  bm: BookmarkItem
+  open: boolean
+  onToggle: () => void
+  onRemove: () => void
+  removing: boolean
+}
+
+function BookmarkHeader({ bm, open, onToggle, onRemove, removing }: BookmarkHeaderProps) {
   return (
     <div className="flex items-start gap-3">
       <div className="flex-1 min-w-0 cursor-pointer focus-visible:ring-2 focus-visible:ring-primary rounded outline-none"
@@ -166,7 +183,11 @@ function BookmarkHeader({ bm, open, onToggle, onRemove, removing }) {
 
 // --- Extracted: expanded details body ---
 
-function BookmarkDetails({ bm }) {
+export interface BookmarkDetailsProps {
+  bm: BookmarkItem
+}
+
+function BookmarkDetails({ bm }: BookmarkDetailsProps) {
   return (
     <div className="border-t theme-border pt-3 mt-3 space-y-3">
       {bm.question_image_url && (
@@ -191,9 +212,18 @@ function BookmarkDetails({ bm }) {
 
 // --- Orchestrator: now thin ---
 
-function BookmarkCard({ bm, onRemove }) {
+export interface BookmarkCardProps {
+  bm: BookmarkItem
+  onRemove: (questionId: number) => void
+}
+
+function BookmarkCard({ bm, onRemove }: BookmarkCardProps) {
   const [open, setOpen] = useState(false)
   const [removing, setRemoving] = useState(false)
+  const cardStyle: CSSProperties & { [key: `--${string}`]: string } = {
+    background: 'var(--bg-card)',
+    '--card-spacing': '1rem',
+  }
 
   const remove = async () => {
     setRemoving(true)
@@ -212,7 +242,7 @@ function BookmarkCard({ bm, onRemove }) {
 
   return (
     <Card className="overflow-hidden border border-border/80 shadow-sm"
-      style={{ background: 'var(--bg-card)', '--card-spacing': '1rem' }}>
+      style={cardStyle}>
       <CardContent className="px-(--card-spacing) py-(--card-spacing)">
         <BookmarkHeader bm={bm} open={open} onToggle={toggle} onRemove={remove} removing={removing} />
         {open && <BookmarkDetails bm={bm} />}
@@ -223,7 +253,7 @@ function BookmarkCard({ bm, onRemove }) {
 
 // --- Extracted: pure filter predicate (testable in isolation) ---
 
-function matchesBookmark(b, search, subject) {
+function matchesBookmark(b: BookmarkItem, search: string, subject: string): boolean {
   if (subject !== 'all' && b.subject !== subject) return false
   if (!search) return true
   const q = search.toLowerCase()
@@ -261,7 +291,12 @@ function NoMatches() {
   return <p className="text-center text-muted-foreground py-8">No bookmarks match your search</p>
 }
 
-function BookmarkList({ items, onRemove }) {
+export interface BookmarkListProps {
+  items: BookmarkItem[]
+  onRemove: (questionId: number) => void
+}
+
+function BookmarkList({ items, onRemove }: BookmarkListProps) {
   return (
     <div className="space-y-2">
       {items.map(bm => <BookmarkCard key={bm.id} bm={bm} onRemove={onRemove} />)}
@@ -271,7 +306,14 @@ function BookmarkList({ items, onRemove }) {
 
 // --- Extracted: render-state selector (replaces the 4-way ternary chain) ---
 
-function renderBookmarksBody({ loading, bookmarks, filtered, onRemove }) {
+export interface RenderBookmarksBodyProps {
+  loading: boolean
+  bookmarks: BookmarkItem[]
+  filtered: BookmarkItem[]
+  onRemove: (questionId: number) => void
+}
+
+function renderBookmarksBody({ loading, bookmarks, filtered, onRemove }: RenderBookmarksBodyProps) {
   if (loading) return <BookmarksLoading />
   if (bookmarks.length === 0) return <EmptyBookmarks />
   if (filtered.length === 0) return <NoMatches />
@@ -281,14 +323,14 @@ function renderBookmarksBody({ loading, bookmarks, filtered, onRemove }) {
 // --- Orchestrator: now thin ---
 
 export default function BookmarksPage() {
-  const { data: bookmarksData, isLoading: loading, mutate } = useSWR('/bookmarks', fetcher)
+  const { data: bookmarksData, isLoading: loading, mutate } = useSWR<BookmarkItem[]>('/bookmarks', fetcher)
   const bookmarks = bookmarksData || []
   const [search, setSearch] = useState('')
   const [filterSubject, setFilterSubject] = useState('all')
 
-  const onRemove = (questionId) => {
+  const onRemove = (questionId: number) => {
     mutate(bookmarks.filter(b => b.question_id !== questionId), false)
-    globalMutate('/bookmarks/ids', (prev) => {
+    globalMutate('/bookmarks/ids', (prev: BookmarkIdsResponse | undefined) => {
       if (!prev) return prev
       const nextIds = new Set(prev.ids || [])
       nextIds.delete(questionId)
@@ -296,7 +338,7 @@ export default function BookmarksPage() {
     }, false)
   }
 
-  const subjects = ['all', ...new Set(bookmarks.map(b => b.subject).filter(Boolean))]
+  const subjects = ['all', ...new Set(bookmarks.map(b => b.subject).filter((subject): subject is string => Boolean(subject)))]
   const filtered = bookmarks.filter(b => matchesBookmark(b, search, filterSubject))
 
   return (

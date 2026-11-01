@@ -7,6 +7,7 @@ export type ApiId = number
 
 export type TestStatus = 'in_progress' | 'submitted'
 
+// TODO(response_model): response shape for GET /tests.
 export interface TestCatalogItem {
   id: number
   title: string
@@ -56,8 +57,29 @@ export interface PasswordResetResponse {
   reset_url: string
 }
 
+// TODO(response_model): response shape for GET /bookmarks/ids.
 export interface BookmarkIdsResponse { ids: number[] }
+// TODO(response_model): response shape for POST /bookmarks/{id}/toggle.
 export interface BookmarkToggleResponse { bookmarked: boolean }
+
+// TODO(response_model): option_images typed as string|null per app write paths (admin/questions.py upload/delete/NAT clear); backend BookmarkOut types it as Optional[dict]; replace with generated BookmarkOut once backend types option_images.
+export interface BookmarkItem {
+  correct_answer?: string | null
+  created_at: string
+  id: number
+  marks: number
+  note: string | null
+  option_images?: Record<string, string | null> | null
+  options: string[]
+  question_id: number
+  question_image_url?: string | null
+  question_text: string
+  question_type: string
+  subject: string | null
+  test_id: number
+  test_title: string
+  topic: string | null
+}
 
 // TODO(response_model): fields consumed by admin test editing.
 export interface AdminTestQuestion extends TestQuestion {
@@ -136,12 +158,38 @@ export interface ResultAnswer {
   topper_answer?: string | null
   topper_time_seconds?: number
   is_correct?: boolean | null
-  options?: unknown[]
-  marks_awarded?: unknown
-  question_text?: unknown
-  selected_answer?: unknown
-  correct_answer?: unknown
-  time_spent_seconds?: unknown
+  options?: unknown[] | Record<string, unknown>
+  marks_awarded?: number
+  question_text?: string
+  selected_answer?: string | null
+  correct_answer?: string
+  time_spent_seconds?: number
+}
+
+export interface PersistedResultAnswer {
+  question_id: number
+  question_type: 'mcq' | 'msq' | 'nat'
+  question_image_url: string | null
+  option_images: Record<string, unknown> | null
+  marks: number
+  negative_marks: number
+  topper_answer: string | null
+  topper_time_seconds: number
+  is_correct: boolean | null
+  options: unknown[] | Record<string, unknown>
+  marks_awarded: number
+  question_text: string
+  selected_answer: string | null
+  correct_answer: string
+  time_spent_seconds: number
+}
+
+export interface ResultTopper {
+  user_id: number
+  full_name: string
+  score: number | null
+  total_marks: number | null
+  percentage: number
 }
 
 export interface ResultData {
@@ -159,8 +207,10 @@ export interface ResultData {
   answers?: ResultAnswer[]
 }
 
+// TODO(response_model): response shape for GET /tests/attempt/{id}/result.
 export interface PersistedResult extends ResultData {
   attempt_id: number
+  attempt_number: number
   client_result_id: string | null
   attempts_remaining: number
   max_attempts: number
@@ -178,8 +228,8 @@ export interface PersistedResult extends ResultData {
   tab_violations: number
   rank: number | null
   total_participants: number
-  topper: unknown
-  answers: ResultAnswer[]
+  topper: ResultTopper | null
+  answers: PersistedResultAnswer[]
 }
 
 export interface PracticeResult {
@@ -203,6 +253,7 @@ export interface SubmittedAttempt {
 
 export type SubmitResult = SubmittedAttempt | PracticeResult
 
+// TODO(response_model): response shape for GET /tests/my/history.
 export interface HistoryItem {
   id: number
   test_id: number
@@ -215,6 +266,7 @@ export interface HistoryItem {
   fullscreen_violations: number
 }
 
+// TODO(response_model): response shape for GET /tests/{id}/my-attempts.
 export interface MyAttempt {
   attempt_id: number
   attempt_number: number
@@ -241,6 +293,7 @@ export interface LeaderboardEntry {
   is_current_user: boolean
 }
 
+// TODO(response_model): response shape for GET /tests/{id}/leaderboard.
 export interface LeaderboardResponse {
   test_id: number
   test_title: string

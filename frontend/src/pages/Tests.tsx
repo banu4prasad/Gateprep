@@ -3,33 +3,39 @@ import { Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import useSWR from 'swr'
 import { fetcher } from '../api/api'
+import type { HistoryItem, TestCatalogItem } from '../types/api'
 import { SUBJECTS, SERIES_LABELS, TYPE_LABELS } from '../utils/constants'
 import { useTestNavigation } from '../hooks/useTestNavigation'
-import Clock from 'lucide-react/dist/esm/icons/clock'
-import BookOpen from 'lucide-react/dist/esm/icons/book-open'
-import Target from 'lucide-react/dist/esm/icons/target'
-import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right'
-import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right'
-import CheckCircle from 'lucide-react/dist/esm/icons/check-circle'
+import type { NavigationStep, NavigationType } from '../hooks/useTestNavigation'
+import { Clock, BookOpen, Target, ArrowRight, ChevronRight, CheckCircle } from 'lucide-react'
 import clsx from 'clsx'
 import { TestCardSkeleton } from '../components/shared/Skeletons'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-function scoreBadgeClass(pct) {
+function scoreBadgeClass(pct: number): string {
   if (pct >= 75) return 'bg-[var(--success-text)]/10 text-success-text dark:text-success-text'
   if (pct >= 50) return 'bg-[var(--warning-text)]/10 text-warning-text dark:text-warning-text'
   return 'bg-[var(--destructive)]/10 text-destructive dark:text-destructive'
 }
 
-function TestCardFooter({ done, attempt, test }) {
+export interface TestCardFooterProps {
+  done: boolean
+  attempt: HistoryItem | undefined
+  test: TestCatalogItem
+}
+
+function TestCardFooter({ done, attempt, test }: TestCardFooterProps) {
   return (
     <CardFooter className="border-t-0 bg-transparent p-4 pt-0">
       {done ? (
         <Button asChild className="w-full h-8 text-xs">
-          <Link to={`/results/${attempt.id}`}>
-            View Result <ArrowRight size={12} className="ml-1.5" />
-          </Link>
+          {
+            // @ts-expect-error TODO(null-safety): done implies attempt exists; if that correlation breaks, reading id would throw.
+            <Link to={`/results/${attempt.id}`}>
+              View Result <ArrowRight size={12} className="ml-1.5" />
+            </Link>
+          }
         </Button>
       ) : (
         <Button asChild className="w-full h-8 text-xs">
@@ -42,9 +48,15 @@ function TestCardFooter({ done, attempt, test }) {
   )
 }
 
-function TestCard({ test, attempt }) {
+export interface TestCardProps {
+  test: TestCatalogItem
+  attempt: HistoryItem | undefined
+}
+
+function TestCard({ test, attempt }: TestCardProps) {
   const done = attempt?.status === 'submitted'
   const pct = done && attempt?.total_marks
+    // @ts-expect-error TODO(null-safety): score may be null before submit; Math.round(null / total_marks * 100) is 0.
     ? Math.round(attempt.score / attempt.total_marks * 100) : null
 
   return (
@@ -63,7 +75,13 @@ function TestCard({ test, attempt }) {
         </div>
         {pct !== null && (
           <div className={clsx('text-xs px-2.5 py-1.5 rounded', scoreBadgeClass(pct))}>
-            Score: {attempt.score?.toFixed(1)}/{attempt.total_marks} ({pct}%)
+            Score: {
+              // @ts-expect-error TODO(null-safety): pct implies a present attempt; without one, score access would throw.
+              attempt.score?.toFixed(1)
+            }/{
+              // @ts-expect-error TODO(null-safety): pct implies a present attempt with truthy total_marks; otherwise access would throw.
+              attempt.total_marks
+            } ({pct}%)
           </div>
         )}
       </CardContent>
@@ -73,7 +91,12 @@ function TestCard({ test, attempt }) {
 }
 
 // ── Breadcrumb ────────────────────────────────────────────────────
-function Breadcrumb({ steps, onBack }) {
+export interface BreadcrumbProps {
+  steps: string[]
+  onBack: (index: number) => void
+}
+
+function Breadcrumb({ steps, onBack }: BreadcrumbProps) {
   return (
     <div className="flex items-center gap-2 text-sm mb-6">
       {steps.map((s, i) => (
@@ -91,7 +114,13 @@ function Breadcrumb({ steps, onBack }) {
 }
 
 // ── Nav Card ──────────────────────────────────────────────────────
-function NavCard({ label, count, onClick }) {
+export interface NavCardProps {
+  label: string
+  count?: number
+  onClick: () => void
+}
+
+function NavCard({ label, count, onClick }: NavCardProps) {
   return (
     <Card className="hover:border-primary/50 transition-all group w-full cursor-pointer border-border" onClick={onClick}>
       <CardContent className="p-5 flex items-center justify-between gap-4">
@@ -109,7 +138,12 @@ function NavCard({ label, count, onClick }) {
 
 // ── View components (one per nav level) ──────────────────────────
 
-function CategoryPicker({ tests, push }) {
+export interface CategoryPickerProps {
+  tests: TestCatalogItem[]
+  push: (type: NavigationType, value: string) => void
+}
+
+function CategoryPicker({ tests, push }: CategoryPickerProps) {
   const wqCount = tests.filter(t => t.category === 'weekly_quiz').length
   const tsCount = tests.filter(t => t.category === 'test_series').length
   return (
@@ -125,7 +159,14 @@ function CategoryPicker({ tests, push }) {
   )
 }
 
-function WeeklyQuizSubjects({ tests, push, breadcrumbs, goBack }) {
+export interface WeeklyQuizSubjectsProps {
+  tests: TestCatalogItem[]
+  push: (type: NavigationType, value: string) => void
+  breadcrumbs: string[]
+  goBack: (index: number) => void
+}
+
+function WeeklyQuizSubjects({ tests, push, breadcrumbs, goBack }: WeeklyQuizSubjectsProps) {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto animate-fade-in">
@@ -149,7 +190,17 @@ function WeeklyQuizSubjects({ tests, push, breadcrumbs, goBack }) {
 
 // ── Generic Option Picker ─────────────────────────────────────────
 
-function OptionPicker({ items, getLabel, getCount, onSelect, breadcrumbs, goBack, gapClassName = 'gap-4' }) {
+export interface OptionPickerProps<TItem extends { value: string }> {
+  items: TItem[]
+  getLabel: (item: TItem) => string
+  getCount: (item: TItem) => number
+  onSelect: (value: string) => void
+  breadcrumbs: string[]
+  goBack: (index: number) => void
+  gapClassName?: string
+}
+
+function OptionPicker<TItem extends { value: string }>({ items, getLabel, getCount, onSelect, breadcrumbs, goBack, gapClassName = 'gap-4' }: OptionPickerProps<TItem>) {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto animate-fade-in">
@@ -166,28 +217,57 @@ function OptionPicker({ items, getLabel, getCount, onSelect, breadcrumbs, goBack
   )
 }
 
-function TestSeriesPicker({ tests, push, breadcrumbs, goBack }) {
-  const items = ['made_easy', 'go_classes'].map(value => ({ value }))
+export interface TestSeriesPickerProps {
+  tests: TestCatalogItem[]
+  push: (type: NavigationType, value: string) => void
+  breadcrumbs: string[]
+  goBack: (index: number) => void
+}
+
+function TestSeriesPicker({ tests, push, breadcrumbs, goBack }: TestSeriesPickerProps) {
+  const items = (['made_easy', 'go_classes'] as const).map(value => ({ value }))
   return <OptionPicker items={items} getLabel={i => SERIES_LABELS[i.value]} 
     getCount={i => tests.filter(t => t.category === 'test_series' && t.series_name === i.value).length}
     onSelect={val => push('series', val)} breadcrumbs={breadcrumbs} goBack={goBack} />
 }
 
-function TestTypePicker({ tests, nav, push, breadcrumbs, goBack }) {
-  const items = ['subject_wise', 'topic_wise', 'full_length'].map(value => ({ value }))
+export interface TestTypePickerProps {
+  tests: TestCatalogItem[]
+  nav: NavigationStep[]
+  push: (type: NavigationType, value: string) => void
+  breadcrumbs: string[]
+  goBack: (index: number) => void
+}
+
+function TestTypePicker({ tests, nav, push, breadcrumbs, goBack }: TestTypePickerProps) {
+  const items = (['subject_wise', 'topic_wise', 'full_length'] as const).map(value => ({ value }))
   return <OptionPicker items={items} getLabel={i => TYPE_LABELS[i.value]}
     getCount={i => tests.filter(t => t.category === 'test_series' && t.series_name === nav[1]?.value && t.test_type === i.value).length}
     onSelect={val => push('type', val)} breadcrumbs={breadcrumbs} goBack={goBack} />
 }
 
-function TopicWiseSubjects({ filteredTests, push, breadcrumbs, goBack }) {
+export interface TopicWiseSubjectsProps {
+  filteredTests: TestCatalogItem[]
+  push: (type: NavigationType, value: string) => void
+  breadcrumbs: string[]
+  goBack: (index: number) => void
+}
+
+function TopicWiseSubjects({ filteredTests, push, breadcrumbs, goBack }: TopicWiseSubjectsProps) {
   const items = SUBJECTS.map(value => ({ value }))
   return <OptionPicker items={items} getLabel={i => i.value} gapClassName="gap-3"
     getCount={i => filteredTests.filter(t => t.subject === i.value).length}
     onSelect={val => push('subject', val)} breadcrumbs={breadcrumbs} goBack={goBack} />
 }
 
-function TestList({ filteredTests, history, breadcrumbs, goBack }) {
+export interface TestListProps {
+  filteredTests: TestCatalogItem[]
+  history: Record<number, HistoryItem | undefined>
+  breadcrumbs: string[]
+  goBack: (index: number) => void
+}
+
+function TestList({ filteredTests, history, breadcrumbs, goBack }: TestListProps) {
   return (
     <Layout>
       <div className="max-w-3xl mx-auto animate-fade-in">
@@ -213,15 +293,33 @@ function TestList({ filteredTests, history, breadcrumbs, goBack }) {
 
 // ── View resolver: table-driven dispatch ─────────────────────────
 
-const isRoot = (nav) => nav.length === 0
-const isWeeklyQuizCategory = (nav) => nav.length === 1 && nav[0].value === 'weekly_quiz'
+const isRoot = (nav: NavigationStep[]): boolean => nav.length === 0
+const isWeeklyQuizCategory = (nav: NavigationStep[]): boolean => nav.length === 1 && nav[0].value === 'weekly_quiz'
 // Note: Originally this fell back to TestSeriesPicker for ANY non-'weekly_quiz' category.
 // Now it strictly requires 'test_series'. If new categories are added upstream, update ROUTES.
-const isTestSeriesCategory = (nav) => nav.length === 1 && nav[0].value === 'test_series'
-const isTestSeriesTypeLevel = (nav) => nav.length === 2 && nav[0].value === 'test_series'
-const isTopicWiseLevel = (currentNav) => currentNav?.type === 'type' && currentNav?.value === 'topic_wise'
+const isTestSeriesCategory = (nav: NavigationStep[]): boolean => nav.length === 1 && nav[0].value === 'test_series'
+const isTestSeriesTypeLevel = (nav: NavigationStep[]): boolean => nav.length === 2 && nav[0].value === 'test_series'
+const isTopicWiseLevel = (currentNav: NavigationStep | undefined): boolean => currentNav?.type === 'type' && currentNav?.value === 'topic_wise'
 
-const ROUTES = [
+export interface ResolveViewProps {
+  nav: NavigationStep[]
+  currentNav: NavigationStep | undefined
+  tests: TestCatalogItem[]
+  filteredTests: TestCatalogItem[]
+  history: Record<number, HistoryItem | undefined>
+  push: (type: NavigationType, value: string) => void
+  goBack: (index: number) => void
+  breadcrumbs: string[]
+}
+
+type ViewComponent = typeof CategoryPicker | typeof WeeklyQuizSubjects | typeof TestSeriesPicker | typeof TestTypePicker | typeof TopicWiseSubjects | typeof TestList
+
+interface ViewRoute {
+  test: (props: ResolveViewProps) => boolean
+  Component: ViewComponent
+}
+
+const ROUTES: ViewRoute[] = [
   { test: ({ nav }) => isRoot(nav), Component: CategoryPicker },
   { test: ({ nav }) => isWeeklyQuizCategory(nav), Component: WeeklyQuizSubjects },
   { test: ({ nav }) => isTestSeriesCategory(nav), Component: TestSeriesPicker },
@@ -229,22 +327,22 @@ const ROUTES = [
   { test: ({ currentNav }) => isTopicWiseLevel(currentNav), Component: TopicWiseSubjects },
 ]
 
-function resolveView(props) {
+function resolveView(props: ResolveViewProps) {
   const route = ROUTES.find(r => r.test(props))
   const Component = route ? route.Component : TestList
   return <Component {...props} />
 }
 
 export default function TestsPage() {
-  const { data: testsData, isLoading: testsLoading } = useSWR('/tests', fetcher)
-  const { data: historyData, isLoading: historyLoading } = useSWR('/tests/my/history', fetcher)
+  const { data: testsData, isLoading: testsLoading } = useSWR<TestCatalogItem[]>('/tests', fetcher)
+  const { data: historyData, isLoading: historyLoading } = useSWR<HistoryItem[]>('/tests/my/history', fetcher)
 
   const loading = testsLoading || historyLoading
   const tests = testsData || []
 
-  const history = useMemo(() => {
+  const history = useMemo<Record<number, HistoryItem | undefined>>(() => {
     if (!historyData) return {}
-    const map = {}
+    const map: Record<number, HistoryItem | undefined> = {}
     historyData.forEach(a => { if (!map[a.test_id] || a.status === 'submitted') map[a.test_id] = a })
     return map
   }, [historyData])

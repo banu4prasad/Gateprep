@@ -1,13 +1,11 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import Layout from '../components/shared/Layout'
 import { fetcher } from '../api/api'
+import type { LeaderboardEntry, LeaderboardResponse } from '../types/api'
 import useSWR from 'swr'
-import Trophy from 'lucide-react/dist/esm/icons/trophy'
-import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left'
-import Medal from 'lucide-react/dist/esm/icons/medal'
-import Crown from 'lucide-react/dist/esm/icons/crown'
-import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw'
+import { Trophy, ArrowLeft, Medal, Crown, RotateCcw } from 'lucide-react'
 import clsx from 'clsx'
 import { LeaderboardSkeleton } from '../components/shared/Skeletons'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,7 +14,13 @@ import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
 } from '@/components/ui/table'
 
-const MEDAL_COLORS = {
+interface MedalColor {
+  bg: string
+  text: string
+  icon: ReactNode
+}
+
+const MEDAL_COLORS: Partial<Record<number, MedalColor>> = {
   1: {
     bg: 'bg-amber-500/10 border-amber-500/30 dark:bg-amber-500/15 dark:border-amber-500/40',
     text: 'text-amber-600 dark:text-amber-400',
@@ -36,7 +40,7 @@ const MEDAL_COLORS = {
 
 const LEADERBOARD_PAGE_SIZE = 50
 
-export function getPodiumOrder(entries = []) {
+export function getPodiumOrder<T>(entries: T[] = []): T[] {
   if (entries.length < 3) {
     return [...entries]
   }
@@ -44,7 +48,7 @@ export function getPodiumOrder(entries = []) {
   return [entries[1], entries[0], entries[2]]
 }
 
-export function formatLeaderboardDate(value) {
+export function formatLeaderboardDate(value: string | null | undefined): string {
   if (!value) return '—'
 
   const date = new Date(value)
@@ -55,7 +59,7 @@ export function formatLeaderboardDate(value) {
   return date.toLocaleDateString('en-IN')
 }
 
-export function getPercentageTone(percentage) {
+export function getPercentageTone(percentage: number): string {
   if (percentage >= 75) return 'text-success-text'
   if (percentage >= 50) return 'text-warning-text'
   return 'text-destructive'
@@ -89,7 +93,13 @@ function LeaderboardNotFoundState() {
   )
 }
 
-function LeaderboardHeader({ testTitle, totalParticipants, currentUserRank }) {
+export interface LeaderboardHeaderProps {
+  testTitle: string
+  totalParticipants: number
+  currentUserRank: number | null
+}
+
+function LeaderboardHeader({ testTitle, totalParticipants, currentUserRank }: LeaderboardHeaderProps) {
   return (
     <div className="text-center">
       <div className="w-14 h-14 rounded-2xl bg-[var(--warning-text)]/10 border-[var(--warning-text)]/20 flex items-center justify-center mx-auto mb-4">
@@ -106,8 +116,12 @@ function LeaderboardHeader({ testTitle, totalParticipants, currentUserRank }) {
   )
 }
 
-function PodiumCard({ entry }) {
-  const medal = MEDAL_COLORS[entry.rank] || {}
+export interface PodiumCardProps {
+  entry: LeaderboardEntry
+}
+
+function PodiumCard({ entry }: PodiumCardProps) {
+  const medal: Partial<MedalColor> = MEDAL_COLORS[entry.rank] || {}
   const isWinner = entry.rank === 1
 
   return (
@@ -147,7 +161,11 @@ function PodiumCard({ entry }) {
   )
 }
 
-function LeaderboardPodium({ entries }) {
+export interface LeaderboardPodiumProps {
+  entries: LeaderboardEntry[]
+}
+
+function LeaderboardPodium({ entries }: LeaderboardPodiumProps) {
   return (
     <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end pt-3">
       {getPodiumOrder(entries).map((entry) => {
@@ -158,7 +176,11 @@ function LeaderboardPodium({ entries }) {
   )
 }
 
-function EmptyLeaderboardState({ testId }) {
+export interface EmptyLeaderboardStateProps {
+  testId: string | undefined
+}
+
+function EmptyLeaderboardState({ testId }: EmptyLeaderboardStateProps) {
   return (
     <Card>
       <CardContent className="p-12 text-center">
@@ -173,7 +195,11 @@ function EmptyLeaderboardState({ testId }) {
   )
 }
 
-function LeaderboardTable({ entries }) {
+export interface LeaderboardTableProps {
+  entries: LeaderboardEntry[]
+}
+
+function LeaderboardTable({ entries }: LeaderboardTableProps) {
   return (
     <Card className="overflow-hidden overflow-x-auto">
       <Table>
@@ -237,7 +263,7 @@ export default function LeaderboardPage() {
   const [pageState, setPageState] = useState(() => ({ testId, offset: 0 }))
   const offset = pageState.testId === testId ? pageState.offset : 0
   const leaderboardKey = `/tests/${testId}/leaderboard?limit=${LEADERBOARD_PAGE_SIZE}&offset=${offset}`
-  const { data, isLoading: loading } = useSWR(leaderboardKey, fetcher)
+  const { data, isLoading: loading } = useSWR<LeaderboardResponse>(leaderboardKey, fetcher)
 
   if (loading) {
     return <LeaderboardLoadingState />
