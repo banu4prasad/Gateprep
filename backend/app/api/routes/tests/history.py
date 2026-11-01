@@ -12,6 +12,7 @@ from app.api.routes.tests.helpers import (
     _percentage,
     _submitted_attempts_query,
 )
+from app.api.routes.tests.schemas import HistoryResponse, MyAttemptResponse
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ def _as_utc(value: datetime | None) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-@router.get("/{test_id}/my-attempts")
+@router.get("/{test_id}/my-attempts", response_model=list[MyAttemptResponse])
 def my_attempts(
     test_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):
@@ -54,7 +55,7 @@ def my_attempts(
     ]
 
 
-@router.get("/my/history")
+@router.get("/my/history", response_model=list[HistoryResponse])
 def my_history(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     attempts = (
         db.query(TestAttempt)

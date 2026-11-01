@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.deps import require_aspirant
 from app.core.database import get_db
 from app.models.models import Test, TestAttempt, TestStatus
+from app.api.routes.tests.schemas import LeaderboardResponse
 
 router = APIRouter()
 DEFAULT_PAGE_SIZE = 50
@@ -37,7 +38,7 @@ def _leaderboard_cache_key_builder(
     )
 
 
-@router.get("/{test_id}/leaderboard")
+@router.get("/{test_id}/leaderboard", response_model=LeaderboardResponse)
 @cache(expire=60, key_builder=_leaderboard_cache_key_builder)
 def get_leaderboard(
     test_id: int,
