@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, cleanup } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ComponentProps, ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import LoginPage from './Login'
 import RegisterPage from './Register'
@@ -22,17 +23,17 @@ vi.mock('react-hot-toast', () => ({
 vi.mock('../components/shared/Spinner', () => ({ default: () => null }))
 vi.mock('../components/shared/Logo', () => ({ default: () => null }))
 vi.mock('../components/ui/button', () => ({
-  Button: ({ children, ...props }) => <button {...props}>{children}</button>,
+  Button: ({ children, ...props }: ComponentProps<'button'>) => <button {...props}>{children}</button>,
 }))
 vi.mock('../components/ui/card', () => ({
-  Card: ({ children }) => <div>{children}</div>,
-  CardContent: ({ children }) => <div>{children}</div>,
+  Card: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  CardContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
 vi.mock('../components/ui/input', () => ({
-  Input: props => <input {...props} />,
+  Input: (props: ComponentProps<'input'>) => <input {...props} />,
 }))
 vi.mock('../components/ui/label', () => ({
-  Label: ({ children, ...props }) => <label {...props}>{children}</label>,
+  Label: ({ children, ...props }: ComponentProps<'label'>) => <label {...props}>{children}</label>,
 }))
 
 const mockedUseAuth = vi.mocked(useAuth)
@@ -46,7 +47,11 @@ const errors = {
   plainError: new Error('Request failed'),
 }
 
-const fallbackByPage = {
+type AuthPage = 'login' | 'register' | 'reset'
+
+const authPages: AuthPage[] = ['login', 'register', 'reset']
+
+const fallbackByPage: Record<AuthPage, string> = {
   login: 'Invalid email or password',
   register: 'Registration failed',
   reset: 'Password reset failed',
@@ -67,13 +72,13 @@ afterEach(() => {
   cleanup()
 })
 
-function renderPage(page) {
+function renderPage(page: AuthPage): void {
   const entry = page === 'reset' ? '/reset-password?token=token' : '/'
   const Page = page === 'login' ? LoginPage : page === 'register' ? RegisterPage : ResetPasswordPage
   render(<MemoryRouter initialEntries={[entry]}><Page /></MemoryRouter>)
 }
 
-function fillPage(page) {
+function fillPage(page: AuthPage): void {
   if (page === 'login') {
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'user@example.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
@@ -88,7 +93,7 @@ function fillPage(page) {
   }
 }
 
-async function submitPage(page, error) {
+async function submitPage(page: AuthPage, error: unknown): Promise<void> {
   const request = page === 'login'
     ? mockedAuthAPI.login
     : page === 'register'
@@ -101,15 +106,18 @@ async function submitPage(page, error) {
   await vi.waitFor(() => expect(mockedToast.error).toHaveBeenCalled())
 }
 
-describe.each(['login', 'register', 'reset'])('%s auth page error messages', page => {
-  it.each([
+function errorCasesFor(page: AuthPage): Array<[string, unknown, string]> {
+  return [
     ['string detail', errors.string, 'Server detail'],
     ['empty-string detail', errors.empty, fallbackByPage[page]],
     ['no response', errors.noResponse, page === 'login' ? 'Network Error: Could not connect to the server.' : fallbackByPage[page]],
     ['non-Axios Error', errors.plainError, page === 'login' ? 'Network Error: Could not connect to the server.' : fallbackByPage[page]],
-  ])('%s', async (_label, error, expected) => {
+  ]
+}
+
+describe.each(authPages)('%s auth page error messages', page => {
+  it.each(errorCasesFor(page))('%s', async (_label, error, expected) => {
     await submitPage(page, error)
     expect(mockedToast.error).toHaveBeenCalledWith(expected)
   })
-
 })
