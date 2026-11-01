@@ -6,8 +6,9 @@ import UsersHeader from '../components/admin/UsersHeader'
 import UsersSearchBar from '../components/admin/UsersSearchBar'
 import DesktopUsersTable from '../components/admin/DesktopUsersTable'
 import MobileUsersList from '../components/admin/MobileUsersList'
+import type { ReactElement } from 'react'
 
-export default function AdminUsers() {
+export default function AdminUsers(): ReactElement {
   const {
     pageIndex,
     users,
