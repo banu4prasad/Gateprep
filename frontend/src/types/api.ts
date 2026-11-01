@@ -5,25 +5,11 @@ export type ApiResponse<T> = AxiosResponse<T>
 export type ApiJson = Record<string, unknown>
 export type ApiId = number
 
-export type TestStatus = 'in_progress' | 'submitted'
+export type TestStatus = components['schemas']['TestStatus']
 // TODO(response_model): backend UserRole enum is defined in app/models/models.py.
 export type AdminRole = 'admin' | 'aspirant' | 'user'
 
-// TODO(response_model): response shape for GET /tests.
-export interface TestCatalogItem {
-  id: number
-  title: string
-  description: string | null
-  duration_minutes: number
-  total_marks: number
-  question_count: number
-  series_id: number | null
-  created_at: string
-  category: string | null
-  series_name: string | null
-  test_type: string | null
-  subject: string | null
-}
+export type TestCatalogItem = components['schemas']['CatalogResponse']
 
 // TODO(response_model): response shape for GET /admin/tests/{id}/questions.
 export interface AdminQuestion extends TestQuestion {
@@ -38,16 +24,7 @@ export interface AdminQuestion extends TestQuestion {
   option_images: Record<string, string | null> | null
 }
 
-export interface TestDetail {
-  id: number
-  title: string
-  description: string | null
-  duration_minutes: number
-  total_marks: number
-  question_count: number
-  series_id: number | null
-  created_at: string
-}
+export type TestDetail = components['schemas']['DetailResponse']
 
 // TODO(response_model): fields consumed by admin user management.
 export interface AdminUser {
@@ -79,7 +56,19 @@ export interface PasswordResetResponse {
 }
 
 // TODO(response_model): response shape for GET /admin/tests.
-export interface AdminTestListItem extends TestCatalogItem {
+export interface AdminTestListItem {
+  id: number
+  title: string
+  description: string | null
+  duration_minutes: number
+  total_marks: number
+  question_count: number
+  series_id: number | null
+  created_at: string
+  category: string | null
+  series_name: string | null
+  test_type: string | null
+  subject: string | null
   is_published: boolean
 }
 
@@ -124,7 +113,15 @@ export interface BookmarkItem {
 // TODO(response_model): fields consumed by admin test editing.
 export type AdminTestQuestion = AdminQuestion
 
-export interface AdminTestResponse extends TestDetail {
+export interface AdminTestResponse {
+  id: number
+  title: string
+  description: string | null
+  duration_minutes: number
+  total_marks: number
+  question_count: number
+  series_id: number | null
+  created_at: string
   questions?: AdminTestQuestion[]
 }
 
@@ -218,31 +215,9 @@ export interface ResultAnswer {
   time_spent_seconds?: number
 }
 
-export interface PersistedResultAnswer {
-  question_id: number
-  question_type: 'mcq' | 'msq' | 'nat'
-  question_image_url: string | null
-  option_images: Record<string, unknown> | null
-  marks: number
-  negative_marks: number
-  topper_answer: string | null
-  topper_time_seconds: number
-  is_correct: boolean | null
-  options: unknown[] | Record<string, unknown>
-  marks_awarded: number
-  question_text: string
-  selected_answer: string | null
-  correct_answer: string
-  time_spent_seconds: number
-}
+export type PersistedResultAnswer = components['schemas']['ResultAnswerResponse']
 
-export interface ResultTopper {
-  user_id: number
-  full_name: string
-  score: number | null
-  total_marks: number | null
-  percentage: number
-}
+export type ResultTopper = components['schemas']['ResultTopperResponse']
 
 export interface ResultData {
   test_title?: string
@@ -259,30 +234,7 @@ export interface ResultData {
   answers?: ResultAnswer[]
 }
 
-// TODO(response_model): response shape for GET /tests/attempt/{id}/result.
-export interface PersistedResult extends ResultData {
-  attempt_id: number
-  attempt_number: number
-  client_result_id: string | null
-  attempts_remaining: number
-  max_attempts: number
-  counts_for_leaderboard: boolean
-  persisted: boolean
-  test_id: number
-  test_title: string
-  score: number
-  total_marks: number
-  percentage: number
-  correct: number
-  incorrect: number
-  skipped: number
-  submitted_at: string | null
-  tab_violations: number
-  rank: number | null
-  total_participants: number
-  topper: ResultTopper | null
-  answers: PersistedResultAnswer[]
-}
+export type PersistedResult = components['schemas']['PersistedResultResponse']
 
 export interface PracticeResult {
   id: string
@@ -305,56 +257,13 @@ export interface SubmittedAttempt {
 
 export type SubmitResult = SubmittedAttempt | PracticeResult
 
-// TODO(response_model): response shape for GET /tests/my/history.
-export interface HistoryItem {
-  id: number
-  test_id: number
-  status: TestStatus
-  started_at: string | null
-  submitted_at: string | null
-  score: number | null
-  total_marks: number | null
-  tab_violations: number
-  fullscreen_violations: number
-}
+export type HistoryItem = components['schemas']['HistoryResponse']
 
-// TODO(response_model): response shape for GET /tests/{id}/my-attempts.
-export interface MyAttempt {
-  attempt_id: number
-  attempt_number: number
-  counts_for_leaderboard: boolean
-  is_first: boolean
-  status: TestStatus
-  score: number | null
-  total_marks: number | null
-  percentage: number
-  started_at: string | null
-  submitted_at: string | null
-  attempts_remaining: number
-}
+export type MyAttempt = components['schemas']['MyAttemptResponse']
 
-export interface LeaderboardEntry {
-  rank: number
-  user_id: number
-  full_name: string
-  score: number | null
-  total_marks: number | null
-  percentage: number
-  submitted_at: string | null
-  tab_violations: number
-  is_current_user: boolean
-}
+export type LeaderboardEntry = components['schemas']['LeaderboardEntryResponse']
 
-// TODO(response_model): response shape for GET /tests/{id}/leaderboard.
-export interface LeaderboardResponse {
-  test_id: number
-  test_title: string
-  total_participants: number
-  current_user_rank: number | null
-  limit: number
-  offset: number
-  leaderboard: LeaderboardEntry[]
-}
+export type LeaderboardResponse = components['schemas']['LeaderboardResponse']
 
 // TODO(response_model): response shape for GET /auth/me.
 export interface MeResponse {
