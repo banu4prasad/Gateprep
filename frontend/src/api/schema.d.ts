@@ -827,6 +827,8 @@ export interface components {
             question_count: number;
             /** Series Id */
             series_id: number | null;
+            /** Test Type */
+            test_type: string | null;
             /** Title */
             title: string;
             /** Total Marks */

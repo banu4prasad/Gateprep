@@ -52,4 +52,5 @@ def get_test(test_id: int, db: Session = Depends(get_db), _=Depends(require_aspi
         "question_count": question_count,
         "series_id": test.series_id,
         "created_at": test.created_at,
+        "test_type": test.test_type,
     }

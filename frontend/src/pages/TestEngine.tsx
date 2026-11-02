@@ -32,6 +32,7 @@ export default function TestEngine() {
       questions={questions}
       submitting={submitting}
       visited={visited}
+      isFullLength={test?.test_type === 'full_length'}
     />
   )
 

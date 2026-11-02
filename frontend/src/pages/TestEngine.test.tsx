@@ -38,6 +38,7 @@ const testData: TestDetail = {
   question_count: 2,
   series_id: null,
   created_at: '2026-11-01T10:00:00Z',
+  test_type: null,
 }
 
 const questions: TestQuestion[] = [

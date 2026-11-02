@@ -20,6 +20,7 @@ export default function TestEngineSidebar({
   questions,
   submitting,
   visited,
+  isFullLength,
 }: TestEngineSidebarProps): React.ReactElement {
   return (
     <TestSidebar
@@ -37,6 +38,7 @@ export default function TestEngineSidebar({
       questions={questions}
       submitting={submitting}
       visited={visited}
+      isFullLength={isFullLength}
     />
   )
 }

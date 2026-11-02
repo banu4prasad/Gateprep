@@ -2,6 +2,7 @@ import { Send } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { getQStatus, STATUS_CLASS } from '../../utils/testEngineUtils'
 import { Button } from '@/components/ui/button'
+import { GENERAL_APTITUDE_SUBJECT } from '../../utils/constants'
 import type { TestQuestion } from '@/types/api'
 import type { QuestionStatus } from '../../utils/testEngineUtils'
 
@@ -20,6 +21,30 @@ export interface TestSidebarProps {
   questions: TestQuestion[]
   submitting: boolean
   visited: Set<number>
+  isFullLength?: boolean
+}
+
+function toPartGroups(questionGroups: QuestionGroups): QuestionGroups {
+  const partA: QuestionGroup[] = []
+  const partB: QuestionGroup[] = []
+
+  for (const items of questionGroups.values()) {
+    for (const item of items) {
+      if (item.question.subject === GENERAL_APTITUDE_SUBJECT) {
+        partA.push(item)
+      } else {
+        partB.push(item)
+      }
+    }
+  }
+
+  partA.sort((left, right) => left.index - right.index)
+  partB.sort((left, right) => left.index - right.index)
+
+  const parts: QuestionGroups = new Map()
+  if (partA.length > 0) parts.set('Part A', partA)
+  if (partB.length > 0) parts.set('Part B', partB)
+  return parts
 }
 
 export default function TestSidebar({
@@ -34,7 +59,10 @@ export default function TestSidebar({
   questions,
   submitting,
   visited,
+  isFullLength = false,
 }: TestSidebarProps): React.ReactElement {
+  const displayQuestionGroups = isFullLength ? toPartGroups(questionGroups) : questionGroups
+
   return (
     <>
       <div className="p-3 border-b text-center border-border">
@@ -57,7 +85,7 @@ export default function TestSidebar({
         ))}
       </div>
 
-      {[...questionGroups.entries()].map(([subject, items]) => (
+      {[...displayQuestionGroups.entries()].map(([subject, items]) => (
         <div key={subject} className="p-2 border-b border-border">
           <p className="text-xs font-semibold mb-2 truncate text-foreground">{subject}</p>
           <div className="grid grid-cols-5 gap-1">

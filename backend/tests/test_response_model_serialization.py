@@ -75,6 +75,7 @@ def _payloads() -> list[tuple[type, object]]:
                 "question_count": 0,
                 "series_id": None,
                 "created_at": naive,
+                "test_type": None,
             },
         ),
         (
