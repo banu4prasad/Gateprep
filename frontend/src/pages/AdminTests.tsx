@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { BADGE_COLORS } from '@/utils/badgeStyles'
 import { getApiErrorDetail } from '@/lib/apiError'
+import { CustomSelect } from '@/components/ui/select'
 import ConfirmDialog from '../components/admin/ConfirmDialog'
 import type { AdminTestCreateResponse, AdminTestListItem } from '@/types/api'
 
@@ -169,11 +170,14 @@ function CreateTestModal({ onClose, onCreated }: CreateTestModalProps) {
             {/* Weekly Quiz → subject */}
             {isWeeklyQuiz && (
               <div>
-                <label className="label">Subject *</label>
-                <select className="input" value={form.subject} onChange={set('subject')}>
-                  <option value="">— Select Subject —</option>
-                  {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <label className="label" htmlFor="weekly-quiz-subject">Subject *</label>
+                <CustomSelect
+                  id="weekly-quiz-subject"
+                  value={form.subject}
+                  onChange={val => setForm(f => ({ ...f, subject: val }))}
+                  placeholder="— Select Subject —"
+                  options={SUBJECTS.map(s => ({ value: s, label: s }))}
+                />
               </div>
             )}
 
@@ -215,11 +219,14 @@ function CreateTestModal({ onClose, onCreated }: CreateTestModalProps) {
                 {/* Topic Wise → subject */}
                 {isTopicWise && (
                   <div>
-                    <label className="label">Subject *</label>
-                    <select className="input" value={form.subject} onChange={set('subject')}>
-                      <option value="">— Select Subject —</option>
-                      {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <label className="label" htmlFor="topic-wise-subject">Subject *</label>
+                    <CustomSelect
+                      id="topic-wise-subject"
+                      value={form.subject}
+                      onChange={val => setForm(f => ({ ...f, subject: val }))}
+                      placeholder="— Select Subject —"
+                      options={SUBJECTS.map(s => ({ value: s, label: s }))}
+                    />
                   </div>
                 )}
               </>

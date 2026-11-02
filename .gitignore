@@ -35,8 +35,10 @@ Thumbs.db
 # Logs
 *.log
 
+#skills
 .agent/
 .agents/
+skills-lock.json
 
 # Coverage
 .coverage

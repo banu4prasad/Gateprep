@@ -5,6 +5,7 @@ import Spinner from '../shared/Spinner'
 import { EMPTY_QUESTION, isQuestionType, OPTION_LETTERS } from './questionUtils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { CustomSelect } from '@/components/ui/select'
 import type { ChangeEvent, ReactElement } from 'react'
 import type { QuestionCreateFormState } from './questionUtils'
 import type { QuestionIn } from '@/types/api'
@@ -74,21 +75,26 @@ export default function QuestionForm({ onAdd, onClose }: QuestionFormProps): Rea
 
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="label">Type</label>
-          <select
-            className="input"
+          <label className="label" htmlFor="question-type-select">Type</label>
+          <CustomSelect
+            id="question-type-select"
             value={question.question_type}
-            onChange={event => setQuestion(prev => ({
-              ...prev,
-              question_type: isQuestionType(event.target.value) ? event.target.value : prev.question_type,
-              correct_answer: '',
-              negative_marks: event.target.value === 'mcq' ? 0.33 : 0,
-            }))}
-          >
-            <option value="mcq">MCQ (Single)</option>
-            <option value="msq">MSQ (Multi)</option>
-            <option value="nat">NAT (Numerical)</option>
-          </select>
+            onChange={val => {
+              if (isQuestionType(val)) {
+                setQuestion(prev => ({
+                  ...prev,
+                  question_type: val,
+                  correct_answer: '',
+                  negative_marks: val === 'mcq' ? 0.33 : 0,
+                }))
+              }
+            }}
+            options={[
+              { value: 'mcq', label: 'MCQ (Single)' },
+              { value: 'msq', label: 'MSQ (Multi)' },
+              { value: 'nat', label: 'NAT (Numerical)' },
+            ]}
+          />
         </div>
         <div>
           <label className="label">Marks</label>
