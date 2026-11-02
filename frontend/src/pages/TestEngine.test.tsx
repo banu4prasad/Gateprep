@@ -276,4 +276,72 @@ describe('TestEngine page flow', () => {
 
     expect(testAPI.saveAnswers).toHaveBeenCalledExactlyOnceWith('7', 31, [])
   })
+
+  it('toggles scientific calculator from the icon button and does not render subject tabs in header', async () => {
+    renderPage()
+    await beginExam()
+
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+
+    const calcButton = screen.getByRole('button', { name: 'Calculator' })
+    expect(calcButton).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Scientific Calculator' })).not.toBeInTheDocument()
+
+    fireEvent.click(calcButton)
+    expect(screen.getByRole('dialog', { name: 'Scientific Calculator' })).toBeInTheDocument()
+
+    fireEvent.click(calcButton)
+    expect(screen.queryByRole('dialog', { name: 'Scientific Calculator' })).not.toBeInTheDocument()
+  })
+
+  it('renders a single section palette without Part A / Part B for single-section tests', async () => {
+    renderPage()
+    await beginExam()
+
+    expect(screen.queryByText('Part A')).not.toBeInTheDocument()
+    expect(screen.queryByText('Part B')).not.toBeInTheDocument()
+    expect(screen.getByText('Computer Science')).toBeInTheDocument()
+  })
+
+  it('renders General Aptitude and Core Subject sections in palette for full-length test', async () => {
+    vi.mocked(testAPI.getTest).mockResolvedValue(response({
+      ...testData,
+      test_type: 'full_length',
+    }))
+    vi.mocked(testAPI.getQuestions).mockResolvedValue(response([
+      { ...questions[0], id: 101, subject: 'General Aptitude' },
+      { ...questions[1], id: 102, subject: 'Computer Science' },
+    ]))
+    renderPage()
+    await beginExam()
+
+    expect(screen.getByText('General Aptitude')).toBeInTheDocument()
+    expect(screen.getByText('Core Subject')).toBeInTheDocument()
+    expect(screen.queryByText('Part A')).not.toBeInTheDocument()
+    expect(screen.queryByText('Part B')).not.toBeInTheDocument()
+  })
+
+  it('renders concise question type "MCQ" without "Single"', async () => {
+    renderPage()
+    await beginExam()
+
+    expect(screen.getByText('MCQ')).toBeInTheDocument()
+    expect(screen.queryByText('MCQ Single')).not.toBeInTheDocument()
+  })
+
+  it('collapses and expands the sidebar', async () => {
+    renderPage()
+    await beginExam()
+
+    expect(screen.queryByRole('button', { name: 'Expand sidebar' })).not.toBeInTheDocument()
+    const collapseBtn = screen.getByRole('button', { name: 'Collapse sidebar' })
+    fireEvent.click(collapseBtn)
+
+    const expandBtn = screen.getByRole('button', { name: 'Expand sidebar' })
+    expect(expandBtn).toBeInTheDocument()
+
+    fireEvent.click(expandBtn)
+    expect(screen.queryByRole('button', { name: 'Expand sidebar' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument()
+  })
 })

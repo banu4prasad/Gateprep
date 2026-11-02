@@ -21,6 +21,8 @@ export default function TestEngineSidebar({
   submitting,
   visited,
   isFullLength,
+  candidateName,
+  onToggleCollapse,
 }: TestEngineSidebarProps): React.ReactElement {
   return (
     <TestSidebar
@@ -39,6 +41,8 @@ export default function TestEngineSidebar({
       submitting={submitting}
       visited={visited}
       isFullLength={isFullLength}
+      candidateName={candidateName}
+      onToggleCollapse={onToggleCollapse}
     />
   )
 }

@@ -1,10 +1,13 @@
-import { Send } from 'lucide-react'
+import { ChevronRight, Send, User } from 'lucide-react'
 import Spinner from '../shared/Spinner'
-import { getQStatus, STATUS_CLASS } from '../../utils/testEngineUtils'
+import {
+  getQStatus,
+  STATUS_CLASS,
+  groupExamQuestions,
+  isFullLengthExam,
+} from '../../utils/testEngineUtils'
 import { Button } from '@/components/ui/button'
-import { GENERAL_APTITUDE_SUBJECT } from '../../utils/constants'
 import type { TestQuestion } from '@/types/api'
-import type { QuestionStatus } from '../../utils/testEngineUtils'
 
 export type QuestionGroup = { question: TestQuestion; index: number }
 export type QuestionGroups = Map<string, QuestionGroup[]>
@@ -22,29 +25,9 @@ export interface TestSidebarProps {
   submitting: boolean
   visited: Set<number>
   isFullLength?: boolean
-}
-
-function toPartGroups(questionGroups: QuestionGroups): QuestionGroups {
-  const partA: QuestionGroup[] = []
-  const partB: QuestionGroup[] = []
-
-  for (const items of questionGroups.values()) {
-    for (const item of items) {
-      if (item.question.subject === GENERAL_APTITUDE_SUBJECT) {
-        partA.push(item)
-      } else {
-        partB.push(item)
-      }
-    }
-  }
-
-  partA.sort((left, right) => left.index - right.index)
-  partB.sort((left, right) => left.index - right.index)
-
-  const parts: QuestionGroups = new Map()
-  if (partA.length > 0) parts.set('Part A', partA)
-  if (partB.length > 0) parts.set('Part B', partB)
-  return parts
+  testType?: string | null
+  candidateName?: string
+  onToggleCollapse?: () => void
 }
 
 export default function TestSidebar({
@@ -59,16 +42,43 @@ export default function TestSidebar({
   questions,
   submitting,
   visited,
-  isFullLength = false,
+  isFullLength,
+  testType,
+  candidateName,
+  onToggleCollapse,
 }: TestSidebarProps): React.ReactElement {
-  const displayQuestionGroups = isFullLength ? toPartGroups(questionGroups) : questionGroups
+  const questionList = questions && questions.length > 0
+    ? questions
+    : [...questionGroups.values()].flat().sort((a, b) => a.index - b.index).map(item => item.question)
+
+  const effectiveFullLength = typeof isFullLength === 'boolean'
+    ? isFullLength
+    : isFullLengthExam(testType, questionList)
+
+  const displayQuestionGroups = groupExamQuestions(questionList, effectiveFullLength)
 
   return (
     <>
-      <div className="p-3 border-b text-center border-border">
-        <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center mx-auto mb-1">
-          <span className="text-foreground font-bold text-sm">U</span>
+      <div className="p-2.5 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0">
+            <User size={14} />
+          </div>
+          <span className="text-xs font-semibold text-foreground truncate">
+            {candidateName || 'Candidate'}
+          </span>
         </div>
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronRight size={16} />
+          </button>
+        )}
       </div>
 
       <div className="p-2 border-b space-y-1.5 border-border">
@@ -85,9 +95,18 @@ export default function TestSidebar({
         ))}
       </div>
 
-      {[...displayQuestionGroups.entries()].map(([subject, items]) => (
-        <div key={subject} className="p-2 border-b border-border">
-          <p className="text-xs font-semibold mb-2 truncate text-foreground">{subject}</p>
+      {[...displayQuestionGroups.entries()].map(([sectionTitle, items]) => (
+        <div key={sectionTitle} className="p-2 border-b border-border">
+          {effectiveFullLength ? (
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold truncate text-foreground">{sectionTitle}</p>
+              <span className="text-[10px] text-muted-foreground font-medium">{items.length} Qs</span>
+            </div>
+          ) : (
+            sectionTitle && sectionTitle !== 'Questions' && (
+              <p className="text-xs font-semibold mb-2 truncate text-foreground">{sectionTitle}</p>
+            )
+          )}
           <div className="grid grid-cols-5 gap-1">
             {items.map(({ question, index: questionIndex }) => {
               const isCurrent = question.id === currentQuestion?.id

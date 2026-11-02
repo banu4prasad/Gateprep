@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import '@testing-library/jest-dom/vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import TestSidebar from './TestSidebar'
 import type { QuestionGroup, QuestionGroups } from './TestSidebar'
 import { GENERAL_APTITUDE_SUBJECT } from '../../utils/constants'
@@ -76,15 +77,16 @@ afterEach(() => {
   cleanup()
 })
 
-describe('TestSidebar full-length sections', () => {
-  it('shows Part A and Part B without subject headings for full-length tests', () => {
+describe('TestSidebar section rendering', () => {
+  it('shows General Aptitude and Core Subject sections without individual subject headings or Part A/B for full-length tests', () => {
     renderSidebar(true)
 
-    expect(screen.queryByText('Part A')).toBeTruthy()
-    expect(screen.queryByText('Part B')).toBeTruthy()
+    expect(screen.getByText('General Aptitude')).toBeInTheDocument()
+    expect(screen.getByText('Core Subject')).toBeInTheDocument()
+    expect(screen.queryByText('Part A')).toBeNull()
+    expect(screen.queryByText('Part B')).toBeNull()
     expect(screen.queryByText('Algorithms')).toBeNull()
     expect(screen.queryByText('Databases')).toBeNull()
-    expect(screen.queryByText(GENERAL_APTITUDE_SUBJECT)).toBeNull()
     expect(screen.getAllByRole('button').slice(0, questions.length).map((button) => button.textContent)).toEqual([
       '2',
       '1',
@@ -92,12 +94,70 @@ describe('TestSidebar full-length sections', () => {
     ])
   })
 
-  it('shows subject headings for other test types', () => {
+  it('renders a unified palette without Part A / Part B for single-section tests', () => {
     renderSidebar(false)
 
     expect(screen.queryByText('Part A')).toBeNull()
-    expect(screen.queryByText('Algorithms')).toBeTruthy()
-    expect(screen.queryByText('Databases')).toBeTruthy()
-    expect(screen.queryByText(GENERAL_APTITUDE_SUBJECT)).toBeTruthy()
+    expect(screen.queryByText('Part B')).toBeNull()
+    expect(screen.queryByText('General Aptitude')).toBeNull()
+    expect(screen.queryByText('Core Subject')).toBeNull()
+    expect(screen.getAllByRole('button').slice(0, questions.length).map((button) => button.textContent)).toEqual([
+      '1',
+      '2',
+      '3',
+    ])
+  })
+
+  it('renders a single section header with subject name for subject-wise tests', () => {
+    const subjectQuestions: TestQuestion[] = [
+      { ...questions[0], id: 10, subject: 'Algorithms' },
+      { ...questions[0], id: 11, subject: 'Algorithms', order_index: 1 },
+    ]
+    render(
+      <TestSidebar
+        answered={0}
+        answers={{}}
+        currentQuestion={subjectQuestions[0]}
+        marked={new Set()}
+        notAnswered={2}
+        onQuestionSelect={() => undefined}
+        onSubmitClick={() => undefined}
+        questionGroups={new Map()}
+        questions={subjectQuestions}
+        submitting={false}
+        visited={new Set()}
+        isFullLength={false}
+      />
+    )
+    expect(screen.getByText('Algorithms')).toBeInTheDocument()
+    expect(screen.queryByText('Part A')).toBeNull()
+    expect(screen.queryByText('Part B')).toBeNull()
+    expect(screen.queryByText('General Aptitude')).toBeNull()
+    expect(screen.queryByText('Core Subject')).toBeNull()
+  })
+
+  it('calls onToggleCollapse when collapse button is clicked', () => {
+    const onToggleCollapse = vi.fn()
+    render(
+      <TestSidebar
+        answered={0}
+        answers={{}}
+        currentQuestion={questions[0]}
+        marked={new Set()}
+        notAnswered={3}
+        onQuestionSelect={() => undefined}
+        onSubmitClick={() => undefined}
+        questionGroups={new Map()}
+        questions={questions}
+        submitting={false}
+        visited={new Set()}
+        candidateName="Aspirant 1"
+        onToggleCollapse={onToggleCollapse}
+      />
+    )
+    expect(screen.getByText('Aspirant 1')).toBeInTheDocument()
+    const collapseBtn = screen.getByRole('button', { name: 'Collapse sidebar' })
+    collapseBtn.click()
+    expect(onToggleCollapse).toHaveBeenCalledOnce()
   })
 })
