@@ -38,6 +38,7 @@ class DetailResponse(BaseModel):
     question_count: int
     series_id: int | None
     created_at: LegacyDatetime
+    test_type: str | None
 
 
 class HistoryResponse(BaseModel):

@@ -11,6 +11,7 @@ import { Card, CardContent } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { Input } from '../components/ui/input'
 import { Textarea } from '../components/ui/textarea'
+import { CustomSelect } from '../components/ui/select'
 import { Bookmark, BookmarkX, ChevronDown, ChevronUp, Search, StickyNote, X, Check } from 'lucide-react'
 import Spinner from '../components/shared/Spinner'
 import MathText from '../components/shared/MathText'
@@ -361,10 +362,14 @@ export default function BookmarksPage() {
               className="h-9 pl-10 text-sm bg-[var(--bg-card)]" />
           </div>
           {subjects.length > 1 && (
-            <select id="bookmarks-subject" name="bookmarksSubject" value={filterSubject} onChange={e => setFilterSubject(e.target.value)}
-              className="h-9 w-full sm:w-40 min-w-0 rounded-lg border border-input bg-[var(--bg-card)] px-2.5 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
-              {subjects.map(s => <option key={s} value={s}>{s === 'all' ? 'All subjects' : s}</option>)}
-            </select>
+            <CustomSelect
+              id="bookmarks-subject"
+              name="bookmarksSubject"
+              value={filterSubject}
+              onChange={val => setFilterSubject(val)}
+              options={subjects.map(s => ({ value: s, label: s === 'all' ? 'All subjects' : s }))}
+              triggerClassName="h-9 w-full sm:w-40 bg-[var(--bg-card)]"
+            />
           )}
         </div>
 

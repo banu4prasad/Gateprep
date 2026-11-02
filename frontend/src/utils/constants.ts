@@ -1,6 +1,8 @@
 // src/utils/constants.js
 // Shared constants for test categories, subjects, series names
 
+export const GENERAL_APTITUDE_SUBJECT = 'General Aptitude'
+
 export const SUBJECTS = [
   'Engineering Mathematics',
   'Discrete Mathematics',
@@ -13,7 +15,7 @@ export const SUBJECTS = [
   'Operating Systems',
   'Databases',
   'Computer Networks',
-  'General Aptitude',
+  GENERAL_APTITUDE_SUBJECT,
 ]
 
 export const SERIES_NAMES = [

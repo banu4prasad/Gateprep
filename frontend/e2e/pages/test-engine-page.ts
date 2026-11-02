@@ -4,12 +4,14 @@ export class TestEnginePage {
   readonly submitButtonSidebar: Locator;
   readonly confirmSubmitModal: Locator;
   readonly confirmSubmitButton: Locator;
+  readonly calculatorButton: Locator;
 
   constructor(private page: Page) {
     this.submitButtonSidebar = page.getByRole('button', { name: 'Submit Test' });
     this.confirmSubmitModal = page.getByText('Submit Test?', { exact: true }).locator('..').locator('..');
     // The button inside the modal is just 'Submit'
     this.confirmSubmitButton = this.confirmSubmitModal.getByRole('button', { name: 'Submit', exact: true });
+    this.calculatorButton = page.getByRole('button', { name: 'Calculator' });
   }
 
   async selectOption(letter: string) {

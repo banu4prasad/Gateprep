@@ -11,6 +11,78 @@ export const STATUS_CLASS = {
 
 export type QuestionStatus = keyof typeof STATUS_CLASS
 
+export const SECTION_GENERAL_APTITUDE = 'General Aptitude'
+export const SECTION_CORE_SUBJECT = 'Core Subject'
+
+export function isGeneralAptitudeQuestion(question: {
+  subject?: string | null
+  part?: string | null
+}): boolean {
+  if (question.part && String(question.part).trim().toUpperCase() === 'A') {
+    return true
+  }
+  if (!question.subject) return false
+  const s = question.subject.trim().toLowerCase()
+  return s === 'general aptitude' || s === 'ga' || s === 'aptitude' || s === 'part a'
+}
+
+export function isFullLengthExam(
+  testType?: string | null,
+  questions?: Array<{ subject?: string | null; part?: string | null }>,
+): boolean {
+  if (testType === 'full_length') return true
+  if (!questions || questions.length === 0) return false
+
+  const hasGA = questions.some(isGeneralAptitudeQuestion)
+  const hasCore = questions.some(q => !isGeneralAptitudeQuestion(q))
+  return hasGA && hasCore
+}
+
+export type QuestionGroup<T = unknown> = { question: T; index: number }
+export type QuestionGroups<T = unknown> = Map<string, QuestionGroup<T>[]>
+
+export function groupExamQuestions<T extends { subject?: string | null; part?: string | null }>(
+  questions: T[],
+  isFullLength: boolean,
+  options?: { singleSectionName?: string },
+): QuestionGroups<T> {
+  const groups: QuestionGroups<T> = new Map()
+  if (!questions || questions.length === 0) return groups
+
+  if (isFullLength) {
+    const gaItems: QuestionGroup<T>[] = []
+    const coreItems: QuestionGroup<T>[] = []
+
+    questions.forEach((question, index) => {
+      const item: QuestionGroup<T> = { question, index }
+      if (isGeneralAptitudeQuestion(question)) {
+        gaItems.push(item)
+      } else {
+        coreItems.push(item)
+      }
+    })
+
+    gaItems.sort((a, b) => a.index - b.index)
+    coreItems.sort((a, b) => a.index - b.index)
+
+    if (gaItems.length > 0) {
+      groups.set(SECTION_GENERAL_APTITUDE, gaItems)
+    }
+    if (coreItems.length > 0) {
+      groups.set(SECTION_CORE_SUBJECT, coreItems)
+    }
+    return groups
+  }
+
+  // Single-section test (Weekly Quiz, Subject-wise, Topic-wise)
+  const firstSubject = questions[0]?.subject?.trim()
+  const allSameSubject = firstSubject ? questions.every(q => q.subject?.trim() === firstSubject) : false
+  const sectionName: string = options?.singleSectionName || (allSameSubject && firstSubject ? firstSubject : 'Questions')
+  const allItems: QuestionGroup<T>[] = questions.map((question, index) => ({ question, index }))
+  groups.set(sectionName, allItems)
+  return groups
+}
+
 export function formatTime(ms: number | null | undefined): string {
   if (ms === null || ms === undefined || isNaN(ms)) return '--:--:--'
   const totalSecs = Math.max(0, Math.floor(ms / 1000))

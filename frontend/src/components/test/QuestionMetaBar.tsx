@@ -1,16 +1,14 @@
-import MathText from '../shared/MathText'
+import type { TestQuestion } from '@/types/api'
 
-const TYPE_LABELS = {
-  mcq: 'MCQ Single',
-  msq: 'MSQ Multiple',
-  nat: 'NAT Numerical',
+const TYPE_LABELS: Record<string, string> = {
+  mcq: 'MCQ',
+  msq: 'MSQ',
+  nat: 'NAT',
 }
 
 export interface QuestionMetaBarProps {
   question: TestQuestion
 }
-
-import type { TestQuestion } from '@/types/api'
 
 export default function QuestionMetaBar({ question }: QuestionMetaBarProps): React.ReactElement {
   const typeLabel = TYPE_LABELS[question.question_type] ?? question.question_type

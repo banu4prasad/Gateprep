@@ -4,6 +4,7 @@ import { Save, X } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import { OPTION_LETTERS, optionsFromQuestion } from './questionUtils'
 import { Button } from '@/components/ui/button'
+import { CustomSelect } from '@/components/ui/select'
 import type { ChangeEvent, FormEvent, ReactElement } from 'react'
 import { isQuestionType } from './questionUtils'
 import type { AdminQuestion, QuestionFormState, QuestionType } from './questionUtils'
@@ -93,14 +94,19 @@ export default function QuestionEditForm({ question, onSave, onCancel }: Questio
     <form onSubmit={submit} className="space-y-4">
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="label">Type</label>
-          <select className="input" value={form.question_type} onChange={event => {
-            if (isQuestionType(event.target.value)) setType(event.target.value)
-          }}>
-            <option value="mcq">MCQ (Single)</option>
-            <option value="msq">MSQ (Multi)</option>
-            <option value="nat">NAT (Numerical)</option>
-          </select>
+          <label className="label" htmlFor="question-edit-type-select">Type</label>
+          <CustomSelect
+            id="question-edit-type-select"
+            value={form.question_type}
+            onChange={val => {
+              if (isQuestionType(val)) setType(val)
+            }}
+            options={[
+              { value: 'mcq', label: 'MCQ (Single)' },
+              { value: 'msq', label: 'MSQ (Multi)' },
+              { value: 'nat', label: 'NAT (Numerical)' },
+            ]}
+          />
         </div>
         <div>
           <label className="label">Marks</label>

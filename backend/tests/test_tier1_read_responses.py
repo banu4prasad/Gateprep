@@ -170,10 +170,17 @@ def test_detail_response_and_not_found(read_setup):
     expected = {
         "id": test.id, "title": "Tier One Test", "description": None,
         "duration_minutes": 60, "total_marks": 2.0, "question_count": 2,
-        "series_id": None, "created_at": FIXED_START.isoformat(),
+        "series_id": None, "created_at": FIXED_START.isoformat(), "test_type": None,
     }
     response = client.get(f"/tests/{test.id}", cookies=_cookies(owner, session))
     _assert_json(response, expected, set(expected))
+
+    test.test_type = "full_length"
+    session.commit()
+    expected["test_type"] = "full_length"
+    response = client.get(f"/tests/{test.id}", cookies=_cookies(owner, session))
+    _assert_json(response, expected, set(expected))
+
     assert client.get(f"/tests/{test.id + 100}", cookies=_cookies(owner, session)).status_code == 404
 
 

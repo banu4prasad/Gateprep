@@ -3,20 +3,16 @@ import clsx from 'clsx'
 import Logo from '../shared/Logo'
 import Spinner from '../shared/Spinner'
 import TimerDisplay from './TimerDisplay'
-import type { TestDetail, TestQuestion } from '@/types/api'
+import type { TestDetail } from '@/types/api'
 
 export interface TestHeaderProps {
   attemptNumber: number | string | null
-  currentQuestion?: TestQuestion
   endTimeMs: number | null
   handleTimerExpire: () => void
   maxAttempts: number | string
   onSubmitClick: () => void
-  questions: TestQuestion[]
-  setCurrent: React.Dispatch<React.SetStateAction<number>>
   setShowCalc: React.Dispatch<React.SetStateAction<boolean>>
   showCalc: boolean
-  subjects: string[]
   submitting: boolean
   test: TestDetail | null
   totalViolations: number
@@ -24,48 +20,23 @@ export interface TestHeaderProps {
 
 export default function TestHeader({
   attemptNumber,
-  currentQuestion,
   endTimeMs,
   handleTimerExpire,
   maxAttempts,
   onSubmitClick,
-  questions,
-  setCurrent,
   setShowCalc,
   showCalc,
-  subjects,
   submitting,
   test,
   totalViolations,
 }: TestHeaderProps): React.ReactElement {
   return (
-    <div className="app-header flex items-center px-2 sm:px-4 h-12 border-b flex-shrink-0 theme-header-surface">
+    <div className="app-header flex items-center justify-between px-2 sm:px-4 h-12 border-b flex-shrink-0 theme-header-surface">
       <div className="flex items-center gap-2 mr-3 flex-shrink-0">
         <Logo size="xs" />
-        <span className="text-foreground text-sm font-semibold hidden md:block truncate max-w-[160px]">
+        <span className="text-foreground text-sm font-semibold truncate max-w-[200px] sm:max-w-xs md:max-w-md">
           {test?.title}
         </span>
-      </div>
-
-      <div className="flex items-center gap-0 flex-1 overflow-x-auto scrollbar-hide" role="tablist" aria-label="Subjects">
-        {subjects.map(subject => {
-          const isActive = (currentQuestion?.subject || 'General') === subject
-          return (
-            <button
-              key={subject}
-              role="tab"
-              aria-selected={isActive}
-              tabIndex={isActive ? 0 : -1}
-              onClick={() => {
-                const idx = questions.findIndex(q => (q.subject || 'General') === subject)
-                if (idx >= 0) setCurrent(idx)
-              }}
-              className={clsx('subject-tab text-xs', isActive && 'active')}
-            >
-              {subject}
-            </button>
-          )
-        })}
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
@@ -82,20 +53,24 @@ export default function TestHeader({
         )}
 
         <button
+          type="button"
           onClick={() => setShowCalc(s => !s)}
+          aria-label="Calculator"
+          title="Calculator"
           className={clsx(
-            'flex items-center gap-1 px-2 py-1 rounded text-xs border transition-colors',
+            'flex items-center justify-center h-9 w-9 rounded-md border transition-colors',
             showCalc
               ? 'bg-primary border-primary text-white'
               : 'theme-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
           )}
         >
-          <CalcIcon size={13} /> Calc
+          <CalcIcon size={16} />
         </button>
 
         <TimerDisplay endTime={endTimeMs} onExpire={handleTimerExpire} />
 
         <button
+          type="button"
           onClick={onSubmitClick}
           disabled={submitting}
           className="flex items-center gap-1 px-3 py-1 rounded bg-primary hover:bg-primary text-white text-xs font-medium transition-colors disabled:opacity-50"

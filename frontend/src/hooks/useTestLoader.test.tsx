@@ -34,6 +34,7 @@ const testDetail: TestDetail = {
   question_count: 2,
   series_id: null,
   created_at: '2026-01-01T00:00:00Z',
+  test_type: null,
 }
 
 const missingTestIds: Array<[string, TestLoaderParams['testId']]> = [

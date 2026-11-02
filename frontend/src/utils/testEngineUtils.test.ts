@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { getQStatus, getEndTimeMs, formatTime } from './testEngineUtils'
+import {
+  getQStatus,
+  getEndTimeMs,
+  formatTime,
+  isGeneralAptitudeQuestion,
+  isFullLengthExam,
+  groupExamQuestions,
+  SECTION_GENERAL_APTITUDE,
+  SECTION_CORE_SUBJECT,
+} from './testEngineUtils'
 
 describe('getQStatus', () => {
   it('returns "current" when qId matches currentQId, regardless of state', () => {
@@ -102,5 +111,88 @@ describe('formatTime', () => {
     
     // 3599000 ms = 59m 59s
     expect(formatTime(3599000)).toBe('00:59:59')
+  })
+})
+
+describe('isGeneralAptitudeQuestion', () => {
+  it('identifies General Aptitude by subject or part', () => {
+    expect(isGeneralAptitudeQuestion({ subject: 'General Aptitude' })).toBe(true)
+    expect(isGeneralAptitudeQuestion({ subject: 'general aptitude' })).toBe(true)
+    expect(isGeneralAptitudeQuestion({ subject: 'GA' })).toBe(true)
+    expect(isGeneralAptitudeQuestion({ subject: 'aptitude' })).toBe(true)
+    expect(isGeneralAptitudeQuestion({ subject: 'Part A' })).toBe(true)
+    expect(isGeneralAptitudeQuestion({ part: 'A' })).toBe(true)
+    expect(isGeneralAptitudeQuestion({ part: 'a' })).toBe(true)
+  })
+
+  it('returns false for core technical subjects or empty input', () => {
+    expect(isGeneralAptitudeQuestion({ subject: 'Algorithms' })).toBe(false)
+    expect(isGeneralAptitudeQuestion({ subject: 'Engineering Mathematics' })).toBe(false)
+    expect(isGeneralAptitudeQuestion({ subject: 'Digital Logic' })).toBe(false)
+    expect(isGeneralAptitudeQuestion({})).toBe(false)
+    expect(isGeneralAptitudeQuestion({ subject: null })).toBe(false)
+  })
+})
+
+describe('isFullLengthExam', () => {
+  it('returns true when testType is full_length', () => {
+    expect(isFullLengthExam('full_length')).toBe(true)
+    expect(isFullLengthExam('full_length', [{ subject: 'Algorithms' }])).toBe(true)
+  })
+
+  it('returns true when questions contain both General Aptitude and Core questions', () => {
+    const questions = [
+      { subject: 'Algorithms' },
+      { subject: 'General Aptitude' },
+    ]
+    expect(isFullLengthExam(null, questions)).toBe(true)
+    expect(isFullLengthExam(undefined, questions)).toBe(true)
+  })
+
+  it('returns false when questions contain only Core subjects or only General Aptitude', () => {
+    expect(isFullLengthExam('subject_wise', [{ subject: 'Algorithms' }, { subject: 'Databases' }])).toBe(false)
+    expect(isFullLengthExam(null, [{ subject: 'General Aptitude' }])).toBe(false)
+    expect(isFullLengthExam(null, [{ subject: 'Algorithms' }])).toBe(false)
+    expect(isFullLengthExam(null, [])).toBe(false)
+  })
+})
+
+describe('groupExamQuestions', () => {
+  const fltQuestions = [
+    { id: 1, subject: 'Algorithms' },
+    { id: 2, subject: 'General Aptitude' },
+    { id: 3, subject: 'Engineering Mathematics' },
+    { id: 4, subject: 'GA' },
+    { id: 5, subject: 'Databases' },
+  ]
+
+  it('groups full-length tests into General Aptitude and Core Subject only', () => {
+    const groups = groupExamQuestions(fltQuestions, true)
+
+    expect([...groups.keys()]).toEqual([SECTION_GENERAL_APTITUDE, SECTION_CORE_SUBJECT])
+    expect(groups.get(SECTION_GENERAL_APTITUDE)?.map(i => i.question.id)).toEqual([2, 4])
+    expect(groups.get(SECTION_CORE_SUBJECT)?.map(i => i.question.id)).toEqual([1, 3, 5])
+    expect(groups.get(SECTION_CORE_SUBJECT)?.map(i => i.index)).toEqual([0, 2, 4])
+  })
+
+  it('groups single-section tests into a single unified section without Part A / Part B', () => {
+    const quizQuestions = [
+      { id: 10, subject: 'Algorithms' },
+      { id: 11, subject: 'Algorithms' },
+      { id: 12, subject: 'Algorithms' },
+    ]
+    const groups = groupExamQuestions(quizQuestions, false)
+
+    expect([...groups.keys()]).toEqual(['Algorithms'])
+    expect(groups.get('Algorithms')?.map(i => i.question.id)).toEqual([10, 11, 12])
+    expect(groups.has('Part A')).toBe(false)
+    expect(groups.has('Part B')).toBe(false)
+    expect(groups.has(SECTION_GENERAL_APTITUDE)).toBe(false)
+    expect(groups.has(SECTION_CORE_SUBJECT)).toBe(false)
+  })
+
+  it('returns empty map for empty questions array', () => {
+    expect(groupExamQuestions([], true).size).toBe(0)
+    expect(groupExamQuestions([], false).size).toBe(0)
   })
 })

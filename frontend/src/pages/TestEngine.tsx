@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { ChevronLeft } from 'lucide-react'
+import clsx from 'clsx'
 import QuestionView from '../components/test/QuestionView'
 import TestHeader from '../components/test/TestHeader'
 import TestEngineStageGate from '../components/test/TestEngineStageGate'
@@ -5,8 +8,10 @@ import TestEngineSidebar from '../components/test/TestEngineSidebar'
 import TestEngineOverlays from '../components/test/TestEngineOverlays'
 import QuestionPaletteSheet from '../components/test/QuestionPaletteSheet'
 import useTestEngine from '../hooks/useTestEngine'
+import { isFullLengthExam } from '../utils/testEngineUtils'
 
 export default function TestEngine() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const engine = useTestEngine()
   const {
     accepted, answered, answers, attemptNumber, beginTest, clearResponse,
@@ -15,7 +20,7 @@ export default function TestEngine() {
     navigate, notAnswered, questionGroups, questions, saveAndNext, setAccepted,
     setCurrent, setMCQ, updateNatInput, setShowCalc, setShowConfirm, setShowFsWarning,
     setShowPalette, showCalc, showConfirm, showFsWarning, showPalette, started,
-    starting, subjects, submitting, test, toggleMSQ, totalViolations, visited,
+    starting, submitting, test, toggleMSQ, totalViolations, visited,
   } = engine
 
   const sidebar = (
@@ -32,6 +37,8 @@ export default function TestEngine() {
       questions={questions}
       submitting={submitting}
       visited={visited}
+      isFullLength={isFullLengthExam(test?.test_type, questions)}
+      onToggleCollapse={() => setSidebarCollapsed(c => !c)}
     />
   )
 
@@ -68,16 +75,12 @@ export default function TestEngine() {
 
         <TestHeader
           attemptNumber={attemptNumber}
-          currentQuestion={currentQuestion}
           endTimeMs={endTimeMs}
           handleTimerExpire={handleTimerExpire}
           maxAttempts={maxAttempts}
           onSubmitClick={() => setShowConfirm(true)}
-          questions={questions}
-          setCurrent={setCurrent}
           setShowCalc={setShowCalc}
           showCalc={showCalc}
-          subjects={subjects}
           submitting={submitting}
           test={test}
           totalViolations={totalViolations}
@@ -101,9 +104,30 @@ export default function TestEngine() {
             toggleMSQ={toggleMSQ}
           />}
 
-          <div className="hidden md:flex w-52 border-l flex-col flex-shrink-0 overflow-y-auto theme-sidebar-surface">
-            {sidebar}
+          <div
+            className={clsx(
+              'hidden md:flex border-l flex-col flex-shrink-0 overflow-y-auto theme-sidebar-surface transition-all duration-200',
+              sidebarCollapsed ? 'w-0 border-l-0 overflow-hidden' : 'w-56'
+            )}
+            aria-hidden={sidebarCollapsed}
+          >
+            {!sidebarCollapsed && sidebar}
           </div>
+
+          {sidebarCollapsed && (
+            <button
+              type="button"
+              onClick={() => setSidebarCollapsed(false)}
+              aria-label="Expand sidebar"
+              title="Expand Question Palette"
+              className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-30 items-center gap-1.5 py-3 px-2 bg-card hover:bg-muted border border-r-0 border-border text-foreground rounded-l-md shadow-md transition-colors text-xs font-semibold select-none group"
+            >
+              <ChevronLeft size={16} className="text-primary group-hover:-translate-x-0.5 transition-transform" />
+              <span className="[writing-mode:vertical-rl] tracking-wider text-[11px] text-muted-foreground group-hover:text-foreground">
+                Question Palette
+              </span>
+            </button>
+          )}
 
           <QuestionPaletteSheet
             current={current}
