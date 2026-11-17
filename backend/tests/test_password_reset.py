@@ -16,7 +16,7 @@ from app.core.database import Base, get_db
 from app.core.security import (
     generate_password_reset_token,
     hash_password,
-    hash_password_reset_token,
+    hash_reset_token,
 )
 from app.models.models import PasswordResetToken, User, UserRole
 
@@ -170,7 +170,7 @@ class PasswordResetTests(unittest.TestCase):
                 PasswordResetToken(
                     user_id=self.user_id,
                     created_by=self.admin_id,
-                    token_hash=hash_password_reset_token(token),
+                    token_hash=hash_reset_token(token),
                     expires_at=datetime.now(timezone.utc) - timedelta(minutes=1),
                 )
             )

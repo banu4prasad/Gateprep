@@ -24,7 +24,7 @@ from app.core.security import (
     decode_token,
     generate_session_id,
     hash_password,
-    hash_password_reset_token,
+    hash_reset_token,
     validate_bcrypt_password,
     verify_password,
 )
@@ -355,7 +355,7 @@ def _lookup_valid_reset_token(db: Session, token: str) -> PasswordResetToken:
     """Find a reset token by hash, raising if missing, used, or expired."""
     reset_token = (
         db.query(PasswordResetToken)
-        .filter(PasswordResetToken.token_hash == hash_password_reset_token(token))
+        .filter(PasswordResetToken.token_hash == hash_reset_token(token))
         .first()
     )
     now = _utcnow()
