@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -45,12 +46,16 @@ def generate_session_id() -> str:
     return secrets.token_hex(32)
 
 
-def generate_password_reset_token() -> str:
+def generate_reset_token() -> str:
     return secrets.token_urlsafe(48)
 
 
-def hash_password_reset_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+def hash_reset_token(token: str) -> str:
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"),
+        token.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
