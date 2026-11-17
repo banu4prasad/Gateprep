@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_admin
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import generate_password_reset_token, hash_reset_token
+from app.core.security import generate_reset_token, hash_reset_token
 from app.models.models import PasswordResetToken, User, UserRole
 from app.core.cache_utils import (
     ADMIN_USERS_CACHE_NAMESPACE,
@@ -198,7 +198,7 @@ def _create_reset_token(
     db: Session, user_id: int, created_by: int
 ) -> tuple[str, datetime]:
     """Generate a new password-reset token, persist it, and return (raw_token, expires_at)."""
-    token = generate_password_reset_token()
+    token = generate_reset_token()
     now = _utcnow()
     expires_at = now + timedelta(minutes=settings.PASSWORD_RESET_EXPIRE_MINUTES)
     db.add(

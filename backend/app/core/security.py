@@ -46,7 +46,7 @@ def generate_session_id() -> str:
     return secrets.token_hex(32)
 
 
-def generate_password_reset_token() -> str:
+def generate_reset_token() -> str:
     return secrets.token_urlsafe(48)
 
 

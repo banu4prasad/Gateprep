@@ -14,7 +14,7 @@ from app.api.routes.admin.helpers import _password_reset_url
 from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.security import (
-    generate_password_reset_token,
+    generate_reset_token,
     hash_password,
     hash_reset_token,
 )
@@ -163,7 +163,7 @@ class PasswordResetTests(unittest.TestCase):
         self.assertEqual(second_response.status_code, 200)
 
     def test_expired_reset_token_is_rejected(self):
-        token = generate_password_reset_token()
+        token = generate_reset_token()
         db = self.SessionLocal()
         try:
             db.add(
