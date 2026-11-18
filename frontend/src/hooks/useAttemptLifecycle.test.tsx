@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { adminAPI, testAPI } from '../api/api'
 import useAttemptLifecycle from './useAttemptLifecycle'
 import type { AttemptLifecycleParams } from './useAttemptLifecycle'
@@ -118,6 +118,16 @@ describe('useAttemptLifecycle resume', () => {
 })
 
 describe('useAttemptLifecycle identifier validation', () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    consoleSpy.mockRestore()
+  })
+
   it('returns before starting when the test identifier is missing', async () => {
     const options = createOptions(undefined)
     const { result } = renderHook(() => useAttemptLifecycle(options))

@@ -99,9 +99,7 @@ describe('AuthProvider', () => {
       expect(screen.getByTestId('loading').textContent).toBe('false')
     })
 
-    await act(async () => {
-      await userEvent.click(screen.getByTestId('logout-btn'))
-    })
+    await userEvent.click(screen.getByTestId('logout-btn'))
 
     const { stopTokenRefresh } = await import('../api/client')
     expect(stopTokenRefresh).toHaveBeenCalled()
@@ -110,6 +108,7 @@ describe('AuthProvider', () => {
   })
 
   it('logout: still clears state even if API call fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     mockGet.mockResolvedValueOnce({ data: { id: 1, email: 'a@b.com', role: 'student', full_name: 'S' } })
     mockPost.mockRejectedValueOnce(new Error('network error'))
 
@@ -121,13 +120,12 @@ describe('AuthProvider', () => {
       expect(screen.getByTestId('loading').textContent).toBe('false')
     })
 
-    await act(async () => {
-      await userEvent.click(screen.getByTestId('logout-btn'))
-    })
+    await userEvent.click(screen.getByTestId('logout-btn'))
 
     // User should still be cleared despite API failure
     expect(screen.getByTestId('user').textContent).toBe('null')
     expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true })
+    consoleSpy.mockRestore()
   })
 
   it('saveUser: sets user from provided data and starts token refresh', async () => {
@@ -141,9 +139,7 @@ describe('AuthProvider', () => {
       expect(screen.getByTestId('loading').textContent).toBe('false')
     })
 
-    await act(async () => {
-      await userEvent.click(screen.getByTestId('save-btn'))
-    })
+    await userEvent.click(screen.getByTestId('save-btn'))
 
     expect(screen.getByTestId('user').textContent).toContain('"email":"new@test.com"')
     expect(screen.getByTestId('session-expired').textContent).toBe('false')
@@ -188,9 +184,7 @@ describe('AuthProvider', () => {
       window.dispatchEvent(new CustomEvent('gateprep:auth-unauthorized'))
     })
 
-    await act(async () => {
-      await userEvent.click(screen.getByText('Sign in'))
-    })
+    await userEvent.click(screen.getByText('Sign in'))
 
     const { stopTokenRefresh } = await import('../api/client')
     expect(stopTokenRefresh).toHaveBeenCalled()
@@ -202,8 +196,9 @@ describe('AuthProvider', () => {
 
 describe('useAuth', () => {
   it('throws if used outside AuthProvider', () => {
-    // Suppress React error boundary console noise
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const errorHandler = (e: ErrorEvent) => e.preventDefault()
+    window.addEventListener('error', errorHandler)
 
     function Naked() {
       useAuth()
@@ -211,6 +206,8 @@ describe('useAuth', () => {
     }
 
     expect(() => render(<Naked />)).toThrow('useAuth must be used within AuthProvider')
-    spy.mockRestore()
+
+    window.removeEventListener('error', errorHandler)
+    consoleSpy.mockRestore()
   })
 })
