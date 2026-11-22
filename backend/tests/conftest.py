@@ -6,6 +6,15 @@ import app.core.csrf as csrf_module
 from app.core.limiter import limiter
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _fast_bcrypt():
+    """Reduce bcrypt hashing rounds to minimum (4) in tests for speed.
+    In production, app.core.security uses the passlib default (12 rounds).
+    """
+    from app.core import security
+    security.pwd_context.update(bcrypt__default_rounds=4)
+
+
 @pytest.fixture(autouse=True)
 def _disable_rate_limiter():
     """Disable rate limiting during tests to prevent cross-test 429 errors."""
