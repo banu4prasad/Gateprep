@@ -26,9 +26,7 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     redis = None
     try:
-        redis = aioredis.from_url(
-            settings.REDIS_URL, encoding="utf8", decode_responses=True
-        )
+        redis = aioredis.from_url(settings.REDIS_URL)
         await redis.ping()
         FastAPICache.init(RedisBackend(redis), prefix="gateprep-cache")
     except Exception as exc:
