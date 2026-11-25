@@ -15,7 +15,7 @@ export default function QuestionFooter({ current, isLastQuestion, setCurrent, ma
     <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-2.5 border-t border-border flex-shrink-0 gap-1 bg-card text-card-foreground">
       <div className="flex items-center gap-1 sm:gap-2">
         <Button variant="outline" onClick={markAndNext} size="sm" className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 text-xs font-medium">
-          <Flag size={14} className="text-[var(--marked-text)]" /> <span className="hidden sm:inline">Mark & Next</span>
+          <Flag size={14} className="text-[var(--marked-text)]" /> <span className="sr-only sm:not-sr-only">Mark & Next</span>
         </Button>
         <Button variant="outline" onClick={clearResponse} size="sm" className="px-2 sm:px-3 text-xs font-medium">
           Clear
@@ -29,7 +29,7 @@ export default function QuestionFooter({ current, isLastQuestion, setCurrent, ma
           disabled={current === 0}
           className="flex items-center gap-1 px-2 sm:px-3 text-xs font-medium"
         >
-          <ChevronLeft size={13} /> <span className="hidden sm:inline">Prev</span>
+          <ChevronLeft size={13} /> <span className="sr-only sm:not-sr-only">Prev</span>
         </Button>
         <Button onClick={saveAndNext} size="sm" className="flex items-center gap-1 px-3 sm:px-4 text-xs font-semibold">
           {isLastQuestion ? 'Save' : 'Save & Next'}

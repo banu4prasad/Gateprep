@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom/vitest"
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 
 import { AvatarGroup, AvatarGroupCount } from "./avatar"
 import { Badge } from "./badge"
@@ -11,6 +11,10 @@ import { Skeleton } from "./skeleton"
 import { modalOverlayClassName } from "./modal"
 import { TableCell, TableHead } from "./table"
 import { Tabs, TabsList, TabsTrigger } from "./tabs"
+
+afterEach(() => {
+  cleanup()
+})
 
 describe("shared UI accessibility defaults", () => {
   it("keeps ordinary buttons out of form submission by default", () => {
