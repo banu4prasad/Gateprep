@@ -1,4 +1,4 @@
-import { StrictMode } from "react"
+import { createRef, StrictMode } from "react"
 import { render, screen, fireEvent, cleanup } from "@testing-library/react"
 import "@testing-library/jest-dom/vitest"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -98,6 +98,27 @@ describe("Select Component", () => {
 
     fireEvent.keyDown(trigger, { key: "Escape" })
     expect(trigger).toHaveAttribute("aria-expanded", "false")
+  })
+
+  it("forwards refs to SelectTrigger, SelectContent, and SelectItem without forwardRef", () => {
+    const triggerRef = createRef<HTMLButtonElement>()
+    const contentRef = createRef<HTMLDivElement>()
+    const itemRef = createRef<HTMLDivElement>()
+
+    render(
+      <Select defaultOpen>
+        <SelectTrigger ref={triggerRef} aria-label="Ref select">
+          <SelectValue placeholder="Choose" />
+        </SelectTrigger>
+        <SelectContent ref={contentRef}>
+          <SelectItem ref={itemRef} value="one">One</SelectItem>
+        </SelectContent>
+      </Select>
+    )
+
+    expect(triggerRef.current).toBeInstanceOf(HTMLButtonElement)
+    expect(contentRef.current).toBeInstanceOf(HTMLDivElement)
+    expect(itemRef.current).toBeInstanceOf(HTMLDivElement)
   })
 })
 

@@ -2,20 +2,13 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div"> & { size?: "default" | "sm" | "lg" }
->(function Card(
-  {
-    className,
-    size = "default",
-    ...props
-  },
-  ref
-) {
+function Card({
+  className,
+  size = "default",
+  ...props
+}: React.ComponentProps<"div"> & { size?: "default" | "sm" | "lg" }) {
   return (
     <div
-      ref={ref}
       data-slot="card"
       data-size={size}
       className={cn(
@@ -24,8 +17,7 @@ const Card = React.forwardRef<
       )}
       {...props} />
   );
-})
-Card.displayName = "Card"
+}
 
 function CardHeader({
   className,

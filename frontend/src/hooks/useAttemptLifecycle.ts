@@ -2,18 +2,18 @@ import { useCallback, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getApiErrorDetail } from '@/lib/apiError'
 import { adminAPI, testAPI } from '../api/api'
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
+import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AttemptStart, TestQuestion } from '@/types/api'
 
 export interface AttemptLifecycleParams {
   testId: string | number | undefined
   isPreview: boolean
   navigate: (to: string) => void
-  attemptRef: MutableRefObject<AttemptStart | PreviewAttempt | null>
-  questionsRef: MutableRefObject<TestQuestion[]>
-  answersRef: MutableRefObject<Record<number, string | undefined>>
-  timingsRef: MutableRefObject<Record<number, number>>
-  loadedRef: MutableRefObject<boolean>
+  attemptRef: RefObject<AttemptStart | PreviewAttempt | null>
+  questionsRef: RefObject<TestQuestion[]>
+  answersRef: RefObject<Record<number, string | undefined>>
+  timingsRef: RefObject<Record<number, number>>
+  loadedRef: RefObject<boolean>
   setQuestions: Dispatch<SetStateAction<TestQuestion[]>>
   setAnswers: Dispatch<SetStateAction<Record<number, string | undefined>>>
   setTimings: Dispatch<SetStateAction<Record<number, number>>>
@@ -24,8 +24,8 @@ export interface AttemptLifecycleParams {
   setTabViolations: Dispatch<SetStateAction<number>>
   setFsViolations: Dispatch<SetStateAction<number>>
   setShowFsWarning: Dispatch<SetStateAction<boolean>>
-  tabViolRef: MutableRefObject<number>
-  fsViolRef: MutableRefObject<number>
+  tabViolRef: RefObject<number>
+  fsViolRef: RefObject<number>
   setStarted: Dispatch<SetStateAction<boolean>>
 }
 interface PreviewAttempt {

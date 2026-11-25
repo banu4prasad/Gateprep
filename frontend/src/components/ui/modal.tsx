@@ -22,33 +22,32 @@ function ModalPortal({
 }
 
 type ModalOverlayProps = ModalPrimitiveProps &
-  Omit<React.ComponentProps<typeof DialogPrimitive.Overlay>, "ref">
+  React.ComponentProps<typeof DialogPrimitive.Overlay>
 
-const ModalOverlay = React.forwardRef<HTMLDivElement, ModalOverlayProps>(function ModalOverlay({
+function ModalOverlay({
   primitive: Primitive,
   slot,
   className,
   ...props
-}, ref) {
+}: ModalOverlayProps) {
   return (
     <Primitive.Overlay
       data-slot={slot}
       className={cn(modalOverlayClassName, className)}
-      ref={ref}
       {...props} />
   )
-})
+}
 
 type ModalContentProps = ModalPrimitiveProps &
-  Omit<React.ComponentProps<typeof DialogPrimitive.Content>, "ref">
+  React.ComponentProps<typeof DialogPrimitive.Content>
 
-const ModalContent = React.forwardRef<HTMLDivElement, ModalContentProps>(function ModalContent({
+function ModalContent({
   primitive: Primitive,
   slot,
   ...props
-}, ref) {
-  return <Primitive.Content data-slot={slot} ref={ref} {...props} />
-})
+}: ModalContentProps) {
+  return <Primitive.Content data-slot={slot} {...props} />
+}
 
 function ModalCloseButton({
   primitive: Primitive,

@@ -10,8 +10,8 @@ interface SelectContextValue {
   onValueChange?: (value: string) => void
   open: boolean
   setOpen: React.Dispatch<React.SetStateAction<boolean>>
-  triggerRef: React.MutableRefObject<HTMLButtonElement | null>
-  contentRef: React.MutableRefObject<HTMLDivElement | null>
+  triggerRef: React.RefObject<HTMLButtonElement | null>
+  contentRef: React.RefObject<HTMLDivElement | null>
   itemsMap: Map<string, React.ReactNode>
   registerItem: (value: string, label: React.ReactNode) => () => void
   highlightedIndex: number
@@ -169,24 +169,21 @@ export function Select({
   )
 
   return (
-    <SelectContext.Provider value={contextValue}>
+    <SelectContext value={contextValue}>
       {children}
       {name && <input type="hidden" name={name} value={value || ""} />}
-    </SelectContext.Provider>
+    </SelectContext>
   )
 }
 
 // ── Select Trigger ────────────────────────────────────────────────────
 
 export interface SelectTriggerProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  extends React.ComponentProps<"button"> {
   children?: React.ReactNode
 }
 
-export const SelectTrigger = React.forwardRef<
-  HTMLButtonElement,
-  SelectTriggerProps
->(function SelectTrigger({ className, children, id: propId, ...props }, ref) {
+export function SelectTrigger({ className, children, id: propId, ref, ...props }: SelectTriggerProps) {
   const {
     open,
     setOpen,
@@ -210,7 +207,7 @@ export const SelectTrigger = React.forwardRef<
       if (typeof ref === "function") {
         ref(node)
       } else if (ref) {
-        ;(ref as React.MutableRefObject<HTMLButtonElement | null>).current = node
+        ref.current = node
       }
     },
     [ref, triggerRef]
@@ -303,7 +300,7 @@ export const SelectTrigger = React.forwardRef<
       />
     </button>
   )
-})
+}
 
 // ── Select Value ──────────────────────────────────────────────────────
 
@@ -338,14 +335,11 @@ export function SelectValue({
 // ── Select Content ────────────────────────────────────────────────────
 
 export interface SelectContentProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+  extends React.ComponentProps<"div"> {
   children?: React.ReactNode
 }
 
-export const SelectContent = React.forwardRef<
-  HTMLDivElement,
-  SelectContentProps
->(function SelectContent({ className, children, ...props }, ref) {
+export function SelectContent({ className, children, ref, ...props }: SelectContentProps) {
   const { open, setOpen, triggerRef, contentRef, contentId } = useSelectContext()
   const [coords, setCoords] = React.useState({ top: 0, left: 0, width: 0 })
   const [mounted, setMounted] = React.useState(false)
@@ -411,7 +405,7 @@ export const SelectContent = React.forwardRef<
       ref={(node) => {
         contentRef.current = node
         if (typeof ref === "function") ref(node)
-        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+        else if (ref) ref.current = node
       }}
       id={contentId}
       role="listbox"
@@ -433,19 +427,18 @@ export const SelectContent = React.forwardRef<
   )
 
   return createPortal(content, document.body)
-})
+}
 
 // ── Select Item ───────────────────────────────────────────────────────
 
 export interface SelectItemProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+  extends React.ComponentProps<"div"> {
   value: string
   disabled?: boolean
   children?: React.ReactNode
 }
 
-export const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
-  function SelectItem({ value: itemValue, disabled = false, className, children, ...props }, ref) {
+export function SelectItem({ value: itemValue, disabled = false, className, children, ref, ...props }: SelectItemProps) {
     const {
       value,
       onValueChange,
@@ -497,8 +490,7 @@ export const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
         <span className="truncate">{children}</span>
       </div>
     )
-  }
-)
+}
 
 // ── Select Group, Label, Separator ────────────────────────────────────
 

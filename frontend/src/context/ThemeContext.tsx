@@ -24,9 +24,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({ theme, toggle }), [theme, toggle])
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext value={value}>
       {children}
-    </ThemeContext.Provider>
+    </ThemeContext>
   )
 }
 

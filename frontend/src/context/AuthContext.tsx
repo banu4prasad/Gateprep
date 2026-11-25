@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }), [user, loading, saveUser, logout, sessionExpired])
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext value={value}>
       {children}
       {sessionExpired && (
         <div className="fixed inset-x-0 top-0 z-[100] p-4" role="alert">
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           </Card>
         </div>
       )}
-    </AuthContext.Provider>
+    </AuthContext>
   )
 }
 

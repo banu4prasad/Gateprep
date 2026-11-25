@@ -15,11 +15,11 @@ function Sheet({
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
 }
 
-const SheetTrigger = React.forwardRef(function SheetTrigger({
+function SheetTrigger({
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Trigger>, ref: React.ForwardedRef<HTMLButtonElement>) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" ref={ref} {...props} />
-})
+}: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+}
 
 function SheetClose({
   ...props
@@ -33,12 +33,12 @@ function SheetPortal({
   return <ModalPortal primitive={SheetPrimitive} slot="sheet-portal" {...props} />;
 }
 
-const SheetOverlay = React.forwardRef(function SheetOverlay({
+function SheetOverlay({
   className,
   ...props
-}: Omit<React.ComponentProps<typeof SheetPrimitive.Overlay>, "ref">, ref: React.ForwardedRef<HTMLDivElement>) {
-  return <ModalOverlay primitive={SheetPrimitive} slot="sheet-overlay" ref={ref} className={className} {...props} />
-})
+}: React.ComponentProps<typeof SheetPrimitive.Overlay>) {
+  return <ModalOverlay primitive={SheetPrimitive} slot="sheet-overlay" className={className} {...props} />
+}
 
 function SheetContent({
   className,
