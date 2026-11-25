@@ -150,7 +150,11 @@ describe("CustomSelect Component", () => {
     fireEvent.click(trigger)
     expect(trigger).toHaveAttribute("aria-expanded", "true")
 
-    fireEvent.click(screen.getByRole("option", { name: "Option 2" }))
+    const option2 = screen.getByRole("option", { name: "Option 2" })
+    fireEvent.mouseDown(option2)
+    expect(trigger).toHaveAttribute("aria-expanded", "true")
+
+    fireEvent.click(option2)
     expect(onChange).toHaveBeenCalledWith("opt2")
     expect(trigger).toHaveAttribute("aria-expanded", "false")
 
