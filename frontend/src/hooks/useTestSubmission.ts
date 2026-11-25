@@ -2,28 +2,28 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getApiErrorDetail } from '@/lib/apiError'
 import { testAPI } from '../api/api'
-import type { MutableRefObject } from 'react'
+import type { RefObject } from 'react'
 import type { TestQuestion } from '@/types/api'
 type AttemptRefValue = { id: string | number }
 
 export interface TestSubmissionParams {
   isPreview: boolean
   navigate: (to: string, options?: { state?: unknown }) => void
-  attemptRef: MutableRefObject<AttemptRefValue | null>
-  answersRef: MutableRefObject<Record<number, string | undefined>>
-  questionsRef: MutableRefObject<TestQuestion[]>
-  timingsRef: MutableRefObject<Record<number, number>>
-  testIdRef: MutableRefObject<string | number | undefined>
-  autoSaveRef: MutableRefObject<ReturnType<typeof setInterval> | null>
+  attemptRef: RefObject<AttemptRefValue | null>
+  answersRef: RefObject<Record<number, string | undefined>>
+  questionsRef: RefObject<TestQuestion[]>
+  timingsRef: RefObject<Record<number, number>>
+  testIdRef: RefObject<string | number | undefined>
+  autoSaveRef: RefObject<ReturnType<typeof setInterval> | null>
   commitNAT: () => void
 }
 export interface TestSubmissionResult {
   submitting: boolean
   showConfirm: boolean
   setShowConfirm: React.Dispatch<React.SetStateAction<boolean>>
-  submitLockRef: MutableRefObject<boolean>
+  submitLockRef: RefObject<boolean>
   doSubmit: (auto?: boolean) => void
-  doSubmitRef: MutableRefObject<(auto?: boolean) => Promise<void>>
+  doSubmitRef: RefObject<(auto?: boolean) => Promise<void>>
   handleTimerExpire: () => void
 }
 export default function useTestSubmission({

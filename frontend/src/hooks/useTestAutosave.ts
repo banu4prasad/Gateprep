@@ -1,19 +1,19 @@
 import { useEffect, useRef } from 'react'
 import { testAPI } from '../api/api'
-import type { MutableRefObject } from 'react'
+import type { RefObject } from 'react'
 import type { AttemptStart } from '@/types/api'
 type AttemptRefValue = { id: string | number }
 
 export interface TestAutosaveParams {
   attempt: AttemptRefValue | null
   isPreview: boolean
-  answersRef: MutableRefObject<Record<number, string | undefined>>
-  timingsRef: MutableRefObject<Record<number, number>>
-  attemptRef: MutableRefObject<AttemptRefValue | null>
-  testIdRef: MutableRefObject<string | number | undefined>
+  answersRef: RefObject<Record<number, string | undefined>>
+  timingsRef: RefObject<Record<number, number>>
+  attemptRef: RefObject<AttemptRefValue | null>
+  testIdRef: RefObject<string | number | undefined>
 }
 export interface TestAutosaveResult {
-  autoSaveRef: MutableRefObject<ReturnType<typeof setInterval> | null>
+  autoSaveRef: RefObject<ReturnType<typeof setInterval> | null>
 }
 export default function useTestAutosave({
   attempt,

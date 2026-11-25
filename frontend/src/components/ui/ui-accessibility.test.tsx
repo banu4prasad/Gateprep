@@ -1,3 +1,4 @@
+import { createRef } from "react"
 import { cleanup, render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom/vitest"
 import { afterEach, describe, expect, it } from "vitest"
@@ -5,8 +6,9 @@ import { afterEach, describe, expect, it } from "vitest"
 import { AvatarGroup, AvatarGroupCount } from "./avatar"
 import { Badge } from "./badge"
 import { Button, buttonVariants } from "./button"
-import { CardTitle } from "./card"
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./dialog"
+import { Card, CardTitle } from "./card"
+import { Dialog, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "./dialog"
+import { Sheet, SheetTrigger } from "./sheet"
 import { Skeleton } from "./skeleton"
 import { modalOverlayClassName } from "./modal"
 import { TableCell, TableHead } from "./table"
@@ -97,5 +99,32 @@ describe("shared UI accessibility defaults", () => {
     )
 
     expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument()
+  })
+
+  it("forwards refs as props on refactored UI components", () => {
+    const cardRef = createRef<HTMLDivElement>()
+    const buttonRef = createRef<HTMLButtonElement>()
+    const sheetTriggerRef = createRef<HTMLButtonElement>()
+    const overlayRef = createRef<HTMLDivElement>()
+
+    render(
+      <>
+        <Card ref={cardRef}>Card</Card>
+        <Button ref={buttonRef}>Action</Button>
+        <Sheet>
+          <SheetTrigger ref={sheetTriggerRef}>Open sheet</SheetTrigger>
+        </Sheet>
+        <Dialog open>
+          <DialogPortal>
+            <DialogOverlay ref={overlayRef} />
+          </DialogPortal>
+        </Dialog>
+      </>
+    )
+
+    expect(cardRef.current).toBeInstanceOf(HTMLDivElement)
+    expect(buttonRef.current).toBeInstanceOf(HTMLButtonElement)
+    expect(sheetTriggerRef.current).toBeInstanceOf(HTMLButtonElement)
+    expect(overlayRef.current).toBeInstanceOf(HTMLDivElement)
   })
 })

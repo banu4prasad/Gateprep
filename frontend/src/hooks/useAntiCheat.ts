@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { testAPI } from '../api/api'
-import type { MutableRefObject, Dispatch, SetStateAction } from 'react'
+import type { RefObject, Dispatch, SetStateAction } from 'react'
 
 type Identifier = string | number | null | undefined
 
@@ -22,16 +22,16 @@ function getIdentifiers(testId: Identifier, attemptId: Identifier): ViolationIde
 }
 
 export interface AntiCheatParams {
-  attemptRef: MutableRefObject<{ id: number | string } | null>
-  doSubmitRef: MutableRefObject<(auto?: boolean) => void>
-  fsViolRef: MutableRefObject<number>
+  attemptRef: RefObject<{ id: number | string } | null>
+  doSubmitRef: RefObject<(auto?: boolean) => void>
+  fsViolRef: RefObject<number>
   isPreview: boolean
-  loadedRef: MutableRefObject<boolean>
+  loadedRef: RefObject<boolean>
   setFsViolations: Dispatch<SetStateAction<number>>
   setShowFsWarning: Dispatch<SetStateAction<boolean>>
   setTabViolations: Dispatch<SetStateAction<number>>
-  tabViolRef: MutableRefObject<number>
-  testIdRef: MutableRefObject<string | number | undefined>
+  tabViolRef: RefObject<number>
+  testIdRef: RefObject<string | number | undefined>
 }
 export default function useAntiCheat({
   attemptRef,

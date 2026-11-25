@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
+import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { TestQuestion } from '@/types/api'
 
 export interface TestAnswerStateParams {
   current: number
   questions: TestQuestion[]
   currentQuestion: TestQuestion | undefined
-  answersRef: MutableRefObject<Record<number, string | undefined>>
-  timingsRef: MutableRefObject<Record<number, number>>
+  answersRef: RefObject<Record<number, string | undefined>>
+  timingsRef: RefObject<Record<number, number>>
 }
 export interface TestAnswerStateResult {
   answers: Record<number, string | undefined>
@@ -25,7 +25,7 @@ export interface TestAnswerStateResult {
   toggleMSQ: (letter: string) => void
   commitNAT: () => void
   clearResponse: () => void
-  questionStartRef: MutableRefObject<number>
+  questionStartRef: RefObject<number>
 }
 export default function useTestAnswerState({
   current,

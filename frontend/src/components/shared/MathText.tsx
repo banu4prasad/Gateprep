@@ -210,7 +210,7 @@ function splitLegacyMath(text: string): MathPart[] {
 }
 
 function useKatexRender<T extends HTMLElement>(math: string, displayMode: boolean): {
-  containerRef: React.MutableRefObject<T | null>
+  containerRef: React.RefObject<T | null>
   ariaLabel: string
 } {
   const containerRef = useRef<T | null>(null)
