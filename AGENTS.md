@@ -4,7 +4,7 @@ This file defines how AI assistants should work in this repository.
 
 Gateprep is a full-stack GATE exam preparation platform with:
 - `backend/` — FastAPI, SQLAlchemy, Alembic, PostgreSQL/Supabase
-- `frontend/` — React 18, Vite, Tailwind CSS, strict TypeScript/TSX
+- `frontend/` — React 19, Vite, Tailwind CSS, strict TypeScript/TSX
 - root Docker files for local and deployment workflows
 
 Read this file first, then load only the relevant files from `.agents/rules/`, `.agents/workflows/`, and `.agents/skills/` for the task at hand.
@@ -24,7 +24,7 @@ When repository files disagree with these notes, trust the actual code and updat
 
 ### Frontend
 
-- React 18 with Vite
+- React 19 with Vite
 - `frontend/src` is strict TypeScript only. Retained JavaScript is intentionally limited to `vite.config.js`, `postcss.config.js`, `api/proxy.js`, and `api/proxy.test.js` (tooling and the Vercel API proxy, outside the `tsconfig.json` `include`). Do not convert them without updating `tsconfig.json` and the build.
 - Tailwind CSS
 - SWR for some data fetching

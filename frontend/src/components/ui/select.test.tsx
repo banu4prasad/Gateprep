@@ -1,3 +1,4 @@
+import { StrictMode } from "react"
 import { render, screen, fireEvent, cleanup } from "@testing-library/react"
 import "@testing-library/jest-dom/vitest"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -127,6 +128,45 @@ describe("CustomSelect Component", () => {
     fireEvent.click(opt2)
 
     expect(onChange).toHaveBeenCalledWith("opt2")
+  })
+
+  it("handles open, selection, outside click, and Escape under React StrictMode", () => {
+    const onChange = vi.fn()
+    render(
+      <StrictMode>
+        <div>
+          <button type="button">Outside</button>
+          <CustomSelect
+            value="opt1"
+            onChange={onChange}
+            options={options}
+            aria-label="Strict subject"
+          />
+        </div>
+      </StrictMode>
+    )
+
+    const trigger = screen.getByRole("combobox", { name: "Strict subject" })
+    fireEvent.click(trigger)
+    expect(trigger).toHaveAttribute("aria-expanded", "true")
+
+    const option2 = screen.getByRole("option", { name: "Option 2" })
+    fireEvent.mouseDown(option2)
+    expect(trigger).toHaveAttribute("aria-expanded", "true")
+
+    fireEvent.click(option2)
+    expect(onChange).toHaveBeenCalledWith("opt2")
+    expect(trigger).toHaveAttribute("aria-expanded", "false")
+
+    fireEvent.click(trigger)
+    expect(trigger).toHaveAttribute("aria-expanded", "true")
+    fireEvent.mouseDown(screen.getByRole("button", { name: "Outside" }))
+    expect(trigger).toHaveAttribute("aria-expanded", "false")
+
+    fireEvent.click(trigger)
+    expect(trigger).toHaveAttribute("aria-expanded", "true")
+    fireEvent.keyDown(trigger, { key: "Escape" })
+    expect(trigger).toHaveAttribute("aria-expanded", "false")
   })
 })
 
