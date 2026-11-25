@@ -315,7 +315,7 @@ export default function AdminTests() {
           {[['all','All'], ['weekly_quiz','Weekly Quiz'], ['test_series','Test Series']].map(([v, l]) => (
             <button key={v} onClick={() => setFilter(v)}
               className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-                filter === v ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+                filter === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}>{l}</button>
           ))}
         </div>

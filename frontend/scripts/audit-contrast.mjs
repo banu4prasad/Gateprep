@@ -110,7 +110,7 @@ function addCheck(label, themeName, foreground, background) {
 }
 
 for (const [themeName, themeVars] of Object.entries(themes)) {
-  const surfaceBackgrounds = ['bg', 'bg-card', 'bg-panel', 'sidebar-bg']
+  const surfaceBackgrounds = ['bg', 'bg-card', 'bg-panel', 'sidebar-bg', 'card', 'muted']
   const textTokens = [
     'text',
     'text-muted',
@@ -127,6 +127,11 @@ for (const [themeName, themeVars] of Object.entries(themes)) {
     }
   }
 
+  addCheck('primary-foreground on primary', themeName, themeVars['primary-foreground'], themeVars['primary'])
+  addCheck('primary-foreground on primary-hover', themeName, themeVars['primary-foreground'], themeVars['primary-hover'])
+  addCheck('btn-disabled-fg on btn-disabled-bg', themeName, themeVars['btn-disabled-fg'], themeVars['btn-disabled-bg'])
+  addCheck('card-foreground on card', themeName, themeVars['card-foreground'], themeVars['card'])
+  addCheck('muted-foreground on muted', themeName, themeVars['muted-foreground'], themeVars['muted'])
   addCheck('header text', themeName, themeVars['header-text'], themeVars['header-bg'])
   addCheck('header muted text', themeName, themeVars['header-muted'], themeVars['header-bg'])
   addCheck('header accent text', themeName, themeVars['header-accent'], themeVars['header-bg'])
@@ -174,10 +179,6 @@ for (const [className, foreground] of Object.entries(lightSurfaceClasses)) {
 }
 
 const componentChecks = [
-  ['btn-primary', 'white', 'sky-700'],
-  ['btn-primary hover', 'white', 'sky-800'],
-  ['bg-sky-600 utility override', 'white', 'sky-700'],
-  ['hover:bg-sky-600 utility override', 'white', 'sky-800'],
   ['btn-danger', 'white', 'red-600'],
   ['btn-danger hover', 'white', 'red-700'],
   ['btn-success', 'white', 'green-700'],

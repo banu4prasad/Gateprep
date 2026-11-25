@@ -1,5 +1,6 @@
 import { Maximize } from 'lucide-react'
 import Spinner from '../shared/Spinner'
+import ThemeToggle from '../shared/ThemeToggle'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { TestDetail } from '@/types/api'
@@ -22,16 +23,19 @@ export default function InstructionScreen({
   test,
 }: InstructionScreenProps): React.ReactElement {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background transition-colors duration-200">
       <Card className="w-full max-w-2xl animate-fade-in border-border">
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-2xl font-bold mb-1">General Instructions</CardTitle>
+            <CardTitle as="h1" className="text-2xl font-bold mb-1">General Instructions</CardTitle>
             <p className="text-sm text-muted-foreground">{test?.title}</p>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/tests')}>
-            Back
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle className="h-9 w-9 border border-border" />
+            <Button variant="ghost" size="sm" onClick={() => navigate('/tests')}>
+              Back
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
@@ -40,7 +44,7 @@ export default function InstructionScreen({
             ['Questions', test?.question_count || 0],
             ['Marks', test?.total_marks || 0],
           ].map(([label, value]) => (
-            <div key={label} className="bg-muted rounded border p-3 text-center">
+            <div key={label} className="bg-muted rounded border border-border p-3 text-center transition-colors duration-200">
               <p className="text-xs mb-1 text-muted-foreground">{label}</p>
               <p className="font-semibold text-foreground">{value}</p>
             </div>
@@ -58,7 +62,7 @@ export default function InstructionScreen({
             type="checkbox"
             checked={accepted}
             onChange={event => setAccepted(event.target.checked)}
-            className="mt-1"
+            className="mt-1 accent-[var(--primary)]"
           />
           <span className="text-sm text-foreground">
             I have read and understood the instructions.

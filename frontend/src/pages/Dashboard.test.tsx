@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
+import '@testing-library/jest-dom/vitest'
 import { MemoryRouter } from 'react-router-dom'
 import {
   DashboardTestCard,
@@ -100,5 +101,26 @@ describe('DashboardTestCard actions', () => {
     expect(screen.queryByText(/view result/i)).toBeNull()
     const retakeLink = screen.getByRole('link', { name: /retake/i })
     expect(retakeLink.getAttribute('href')).toBe('/tests/42')
+  })
+
+  it('uses explicit card title text token, standardized metadata, and mt-auto footer alignment', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <DashboardTestCard
+          testItem={{ ...mockTest, description: null, duration_minutes: 180, question_count: 65, total_marks: 100 }}
+          attempt={undefined}
+          done={false}
+          percentage={null}
+        />
+      </MemoryRouter>
+    )
+    const card = screen.getByTestId('test-card')
+    expect(card).toHaveClass('h-full', 'flex', 'flex-col', 'duration-200')
+    expect(screen.getByRole('heading', { name: 'Algorithms Test' })).toHaveClass('text-card-foreground', 'duration-200')
+    expect(screen.getByText('180 min')).toBeInTheDocument()
+    expect(screen.getByText('65 questions')).toBeInTheDocument()
+    expect(screen.getByText('100 marks')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="card-content"] > .mt-auto')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="card-footer"]')).toHaveClass('mt-auto')
   })
 })

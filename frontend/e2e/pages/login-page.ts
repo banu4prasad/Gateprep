@@ -8,7 +8,7 @@ export class LoginPage {
   constructor(private page: Page) {
     this.emailInput = page.getByLabel('Email address');
     this.passwordInput = page.getByLabel('Password', { exact: true });
-    this.submitButton = page.getByRole('button', { name: 'Sign In' });
+    this.submitButton = page.getByRole('button', { name: 'Sign in' });
   }
 
   async goto() {

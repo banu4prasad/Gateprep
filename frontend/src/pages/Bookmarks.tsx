@@ -222,7 +222,6 @@ function BookmarkCard({ bm, onRemove }: BookmarkCardProps) {
   const [open, setOpen] = useState(false)
   const [removing, setRemoving] = useState(false)
   const cardStyle: CSSProperties & { [key: `--${string}`]: string } = {
-    background: 'var(--bg-card)',
     '--card-spacing': '1rem',
   }
 
@@ -242,7 +241,7 @@ function BookmarkCard({ bm, onRemove }: BookmarkCardProps) {
   const toggle = () => setOpen(o => !o)
 
   return (
-    <Card className="overflow-hidden border border-border/80 shadow-sm"
+    <Card className="overflow-hidden border-border shadow-sm"
       style={cardStyle}>
       <CardContent className="px-(--card-spacing) py-(--card-spacing)">
         <BookmarkHeader bm={bm} open={open} onToggle={toggle} onRemove={remove} removing={removing} />
@@ -273,7 +272,7 @@ function BookmarksLoading() {
 
 function EmptyBookmarks() {
   return (
-    <Card className="border border-border/80 shadow-sm text-center" style={{ background: 'var(--bg-card)' }}>
+    <Card className="border-border shadow-sm text-center">
       <CardContent className="p-12">
         <Bookmark size={40} className="text-foreground mx-auto mb-3" />
         <p className="text-muted-foreground font-medium">No bookmarks yet</p>
@@ -346,10 +345,10 @@ export default function BookmarksPage() {
     <Layout>
       <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3 transition-colors duration-200">
             <Bookmark size={26} className="text-primary" /> Bookmarks
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 transition-colors duration-200">
             {bookmarks.length} saved question{bookmarks.length !== 1 ? 's' : ''}
           </p>
         </div>

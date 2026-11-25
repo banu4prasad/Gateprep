@@ -2,7 +2,7 @@ import Navbar from './Navbar'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col transition-colors duration-200">
       <Navbar />
       <main className="flex-1 pt-14 pb-mobile-nav sm:pb-0">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">

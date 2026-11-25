@@ -8,17 +8,39 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
+function readStoredTheme(): Theme {
+  try {
+    const stored = localStorage.getItem('theme')
+    return stored === 'light' || stored === 'dark' ? stored : 'dark'
+  } catch {
+    return 'dark'
+  }
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    // Preserve stored values at this localStorage boundary.
-    return (localStorage.getItem('theme') as Theme | null) || 'dark'
-  })
+  const [theme, setTheme] = useState<Theme>(readStoredTheme)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     document.documentElement.style.colorScheme = theme
-    localStorage.setItem('theme', theme)
+    document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', theme)
+    try {
+      localStorage.setItem('theme', theme)
+    } catch {
+      // Ignore storage write failures when site storage is restricted.
+    }
   }, [theme])
+
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== 'theme') return
+      if (event.newValue === 'light' || event.newValue === 'dark') {
+        setTheme(event.newValue)
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   const toggle = useCallback(() => setTheme((currentTheme) => currentTheme === 'dark' ? 'light' : 'dark'), [])
   const value = useMemo(() => ({ theme, toggle }), [theme, toggle])

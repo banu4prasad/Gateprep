@@ -62,13 +62,13 @@ function fillPage(page: AuthPage): void {
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'user@example.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
   } else if (page === 'register') {
-    fireEvent.change(screen.getByLabelText('Full Name'), { target: { value: 'Test User' } })
-    fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'user@example.com' } })
+    fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Test User' } })
+    fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'user@example.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
-    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'password123' } })
+    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'password123' } })
   } else {
-    fireEvent.change(screen.getByLabelText('New Password'), { target: { value: 'password123' } })
-    fireEvent.change(screen.getByLabelText('Confirm Password'), { target: { value: 'password123' } })
+    fireEvent.change(screen.getByLabelText('New password'), { target: { value: 'password123' } })
+    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'password123' } })
   }
 }
 
@@ -81,7 +81,7 @@ async function submitPage(page: AuthPage): Promise<void> {
   request.mockRejectedValueOnce({ response: { data: { detail: [{ msg: 'Invalid input' }] } } })
   renderPage(page)
   fillPage(page)
-  fireEvent.click(screen.getByRole('button', { name: page === 'login' ? 'Sign In' : page === 'register' ? 'Create Account' : 'Update Password' }))
+  fireEvent.click(screen.getByRole('button', { name: page === 'login' ? 'Sign in' : page === 'register' ? 'Create account' : 'Update password' }))
   await vi.waitFor(() => expect(mockedToast.error).toHaveBeenCalled())
 }
 

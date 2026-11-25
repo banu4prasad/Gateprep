@@ -1,11 +1,9 @@
 import { Link, useLocation } from 'react-router-dom'
 import Logo from './Logo'
+import ThemeToggle from './ThemeToggle'
 import { useAuth } from '../../context/AuthContext'
-import { useTheme } from '../../context/ThemeContext'
 import {
   LogOut,
-  Sun,
-  Moon,
   LayoutDashboard,
   FlaskConical,
   Users,
@@ -24,9 +22,6 @@ interface NavItem {
 
 export default function Navbar(): React.ReactElement | null {
   const { user, logout, loading } = useAuth()
-  const themeContext = useTheme()
-  if (!themeContext) return null
-  const { theme, toggle } = themeContext
   const location = useLocation()
   const isAdmin = user?.role === 'admin'
 
@@ -51,7 +46,7 @@ export default function Navbar(): React.ReactElement | null {
   return (
     <>
       {/* ── Desktop/Tablet Top Bar ────────────────────────────────── */}
-      <nav aria-label="Main Navigation" className="app-header fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-4 border-b bg-background/80 border-border backdrop-blur-md">
+      <nav aria-label="Main Navigation" className="app-header fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-4 border-b bg-background/80 border-border backdrop-blur-md transition-colors duration-200">
         <Link to={isAdmin ? '/admin' : '/dashboard'} className="flex items-center gap-2 mr-2 sm:mr-4 flex-shrink-0">
           <Logo size="sm" className="rounded-md" />
           <span className="font-bold text-foreground text-sm">GATEPrep</span>
@@ -61,7 +56,7 @@ export default function Navbar(): React.ReactElement | null {
         <div className="hidden sm:flex items-center gap-0.5 flex-1 overflow-x-auto">
           {!loading && links.map(({ to, label, icon: Icon }) => (
             <Link key={to} to={to} aria-current={isActive(to) ? 'page' : undefined} className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors duration-200',
               isActive(to)
                 ? 'bg-primary/10 text-primary'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -75,12 +70,7 @@ export default function Navbar(): React.ReactElement | null {
         <div className="flex-1 sm:hidden" />
 
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          <button onClick={toggle}
-            title="Toggle theme"
-            aria-label="Toggle theme"
-            className="p-2 sm:p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
+          <ThemeToggle className="sm:p-1.5" />
           {loading ? (
             <div className="hidden sm:flex flex-col gap-1.5 items-end mx-1">
               <div className="h-3 w-20 bg-muted rounded animate-pulse" aria-hidden="true" />
@@ -102,7 +92,7 @@ export default function Navbar(): React.ReactElement | null {
       </nav>
 
       {/* ── Mobile Bottom Navigation ──────────────────────────────── */}
-      <nav aria-label="Mobile Navigation" className="mobile-bottom-nav sm:hidden flex items-center justify-around px-2 bg-background/80 border-border backdrop-blur-md">
+      <nav aria-label="Mobile Navigation" className="mobile-bottom-nav sm:hidden flex items-center justify-around px-2 bg-background/80 border-border backdrop-blur-md transition-colors duration-200">
         {!loading && links.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
