@@ -41,10 +41,29 @@ export interface AnswerStatusIconProps {
   qa: PersistedResultAnswer
 }
 
-function AnswerStatusIcon({ qa }: AnswerStatusIconProps) {
-  if (qa.is_correct === true) return <CheckCircle size={14} className="text-success-text flex-shrink-0 mt-0.5" />
-  if (qa.is_correct === false) return <XCircle size={14} className="text-destructive flex-shrink-0 mt-0.5" />
-  return <MinusCircle size={14} className="text-muted-foreground flex-shrink-0 mt-0.5" />
+export function AnswerStatusIcon({ qa }: AnswerStatusIconProps) {
+  if (qa.is_correct === true) {
+    return (
+      <>
+        <CheckCircle size={14} className="text-success-text flex-shrink-0 mt-0.5" />
+        <span className="sr-only">Correct</span>
+      </>
+    )
+  }
+  if (qa.is_correct === false) {
+    return (
+      <>
+        <XCircle size={14} className="text-destructive flex-shrink-0 mt-0.5" />
+        <span className="sr-only">Incorrect</span>
+      </>
+    )
+  }
+  return (
+    <>
+      <MinusCircle size={14} className="text-muted-foreground flex-shrink-0 mt-0.5" />
+      <span className="sr-only">Skipped</span>
+    </>
+  )
 }
 
 function getOptionState(qa: PersistedResultAnswer, letter: string | undefined) {

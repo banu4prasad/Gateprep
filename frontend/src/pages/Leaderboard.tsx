@@ -136,6 +136,7 @@ function PodiumCard({ entry }: PodiumCardProps) {
       <div className="flex flex-col items-center gap-1.5 w-full">
         <div className="flex items-center justify-center w-8 h-8 rounded-full bg-background/80 shadow-xs">
           {medal.icon}
+          <span className="sr-only">#{entry.rank}</span>
         </div>
         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 font-semibold text-xs text-foreground">
           {entry.full_name?.[0]?.toUpperCase() || '—'}
@@ -165,7 +166,7 @@ export interface LeaderboardPodiumProps {
   entries: LeaderboardEntry[]
 }
 
-function LeaderboardPodium({ entries }: LeaderboardPodiumProps) {
+export function LeaderboardPodium({ entries }: LeaderboardPodiumProps) {
   return (
     <div className="grid grid-cols-3 gap-2 sm:gap-4 items-end pt-3">
       {getPodiumOrder(entries).map((entry) => {
@@ -199,7 +200,7 @@ export interface LeaderboardTableProps {
   entries: LeaderboardEntry[]
 }
 
-function LeaderboardTable({ entries }: LeaderboardTableProps) {
+export function LeaderboardTable({ entries }: LeaderboardTableProps) {
   return (
     <Card className="overflow-hidden overflow-x-auto">
       <Table>
@@ -224,7 +225,14 @@ function LeaderboardTable({ entries }: LeaderboardTableProps) {
               >
                 <TableCell className="px-3 sm:px-5 py-3.5">
                   <div className="flex items-center justify-center w-7 h-7">
-                    {medal ? medal.icon : <span className="text-muted-foreground font-mono text-sm">#{entry.rank}</span>}
+                    {medal ? (
+                      <>
+                        {medal.icon}
+                        <span className="sr-only">#{entry.rank}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground font-mono text-sm">#{entry.rank}</span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="px-3 sm:px-5 py-3.5">

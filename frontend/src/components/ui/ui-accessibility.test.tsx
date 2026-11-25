@@ -1,15 +1,20 @@
-import { render, screen } from "@testing-library/react"
+import { cleanup, render, screen } from "@testing-library/react"
 import "@testing-library/jest-dom/vitest"
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 
 import { AvatarGroup, AvatarGroupCount } from "./avatar"
 import { Badge } from "./badge"
 import { Button, buttonVariants } from "./button"
 import { CardTitle } from "./card"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./dialog"
 import { Skeleton } from "./skeleton"
 import { modalOverlayClassName } from "./modal"
 import { TableCell, TableHead } from "./table"
 import { Tabs, TabsList, TabsTrigger } from "./tabs"
+
+afterEach(() => {
+  cleanup()
+})
 
 describe("shared UI accessibility defaults", () => {
   it("keeps ordinary buttons out of form submission by default", () => {
@@ -79,5 +84,18 @@ describe("shared UI accessibility defaults", () => {
     render(<table><tbody><tr><TableCell>Long content</TableCell></tr></tbody></table>)
 
     expect(screen.getByRole("cell", { name: "Long content" })).toHaveClass("whitespace-normal", "sm:whitespace-nowrap")
+  })
+
+  it("keeps dialog close button accessible on Lucide v1", () => {
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Confirm</DialogTitle>
+          <DialogDescription>Dialog body</DialogDescription>
+        </DialogContent>
+      </Dialog>
+    )
+
+    expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument()
   })
 })
