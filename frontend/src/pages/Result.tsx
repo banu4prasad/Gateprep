@@ -463,7 +463,7 @@ const QuestionReviewList = memo(function QuestionReviewList({ items, filter, set
           {(['all', 'correct', 'incorrect', 'skipped'] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={clsx('px-2.5 py-1 rounded text-xs font-medium capitalize transition-colors',
-                filter === f ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground')}>
+                filter === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}>
               {f}
             </button>
           ))}

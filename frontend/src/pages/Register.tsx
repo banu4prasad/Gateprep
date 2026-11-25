@@ -5,10 +5,9 @@ import { useAuth } from '../context/AuthContext'
 import { authAPI } from '../api/api'
 import { getApiErrorDetail } from '../lib/apiError'
 import toast from 'react-hot-toast'
+import AuthLayout from '../components/shared/AuthLayout'
 import Spinner from '../components/shared/Spinner'
-import Logo from '../components/shared/Logo'
 import { Button } from '../components/ui/button'
-import { Card, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Eye, EyeOff, UserPlus } from 'lucide-react'
@@ -24,7 +23,8 @@ export default function RegisterPage() {
   const { saveUser } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState<RegisterForm>({ email: '', full_name: '', password: '', confirm: '' })
-  const [show, setShow] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handle = (key: keyof RegisterForm) => (event: ChangeEvent<HTMLInputElement>): void =>
@@ -47,110 +47,119 @@ export default function RegisterPage() {
       else navigate('/pending', { replace: true })
     } catch (err: unknown) {
       toast.error(getApiErrorDetail(err) || 'Registration failed')
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="theme-light-surface min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
-      <div className="w-full max-w-md animate-slide-up">
-        <div className="flex items-center gap-2 mb-8">
-          <Logo size="md" />
-          <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>GATEPrep</span>
+    <AuthLayout
+      title="Create account"
+      subtitle="Fill in your details to get started"
+      footer={
+        <p className="text-center mt-4 text-sm text-muted-foreground">
+          Already have an account?{' '}
+          <Link to="/login" className="text-primary hover:underline font-medium">
+            Sign in
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={submit} className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="full_name" className="text-muted-foreground">Full name</Label>
+          <Input
+            id="full_name"
+            name="full_name"
+            type="text"
+            autoComplete="name"
+            required
+            value={form.full_name}
+            onChange={handle('full_name')}
+            placeholder="Rahul Sharma"
+            autoFocus
+            className="h-11 rounded-md bg-card px-4 text-sm shadow-sm"
+          />
         </div>
 
-        <h2 className="text-2xl font-bold mb-1" style={{ color: 'var(--text)' }}>Create Account</h2>
-        <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Fill in your details to get started</p>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email" className="text-muted-foreground">Email address</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            spellCheck={false}
+            autoCapitalize="none"
+            required
+            value={form.email}
+            onChange={handle('email')}
+            placeholder="you@example.com"
+            className="h-11 rounded-md bg-card px-4 text-sm shadow-sm"
+          />
+        </div>
 
-        <Card
-          className="border border-border/80 shadow-sm"
-          style={Object.assign({ background: 'var(--bg-card)' }, { '--card-spacing': '1.5rem' })}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="password" className="text-muted-foreground">Password</Label>
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              value={form.password}
+              onChange={handle('password')}
+              placeholder="Min. 8 characters"
+              className="h-11 rounded-md bg-card px-4 pr-11 text-sm shadow-sm"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(s => !s)}
+              aria-label="Toggle password visibility"
+              aria-pressed={showPassword}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground transition-colors hover:text-primary"
+            >
+              {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="confirm" className="text-muted-foreground">Confirm password</Label>
+          <div className="relative">
+            <Input
+              id="confirm"
+              name="confirm"
+              type={showConfirm ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              value={form.confirm}
+              onChange={handle('confirm')}
+              placeholder="Re-enter password"
+              className="h-11 rounded-md bg-card px-4 pr-11 text-sm shadow-sm"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirm(s => !s)}
+              aria-label="Toggle confirm password visibility"
+              aria-pressed={showConfirm}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground transition-colors hover:text-primary"
+            >
+              {showConfirm ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+            </button>
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="mt-2 h-11 w-full rounded-md px-5 gap-2 shadow-sm"
         >
-          <CardContent>
-            <form onSubmit={submit} className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="full_name" style={{ color: 'var(--text-muted)' }}>Full Name</Label>
-                <Input
-                  id="full_name"
-                  type="text"
-                  autoComplete="name"
-                  required
-                  value={form.full_name}
-                  onChange={handle('full_name')}
-                  placeholder="Rahul Sharma"
-                  autoFocus
-                  className="h-11 rounded-md bg-[var(--bg-card)] px-4 text-sm shadow-sm"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email" style={{ color: 'var(--text-muted)' }}>Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={form.email}
-                  onChange={handle('email')}
-                  placeholder="you@example.com"
-                  className="h-11 rounded-md bg-[var(--bg-card)] px-4 text-sm shadow-sm"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="password" style={{ color: 'var(--text-muted)' }}>Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={show ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    required
-                    value={form.password}
-                    onChange={handle('password')}
-                    placeholder="Min. 8 characters"
-                    className="h-11 rounded-md bg-[var(--bg-card)] px-4 pr-11 text-sm shadow-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShow(s => !s)}
-                    aria-label="Toggle password visibility"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    {show ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="confirm" style={{ color: 'var(--text-muted)' }}>Confirm Password</Label>
-                <Input
-                  id="confirm"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={form.confirm}
-                  onChange={handle('confirm')}
-                  placeholder="Re-enter password"
-                  className="h-11 rounded-md bg-[var(--bg-card)] px-4 text-sm shadow-sm"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="mt-4 h-11 w-full rounded-md px-5 gap-2 shadow-sm"
-              >
-                {loading ? <Spinner size={18} /> : <UserPlus size={18} />}
-                {loading ? 'Creating account...' : 'Create Account'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <p className="text-center mt-4 text-sm" style={{ color: 'var(--text-muted)' }}>
-          Already have an account?{' '}
-          <Link to="/login" className="text-primary hover:text-primary font-medium">Sign in</Link>
-        </p>
-      </div>
-    </div>
+          {loading ? <Spinner size={18} /> : <UserPlus size={18} aria-hidden="true" />}
+          {loading ? 'Creating account...' : 'Create account'}
+        </Button>
+      </form>
+    </AuthLayout>
   )
 }

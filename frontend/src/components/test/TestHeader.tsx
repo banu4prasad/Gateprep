@@ -2,6 +2,7 @@ import { Calculator as CalcIcon, Send } from 'lucide-react'
 import clsx from 'clsx'
 import Logo from '../shared/Logo'
 import Spinner from '../shared/Spinner'
+import ThemeToggle from '../shared/ThemeToggle'
 import TimerDisplay from './TimerDisplay'
 import type { TestDetail } from '@/types/api'
 
@@ -52,15 +53,17 @@ export default function TestHeader({
           </span>
         )}
 
+        <ThemeToggle className="h-9 w-9 border theme-border" />
+
         <button
           type="button"
           onClick={() => setShowCalc(s => !s)}
           aria-label="Calculator"
           title="Calculator"
           className={clsx(
-            'flex items-center justify-center h-9 w-9 rounded-md border transition-colors',
+            'flex items-center justify-center h-9 w-9 rounded-md border transition-colors duration-200',
             showCalc
-              ? 'bg-primary border-primary text-white'
+              ? 'bg-primary border-primary text-primary-foreground'
               : 'theme-border text-muted-foreground hover:text-foreground hover:border-muted-foreground'
           )}
         >
@@ -73,7 +76,7 @@ export default function TestHeader({
           type="button"
           onClick={onSubmitClick}
           disabled={submitting}
-          className="flex items-center gap-1 px-3 py-1 rounded bg-primary hover:bg-primary text-white text-xs font-medium transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 px-3 py-1 rounded bg-primary hover:bg-[var(--primary-hover)] text-primary-foreground text-xs font-medium transition-colors duration-200 disabled:bg-[var(--btn-disabled-bg)] disabled:text-[var(--btn-disabled-fg)] disabled:opacity-100"
         >
           {submitting ? <Spinner size={12} /> : <Send size={12} />} Submit
         </button>

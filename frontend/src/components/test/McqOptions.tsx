@@ -52,7 +52,7 @@ export default function McqOptions({ question, selectedLetter, onSelect }: McqOp
               'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
               selected ? 'border-primary bg-primary' : 'border-muted-foreground',
             )}>
-              {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+              {selected && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
             </div>
             <div className="flex-1">
               <span className="text-xs font-semibold mr-2 text-muted-foreground">{letter}.</span>

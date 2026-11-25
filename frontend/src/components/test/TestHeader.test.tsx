@@ -75,7 +75,7 @@ describe('TestHeader component', () => {
     rerender(<TestHeader {...defaultProps} showCalc={true} />)
     const activeBtn = screen.getByRole('button', { name: 'Calculator' })
     expect(activeBtn).toHaveClass('bg-primary')
-    expect(activeBtn).toHaveClass('text-white')
+    expect(activeBtn).toHaveClass('text-primary-foreground')
   })
 
   it('displays attempt count and violations count when applicable', () => {

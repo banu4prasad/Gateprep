@@ -5,9 +5,10 @@ import { useAuth } from '../context/AuthContext'
 import useSWR from 'swr'
 import { fetcher } from '../api/api'
 import type { HistoryItem, TestCatalogItem } from '../types/api'
-import { BookOpen, Clock, Target, ArrowRight, CheckCircle } from 'lucide-react'
+import { BookOpen, ArrowRight, CheckCircle } from 'lucide-react'
 import clsx from 'clsx'
 import { SkeletonBlock, TestCardSkeleton } from '../components/shared/Skeletons'
+import TestMetaRow from '../components/shared/TestMetaRow'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -71,9 +72,9 @@ function DashboardStats({ tests, completedCount, testsLoading, historyLoading }:
               {isLoading ? (
                 <SkeletonBlock className="h-5 w-12" />
               ) : (
-                <p className="text-xl font-bold text-foreground leading-none">{value}</p>
+                <p className="text-xl font-bold text-foreground leading-none transition-colors duration-200">{value}</p>
               )}
-              <p className="text-muted-foreground text-xs mt-1 truncate">{label}</p>
+              <p className="text-muted-foreground text-xs mt-1 truncate transition-colors duration-200">{label}</p>
             </div>
           </CardContent>
         </Card>
@@ -93,7 +94,7 @@ export function DashboardTestCard({ testItem, attempt, done, percentage }: Dashb
   const resultTone = percentage !== null ? getScoreToneClass(percentage) : ''
 
   return (
-    <Card key={testItem.id} data-testid="test-card" className="flex flex-col hover:border-primary/50 transition-colors border-border">
+    <Card key={testItem.id} data-testid="test-card" className="h-full flex flex-col hover:border-primary/50 border-border">
       <CardHeader className="p-3 pb-1.5">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-sm leading-snug">{testItem.title}</CardTitle>
@@ -102,24 +103,26 @@ export function DashboardTestCard({ testItem, attempt, done, percentage }: Dashb
         {testItem.description && <CardDescription className="text-xs line-clamp-2">{testItem.description}</CardDescription>}
       </CardHeader>
       <CardContent className="p-3 pt-0 flex-1 flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5"><Clock size={12} />{testItem.duration_minutes} min</span>
-          <span className="flex items-center gap-1.5"><BookOpen size={12} />{testItem.question_count} questions</span>
-          <span className="flex items-center gap-1.5"><Target size={12} />{testItem.total_marks} marks</span>
+        <div className="mt-auto flex flex-col gap-2">
+          <TestMetaRow
+            durationMinutes={testItem.duration_minutes}
+            questionCount={testItem.question_count}
+            totalMarks={testItem.total_marks}
+          />
+          {percentage !== null && (
+            <div className={clsx('px-2.5 py-1.5 rounded-md border text-xs', resultTone)}>
+              Score: {
+                // @ts-expect-error TODO(null-safety): percentage implies a present attempt; without one, score access would throw.
+                attempt.score?.toFixed(1)
+              } / {
+                // @ts-expect-error TODO(null-safety): percentage implies a present attempt with truthy total_marks; otherwise access would throw.
+                attempt.total_marks
+              } ({percentage}%)
+            </div>
+          )}
         </div>
-        {percentage !== null && (
-          <div className={clsx('px-2.5 py-1.5 rounded-md border text-xs', resultTone)}>
-            Score: {
-              // @ts-expect-error TODO(null-safety): percentage implies a present attempt; without one, score access would throw.
-              attempt.score?.toFixed(1)
-            } / {
-              // @ts-expect-error TODO(null-safety): percentage implies a present attempt with truthy total_marks; otherwise access would throw.
-              attempt.total_marks
-            } ({percentage}%)
-          </div>
-        )}
       </CardContent>
-      <CardFooter className="border-t-0 bg-transparent p-3 pt-1">
+      <CardFooter className="mt-auto border-t-0 bg-transparent p-3 pt-1">
         {done ? (
           <div className="flex gap-2 w-full">
             {attempt?.id != null && (
@@ -212,10 +215,10 @@ export default function Dashboard() {
     <Layout>
       <div className="flex flex-col gap-8 animate-fade-in">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground transition-colors duration-200">
             Hello, {user?.full_name?.split(' ')[0]}
           </h1>
-          <p className="text-muted-foreground mt-1">Ready to practice? Pick a test below.</p>
+          <p className="text-muted-foreground mt-1 transition-colors duration-200">Ready to practice? Pick a test below.</p>
         </div>
 
         <DashboardStats
@@ -227,7 +230,7 @@ export default function Dashboard() {
 
         <div>
           <div className="flex items-center justify-between gap-3 mb-4">
-            <h2 className="text-xl font-semibold text-foreground">Recent Tests</h2>
+            <h2 className="text-xl font-semibold text-foreground transition-colors duration-200">Recent Tests</h2>
             {tests.length > 9 && (
               <Link to="/tests" className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline">
                 View all tests <ArrowRight size={14} />
