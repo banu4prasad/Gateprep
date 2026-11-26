@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { AlertTriangle, Maximize } from 'lucide-react'
 import TimerDisplay from './TimerDisplay'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
+import { requestFullscreenBestEffort } from '@/utils/fullscreen'
+
+const FULLSCREEN_RETRY_FALLBACK_MS = 1000
 
 export interface FullscreenWarningProps {
   endTimeMs: number | null
@@ -23,6 +27,42 @@ export default function FullscreenWarning({
   setShowConfirm,
   setShowFsWarning,
 }: FullscreenWarningProps): React.ReactElement {
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (fallbackTimerRef.current !== null) {
+        clearTimeout(fallbackTimerRef.current)
+        fallbackTimerRef.current = null
+      }
+    }
+  }, [])
+
+  const clearFallbackTimer = () => {
+    if (fallbackTimerRef.current !== null) {
+      clearTimeout(fallbackTimerRef.current)
+      fallbackTimerRef.current = null
+    }
+  }
+
+  const handleReturnToFullscreen = () => {
+    clearFallbackTimer()
+    let settled = false
+    const initiated = requestFullscreenBestEffort({
+      onSettled: () => {
+        settled = true
+        clearFallbackTimer()
+        setShowFsWarning(false)
+      },
+    })
+    if (initiated && !settled) {
+      fallbackTimerRef.current = setTimeout(() => {
+        fallbackTimerRef.current = null
+        setShowFsWarning(false)
+      }, FULLSCREEN_RETRY_FALLBACK_MS)
+    }
+  }
+
   return (
     <Dialog open={true}>
       <DialogContent
@@ -51,11 +91,7 @@ export default function FullscreenWarning({
         />
         <div className="flex flex-col gap-3">
           <Button
-            onClick={() => {
-              document.documentElement.requestFullscreen?.()
-                .then(() => setShowFsWarning(false))
-                .catch(() => setShowFsWarning(false))
-            }}
+            onClick={handleReturnToFullscreen}
             className="w-full flex items-center justify-center gap-2"
           >
             <Maximize size={16} /> Return to Fullscreen

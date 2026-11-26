@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getApiErrorDetail } from '@/lib/apiError'
+import { exitFullscreenBestEffort } from '@/utils/fullscreen'
 import { testAPI } from '../api/api'
 import type { RefObject } from 'react'
 import type { TestQuestion } from '@/types/api'
@@ -47,9 +48,7 @@ export default function useTestSubmission({
     setSubmitting(true)
     if (autoSaveRef.current) clearInterval(autoSaveRef.current)
 
-    try {
-      if (document.fullscreenElement) await document.exitFullscreen()
-    } catch {}
+    exitFullscreenBestEffort()
 
     if (isPreview) {
       if (auto) toast('Time up! Auto-submitted preview.', { duration: 5000 })

@@ -345,3 +345,160 @@ describe('TestEngine page flow', () => {
     expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument()
   })
 })
+
+describe('TestEngine fullscreen fallback', () => {
+  const originalFullscreenEnabled = Object.getOwnPropertyDescriptor(document, 'fullscreenEnabled')
+  const originalFullscreenElement = Object.getOwnPropertyDescriptor(document, 'fullscreenElement')
+  const originalRequestFullscreen = Object.getOwnPropertyDescriptor(document.documentElement, 'requestFullscreen')
+
+  function restoreDescriptor(target: object, key: string, descriptor: PropertyDescriptor | undefined) {
+    if (descriptor) {
+      Object.defineProperty(target, key, descriptor)
+    } else {
+      delete (target as Record<string, unknown>)[key]
+    }
+  }
+
+  afterEach(() => {
+    restoreDescriptor(document, 'fullscreenEnabled', originalFullscreenEnabled)
+    restoreDescriptor(document, 'fullscreenElement', originalFullscreenElement)
+    restoreDescriptor(document.documentElement, 'requestFullscreen', originalRequestFullscreen)
+  })
+
+  it('starts the test with a non-blocking notice when fullscreen is unsupported (iOS Safari)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const requestFullscreen = vi.fn(() => new Promise<void>(() => {}))
+    Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: false })
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: null })
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      configurable: true,
+      value: requestFullscreen,
+    })
+
+    renderPage()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'General Instructions' })).toBeInTheDocument())
+    expect(screen.getByRole('status')).toHaveTextContent(/fullscreen mode is unavailable/i)
+
+    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: 'Begin Test' }))
+
+    await waitFor(() => expect(screen.getByText('Question No. 1')).toBeInTheDocument())
+    expect(requestFullscreen).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Starting Test...' })).not.toBeInTheDocument()
+
+    const notice = screen.getByRole('status')
+    expect(notice).toHaveTextContent(/continuing test without fullscreen/i)
+
+    act(() => vi.advanceTimersByTime(2000))
+    expect(screen.queryByText('You exited fullscreen!')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss fullscreen notice' }))
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('does not hang on Starting Test when requestFullscreen never settles', async () => {
+    const requestFullscreen = vi.fn(() => new Promise<void>(() => {}))
+    Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: true })
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: null })
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      configurable: true,
+      value: requestFullscreen,
+    })
+
+    renderPage()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'General Instructions' })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: 'Begin Test' }))
+
+    await waitFor(() => expect(screen.getByText('Question No. 1')).toBeInTheDocument())
+    expect(requestFullscreen).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('button', { name: 'Starting Test...' })).not.toBeInTheDocument()
+  })
+
+  it('does not throw or trap the user in FullscreenWarning when Return to Fullscreen fails', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: true })
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      value: document.documentElement,
+    })
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(undefined),
+    })
+
+    renderPage()
+    await beginExam()
+
+    act(() => vi.advanceTimersByTime(2000))
+
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: null })
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      configurable: true,
+      value: undefined,
+    })
+
+    act(() => {
+      document.dispatchEvent(new Event('fullscreenchange'))
+      vi.advanceTimersByTime(250)
+    })
+
+    await waitFor(() => expect(screen.getByText('You exited fullscreen!')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /Return to Fullscreen/i }))
+    await waitFor(() => expect(screen.queryByText('You exited fullscreen!')).not.toBeInTheDocument())
+  })
+
+  it('dismisses FullscreenWarning after fallback timeout if Return to Fullscreen hangs', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: true })
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      value: document.documentElement,
+    })
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(undefined),
+    })
+
+    renderPage()
+    await beginExam()
+
+    act(() => vi.advanceTimersByTime(2000))
+
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: null })
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      configurable: true,
+      value: vi.fn(() => new Promise<void>(() => {})),
+    })
+
+    act(() => {
+      document.dispatchEvent(new Event('fullscreenchange'))
+      vi.advanceTimersByTime(250)
+    })
+
+    await waitFor(() => expect(screen.getByText('You exited fullscreen!')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /Return to Fullscreen/i }))
+
+    act(() => vi.advanceTimersByTime(1000))
+    await waitFor(() => expect(screen.queryByText('You exited fullscreen!')).not.toBeInTheDocument())
+  })
+
+  it('does not show the fullscreen-unavailable notice on InstructionScreen when supported', async () => {
+    Object.defineProperty(document, 'fullscreenEnabled', { configurable: true, value: true })
+    Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: null })
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      configurable: true,
+      value: vi.fn().mockRejectedValue(new Error('blocked')),
+    })
+
+    renderPage()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'General Instructions' })).toBeInTheDocument())
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(screen.getByRole('button', { name: 'Begin Test' }))
+
+    await waitFor(() => expect(screen.getByText('Question No. 1')).toBeInTheDocument())
+    expect(screen.getByRole('status')).toHaveTextContent(/continuing test without fullscreen/i)
+  })
+})

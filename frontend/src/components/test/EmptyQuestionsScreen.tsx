@@ -1,31 +1,26 @@
-import { useCallback, useEffect } from 'react'
+import { useEffect } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { exitFullscreenBestEffort } from '@/utils/fullscreen'
 
 export interface EmptyQuestionsScreenProps {
   navigate: (to: string) => void
 }
 
 export default function EmptyQuestionsScreen({ navigate }: EmptyQuestionsScreenProps): React.ReactElement {
-  const safeExitFullscreen = useCallback(() => {
-    if (typeof document !== 'undefined' && document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {})
-    }
-  }, [])
-
   useEffect(() => {
     const handlePopState = () => {
-      safeExitFullscreen()
+      exitFullscreenBestEffort()
     }
     window.addEventListener('popstate', handlePopState)
     return () => {
       window.removeEventListener('popstate', handlePopState)
     }
-  }, [safeExitFullscreen])
+  }, [])
 
   const handleBack = () => {
-    safeExitFullscreen()
+    exitFullscreenBestEffort()
     navigate('/tests')
   }
 

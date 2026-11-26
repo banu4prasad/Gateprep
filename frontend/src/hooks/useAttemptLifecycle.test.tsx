@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, cleanup, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { adminAPI, testAPI } from '../api/api'
 import useAttemptLifecycle from './useAttemptLifecycle'
@@ -56,6 +56,7 @@ function createOptions(testId: AttemptLifecycleParams['testId']): AttemptLifecyc
 }
 
 afterEach(() => {
+  cleanup()
   vi.clearAllTimers()
   vi.useRealTimers()
   vi.clearAllMocks()
@@ -194,5 +195,283 @@ describe('useAttemptLifecycle identifier validation', () => {
 
     expect(toast.error).toHaveBeenCalledWith('Failed to start test')
     expect(options.navigate).toHaveBeenCalledWith('/tests')
+  })
+})
+
+describe('useAttemptLifecycle fullscreen fallback', () => {
+  const originalFullscreenEnabled = Object.getOwnPropertyDescriptor(document, 'fullscreenEnabled')
+  const originalFullscreenElement = Object.getOwnPropertyDescriptor(document, 'fullscreenElement')
+  const originalRequestFullscreen = Object.getOwnPropertyDescriptor(document.documentElement, 'requestFullscreen')
+  const originalExitFullscreen = Object.getOwnPropertyDescriptor(document, 'exitFullscreen')
+
+  const mockAttempt: AttemptStart = {
+    id: 42,
+    test_id: 7,
+    status: 'in_progress',
+    started_at: '2026-01-01T10:00:00Z',
+    submitted_at: null,
+    score: null,
+    total_marks: null,
+    tab_violations: 0,
+    fullscreen_violations: 0,
+    server_time: '2026-01-01T10:00:00Z',
+    answers: [],
+    attempt_number: 1,
+    max_attempts: 6,
+  }
+
+  const mockQuestions: TestQuestion[] = [{
+    id: 1,
+    question_type: 'mcq',
+    question_text: 'Sample?',
+    question_image_url: null,
+    options: ['A', 'B'],
+    option_images: null,
+    order_index: 0,
+    marks: 1,
+    negative_marks: 0,
+    subject: null,
+    topic: null,
+  }]
+
+  function setDocumentFullscreenProps(props: {
+    enabled?: boolean
+    element?: Element | null
+    requestFullscreen?: (() => Promise<void>) | undefined
+  }) {
+    if ('enabled' in props) {
+      Object.defineProperty(document, 'fullscreenEnabled', {
+        configurable: true,
+        value: props.enabled,
+      })
+    }
+    if ('element' in props) {
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        value: props.element,
+      })
+    }
+    if ('requestFullscreen' in props) {
+      Object.defineProperty(document.documentElement, 'requestFullscreen', {
+        configurable: true,
+        value: props.requestFullscreen,
+      })
+    }
+  }
+
+  function restoreDescriptor(target: object, key: string, descriptor: PropertyDescriptor | undefined) {
+    if (descriptor) {
+      Object.defineProperty(target, key, descriptor)
+    } else {
+      delete (target as Record<string, unknown>)[key]
+    }
+  }
+
+  beforeEach(() => {
+    vi.mocked(testAPI.startTest).mockResolvedValue(apiResponse(mockAttempt))
+    vi.mocked(testAPI.getQuestions).mockResolvedValue(apiResponse(mockQuestions))
+  })
+
+  afterEach(() => {
+    restoreDescriptor(document, 'fullscreenEnabled', originalFullscreenEnabled)
+    restoreDescriptor(document, 'fullscreenElement', originalFullscreenElement)
+    restoreDescriptor(document.documentElement, 'requestFullscreen', originalRequestFullscreen)
+    restoreDescriptor(document, 'exitFullscreen', originalExitFullscreen)
+  })
+
+  it('skips requestFullscreen and starts the exam when document.fullscreenEnabled is false', async () => {
+    vi.useFakeTimers()
+    const requestFullscreen = vi.fn(() => new Promise<void>(() => {}))
+    setDocumentFullscreenProps({
+      enabled: false,
+      element: null,
+      requestFullscreen,
+    })
+
+    const options = createOptions(7)
+    const { result } = renderHook(() => useAttemptLifecycle(options))
+
+    act(() => result.current.setAccepted(true))
+    await act(async () => result.current.beginTest())
+
+    expect(requestFullscreen).not.toHaveBeenCalled()
+    expect(options.setStarted).toHaveBeenCalledWith(true)
+    expect(result.current.starting).toBe(false)
+    expect(result.current.fullscreenUnavailable).toBe(true)
+
+    act(() => vi.advanceTimersByTime(2000))
+    expect(options.loadedRef.current).toBe(true)
+    expect(options.setShowFsWarning).not.toHaveBeenCalledWith(true)
+  })
+
+  it('falls back gracefully when requestFullscreen throws synchronously', async () => {
+    vi.useFakeTimers()
+    const requestFullscreen = vi.fn(() => {
+      throw new Error('Fullscreen blocked')
+    })
+    setDocumentFullscreenProps({
+      enabled: true,
+      element: null,
+      requestFullscreen,
+    })
+
+    const options = createOptions(7)
+    const { result } = renderHook(() => useAttemptLifecycle(options))
+
+    act(() => result.current.setAccepted(true))
+    await act(async () => result.current.beginTest())
+
+    expect(requestFullscreen).toHaveBeenCalledOnce()
+    expect(options.setStarted).toHaveBeenCalledWith(true)
+    expect(result.current.starting).toBe(false)
+    expect(result.current.fullscreenUnavailable).toBe(true)
+
+    act(() => vi.advanceTimersByTime(2000))
+    expect(options.loadedRef.current).toBe(true)
+    expect(options.setShowFsWarning).not.toHaveBeenCalledWith(true)
+  })
+
+  it('falls back gracefully when requestFullscreen rejects', async () => {
+    vi.useFakeTimers()
+    const requestFullscreen = vi.fn().mockRejectedValue(new Error('Permission denied'))
+    setDocumentFullscreenProps({
+      enabled: true,
+      element: null,
+      requestFullscreen,
+    })
+
+    const options = createOptions(7)
+    const { result } = renderHook(() => useAttemptLifecycle(options))
+
+    act(() => result.current.setAccepted(true))
+    await act(async () => result.current.beginTest())
+
+    expect(requestFullscreen).toHaveBeenCalledOnce()
+    expect(options.setStarted).toHaveBeenCalledWith(true)
+    expect(result.current.starting).toBe(false)
+    expect(result.current.fullscreenUnavailable).toBe(true)
+
+    act(() => vi.advanceTimersByTime(2000))
+    expect(options.loadedRef.current).toBe(true)
+    expect(options.setShowFsWarning).not.toHaveBeenCalledWith(true)
+  })
+
+  it('does not hang when requestFullscreen returns a never-settling promise', async () => {
+    vi.useFakeTimers()
+    const requestFullscreen = vi.fn(() => new Promise<void>(() => {}))
+    setDocumentFullscreenProps({
+      enabled: true,
+      element: null,
+      requestFullscreen,
+    })
+
+    const options = createOptions(7)
+    const { result } = renderHook(() => useAttemptLifecycle(options))
+
+    act(() => result.current.setAccepted(true))
+    await act(async () => result.current.beginTest())
+
+    expect(requestFullscreen).toHaveBeenCalledOnce()
+    expect(options.setStarted).toHaveBeenCalledWith(true)
+    expect(result.current.starting).toBe(false)
+
+    act(() => vi.advanceTimersByTime(2000))
+    expect(options.loadedRef.current).toBe(true)
+    expect(result.current.fullscreenUnavailable).toBe(true)
+    expect(options.setShowFsWarning).not.toHaveBeenCalledWith(true)
+  })
+
+  it('enters fullscreen cleanly without notice when requestFullscreen succeeds', async () => {
+    vi.useFakeTimers()
+    const requestFullscreen = vi.fn(async () => {
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        value: document.documentElement,
+      })
+    })
+    setDocumentFullscreenProps({
+      enabled: true,
+      element: null,
+      requestFullscreen,
+    })
+
+    const options = createOptions(7)
+    const { result } = renderHook(() => useAttemptLifecycle(options))
+
+    act(() => result.current.setAccepted(true))
+    await act(async () => result.current.beginTest())
+
+    expect(requestFullscreen).toHaveBeenCalledOnce()
+    expect(options.setStarted).toHaveBeenCalledWith(true)
+    expect(result.current.starting).toBe(false)
+    expect(result.current.fullscreenUnavailable).toBe(false)
+
+    act(() => vi.advanceTimersByTime(2000))
+    expect(options.loadedRef.current).toBe(true)
+    expect(options.setShowFsWarning).not.toHaveBeenCalledWith(true)
+  })
+
+  it('shows FullscreenWarning after 2 seconds if fullscreen was entered and exited early', async () => {
+    vi.useFakeTimers()
+    const requestFullscreen = vi.fn(async () => {
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        value: document.documentElement,
+      })
+    })
+    setDocumentFullscreenProps({
+      enabled: true,
+      element: null,
+      requestFullscreen,
+    })
+
+    const options = createOptions(7)
+    const { result } = renderHook(() => useAttemptLifecycle(options))
+
+    act(() => result.current.setAccepted(true))
+    await act(async () => result.current.beginTest())
+
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      value: null,
+    })
+
+    act(() => vi.advanceTimersByTime(2000))
+    expect(options.loadedRef.current).toBe(true)
+    expect(options.setShowFsWarning).toHaveBeenCalledWith(true)
+  })
+
+  it('resets starting and exits fullscreen if starting the attempt fails', async () => {
+    const exitFullscreen = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(document, 'exitFullscreen', {
+      configurable: true,
+      value: exitFullscreen,
+    })
+    const requestFullscreen = vi.fn(async () => {
+      Object.defineProperty(document, 'fullscreenElement', {
+        configurable: true,
+        value: document.documentElement,
+      })
+    })
+    setDocumentFullscreenProps({
+      enabled: true,
+      element: null,
+      requestFullscreen,
+    })
+    vi.mocked(testAPI.startTest).mockRejectedValueOnce(new Error('network error'))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const options = createOptions(7)
+    const { result } = renderHook(() => useAttemptLifecycle(options))
+
+    act(() => result.current.setAccepted(true))
+    await act(async () => result.current.beginTest())
+
+    expect(result.current.starting).toBe(false)
+    expect(result.current.fullscreenUnavailable).toBe(false)
+    expect(exitFullscreen).toHaveBeenCalledOnce()
+    expect(options.navigate).toHaveBeenCalledWith('/tests')
+
+    consoleSpy.mockRestore()
   })
 })

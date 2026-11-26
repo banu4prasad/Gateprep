@@ -1,8 +1,10 @@
 import { Maximize } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import ThemeToggle from '../shared/ThemeToggle'
+import { ALERT_STYLE } from '../shared/alertStyles'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { isFullscreenSupported } from '@/utils/fullscreen'
 import type { TestDetail } from '@/types/api'
 
 export interface InstructionScreenProps {
@@ -22,6 +24,8 @@ export default function InstructionScreen({
   starting,
   test,
 }: InstructionScreenProps): React.ReactElement {
+  const fullscreenSupported = isFullscreenSupported()
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background transition-colors duration-200">
       <Card className="w-full max-w-2xl animate-fade-in border-border">
@@ -55,6 +59,11 @@ export default function InstructionScreen({
           <p>The test opens in fullscreen mode after you click Begin Test.</p>
           <p>Leaving fullscreen or switching tabs may be counted as a violation.</p>
           <p>The timer starts only after the attempt is created.</p>
+          {!fullscreenSupported && (
+            <p role="status" className={ALERT_STYLE.info}>
+              Fullscreen mode is unavailable in this browser. You can still start and complete the test without fullscreen.
+            </p>
+          )}
         </div>
 
         <label className="flex items-start gap-3 mb-6 cursor-pointer">
