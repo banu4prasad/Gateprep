@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react'
 import { SWRConfig } from 'swr'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
-import { ProtectedRoute, GuestRoute } from './components/shared/ProtectedRoute'
+import { ProtectedRoute, GuestRoute, HomeRedirect } from './components/shared/ProtectedRoute'
 import Spinner from './components/shared/Spinner'
 import Dashboard from './pages/Dashboard'
 const LoginPage      = lazy(() => import('./pages/Login'))
@@ -11,6 +11,7 @@ const RegisterPage   = lazy(() => import('./pages/Register'))
 const ForgotPassword   = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword    = lazy(() => import('./pages/ResetPassword'))
 const PendingPage      = lazy(() => import('./pages/Pending'))
+const NotFoundPage     = lazy(() => import('./pages/NotFound'))
 
 
 
@@ -51,6 +52,8 @@ export default function App() {
           </div>
         }>
           <Routes>
+            <Route path="/" element={<HomeRedirect />} />
+
             {/* Public */}
             <Route path="/login"    element={<GuestRoute><LoginPage /></GuestRoute>} />
             <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
@@ -73,7 +76,7 @@ export default function App() {
             <Route path="/results/:attemptId"      element={<ProtectedRoute><Result /></ProtectedRoute>} />
             <Route path="/bookmarks"               element={<ProtectedRoute role="aspirant"><Bookmarks /></ProtectedRoute>} />
 
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </AuthProvider>

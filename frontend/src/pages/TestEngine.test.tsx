@@ -129,12 +129,13 @@ function response<T>(data: T): ApiResponse<T> {
 
 function LocationProbe(): React.ReactElement {
   const location = useLocation()
-  return <output data-testid="location">{location.pathname}</output>
+  return <output data-testid="location">{`${location.pathname}${location.search}`}</output>
 }
 
-function renderPage(entry = '/tests/7'): void {
+function renderPage(entries: string | string[] = '/tests/7'): void {
+  const initialEntries = Array.isArray(entries) ? entries : [entries]
   render(
-    <MemoryRouter initialEntries={[entry]}>
+    <MemoryRouter initialEntries={initialEntries}>
       <Routes>
         <Route path="/tests/:testId" element={<TestEngine />} />
         <Route path="*" element={<LocationProbe />} />
@@ -243,12 +244,70 @@ describe('TestEngine page flow', () => {
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/admin/tests/7'))
   })
 
-  it('shows the load error and navigates to tests', async () => {
-    vi.mocked(testAPI.getTest).mockRejectedValue(new Error('load failed'))
-    renderPage()
+  it('shows inline "Test not found" for non-numeric IDs and 404 responses without redirecting', async () => {
+    renderPage('/tests/not-a-valid-id')
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Test not found' })).toBeInTheDocument())
+    expect(testAPI.getTest).not.toHaveBeenCalled()
+    expect(toast.error).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/tests'))
+
+    cleanup()
+    vi.clearAllMocks()
+
+    vi.mocked(testAPI.getTest).mockRejectedValueOnce({
+      isAxiosError: true,
+      response: { status: 404, data: { detail: 'Test not found' } },
+    })
+    renderPage(['/tests?category=test_series&series=go_classes', '/tests/9999'])
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Test not found' })).toBeInTheDocument())
+    expect(toast.error).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/tests?category=test_series&series=go_classes'))
+  })
+
+  it('shows inline "Failed to load" with Retry and Back on 500 or network errors', async () => {
+    vi.mocked(testAPI.getTest)
+      .mockRejectedValueOnce(new Error('Network Error'))
+      .mockResolvedValueOnce(response(testData))
+    renderPage(['/dashboard', '/tests/7'])
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to load test'))
-    expect(screen.getByTestId('location')).toHaveTextContent('/tests')
+    expect(screen.getByRole('heading', { name: 'Failed to load' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'General Instructions' })).toBeInTheDocument())
+  })
+
+  it('uses context-aware Back navigation to previous routes with fallback to /tests or admin preview', async () => {
+    renderPage(['/dashboard', '/tests/7'])
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'General Instructions' })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/dashboard'))
+
+    cleanup()
+
+    renderPage(['/tests?category=weekly_quiz&subject=Operating+Systems', '/tests/7'])
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'General Instructions' })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/tests?category=weekly_quiz&subject=Operating+Systems'))
+
+    cleanup()
+
+    renderPage('/tests/7')
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'General Instructions' })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/tests'))
+
+    cleanup()
+
+    renderPage('/tests/7?preview=true')
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'General Instructions' })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/admin/tests/7'))
   })
 
   it('records a fullscreen violation after the guarded delay', async () => {

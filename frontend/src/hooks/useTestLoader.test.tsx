@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { AxiosHeaders } from 'axios'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import toast from 'react-hot-toast'
@@ -37,83 +37,112 @@ const testDetail: TestDetail = {
   test_type: null,
 }
 
-const missingTestIds: Array<[string, TestLoaderParams['testId']]> = [
+const invalidTestIds: Array<[string, TestLoaderParams['testId']]> = [
   ['undefined', undefined],
   ['empty', ''],
+  ['non-numeric', 'does-not-exist'],
+  ['mixed alphanumeric', '12abc'],
+  ['negative', '-5'],
 ]
 
 afterEach(() => {
   vi.clearAllMocks()
 })
 
-describe('useTestLoader identifier validation', () => {
-  it.each(missingTestIds)('clears the active test and skips the request when the identifier is %s', async (_name, testId) => {
-    const navigate = vi.fn<TestLoaderParams['navigate']>()
-    const { result } = renderHook(() => useTestLoader({ testId, navigate }))
+describe('useTestLoader identifier validation and error classification', () => {
+  it.each(invalidTestIds)('marks status as not_found without requesting API when testId is %s', async (_name, testId) => {
+    const { result } = renderHook(() => useTestLoader({ testId }))
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.test).toBeNull()
+    expect(result.current.status).toBe('not_found')
+    expect(result.current.errorMessage).toBe('Test not found')
     expect(testAPI.getTest).not.toHaveBeenCalled()
-    expect(toast.error).toHaveBeenCalledWith('Test could not be found')
-    expect(navigate).toHaveBeenCalledWith('/tests')
+    expect(toast.error).not.toHaveBeenCalled()
   })
 
-  it('loads the requested test when its identifier is present', async () => {
-    const navigate = vi.fn<TestLoaderParams['navigate']>()
+  it('loads the requested test when its identifier is valid', async () => {
     vi.mocked(testAPI.getTest).mockResolvedValueOnce(apiResponse(testDetail))
-    const { result } = renderHook(() => useTestLoader({ testId: 17, navigate }))
+    const { result } = renderHook(() => useTestLoader({ testId: 17 }))
 
     await waitFor(() => expect(result.current.test).toEqual(testDetail))
 
+    expect(result.current.status).toBe('ready')
+    expect(result.current.errorMessage).toBeNull()
     expect(testAPI.getTest).toHaveBeenCalledExactlyOnceWith(17)
-    expect(navigate).not.toHaveBeenCalled()
   })
 
   it('clears a previously loaded test when its identifier becomes absent', async () => {
-    const navigate = vi.fn<TestLoaderParams['navigate']>()
     vi.mocked(testAPI.getTest).mockResolvedValueOnce(apiResponse(testDetail))
-    const initialProps: TestLoaderParams = { testId: 17, navigate }
+    const initialProps: TestLoaderParams = { testId: 17 }
     const { result, rerender } = renderHook(
-      ({ testId }: TestLoaderParams) => useTestLoader({ testId, navigate }),
+      ({ testId }: TestLoaderParams) => useTestLoader({ testId }),
       { initialProps },
     )
 
     await waitFor(() => expect(result.current.test).toEqual(testDetail))
-    rerender({ testId: undefined, navigate })
+    rerender({ testId: undefined })
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.test).toBeNull()
+    expect(result.current.status).toBe('not_found')
     expect(testAPI.getTest).toHaveBeenCalledExactlyOnceWith(17)
   })
 
-  it('displays the server error detail when loading fails with a string detail', async () => {
-    const navigate = vi.fn<TestLoaderParams['navigate']>()
+  it.each([404, 422])('marks status as not_found without toast on HTTP %i', async (httpStatus) => {
     vi.mocked(testAPI.getTest).mockRejectedValueOnce({
       isAxiosError: true,
-      response: { data: { detail: 'Specific test load failure' } },
+      response: { status: httpStatus, data: { detail: 'Not found' } },
     })
-    const { result } = renderHook(() => useTestLoader({ testId: 17, navigate }))
+    const { result } = renderHook(() => useTestLoader({ testId: 999 }))
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.test).toBeNull()
-    expect(toast.error).toHaveBeenCalledWith('Specific test load failure')
-    expect(navigate).toHaveBeenCalledWith('/tests')
+    expect(result.current.status).toBe('not_found')
+    expect(result.current.errorMessage).toBe('Test not found')
+    expect(toast.error).not.toHaveBeenCalled()
   })
 
-  it('displays the fallback error message when loading fails with an array detail', async () => {
-    const navigate = vi.fn<TestLoaderParams['navigate']>()
+  it('keeps toast and marks status as error on 500 server failure with string detail', async () => {
     vi.mocked(testAPI.getTest).mockRejectedValueOnce({
       isAxiosError: true,
-      response: { data: { detail: [{ msg: 'Invalid id' }] } },
+      response: { status: 500, data: { detail: 'Specific test load failure' } },
     })
-    const { result } = renderHook(() => useTestLoader({ testId: 17, navigate }))
+    const { result } = renderHook(() => useTestLoader({ testId: 17 }))
 
     await waitFor(() => expect(result.current.loading).toBe(false))
 
     expect(result.current.test).toBeNull()
+    expect(result.current.status).toBe('error')
+    expect(result.current.errorMessage).toBe('Specific test load failure')
+    expect(toast.error).toHaveBeenCalledWith('Specific test load failure')
+  })
+
+  it('uses fallback toast message on network error or non-string error detail and supports retry', async () => {
+    vi.mocked(testAPI.getTest)
+      .mockRejectedValueOnce({
+        isAxiosError: true,
+        response: { status: 503, data: { detail: [{ msg: 'Unavailable' }] } },
+      })
+      .mockResolvedValueOnce(apiResponse(testDetail))
+
+    const { result } = renderHook(() => useTestLoader({ testId: 17 }))
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+
+    expect(result.current.test).toBeNull()
+    expect(result.current.status).toBe('error')
+    expect(result.current.errorMessage).toBe('Failed to load test')
     expect(toast.error).toHaveBeenCalledWith('Failed to load test')
-    expect(navigate).toHaveBeenCalledWith('/tests')
+
+    act(() => {
+      result.current.retry()
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    expect(result.current.test).toEqual(testDetail)
+    expect(testAPI.getTest).toHaveBeenCalledTimes(2)
   })
 })

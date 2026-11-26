@@ -11,6 +11,7 @@ export interface InstructionScreenProps {
   accepted: boolean
   beginTest: () => Promise<void>
   navigate: (to: string) => void
+  onBack?: () => void
   setAccepted: React.Dispatch<React.SetStateAction<boolean>>
   starting: boolean
   test: TestDetail | null
@@ -20,11 +21,13 @@ export default function InstructionScreen({
   accepted,
   beginTest,
   navigate,
+  onBack,
   setAccepted,
   starting,
   test,
 }: InstructionScreenProps): React.ReactElement {
   const fullscreenSupported = isFullscreenSupported()
+  const handleBack = onBack ?? (() => navigate('/tests'))
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background transition-colors duration-200">
@@ -36,7 +39,7 @@ export default function InstructionScreen({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <ThemeToggle className="h-9 w-9 border border-border" />
-            <Button variant="ghost" size="sm" onClick={() => navigate('/tests')}>
+            <Button variant="ghost" size="sm" onClick={handleBack}>
               Back
             </Button>
           </div>

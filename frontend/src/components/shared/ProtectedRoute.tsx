@@ -9,6 +9,13 @@ interface RouteProps {
   role?: RouteRole
 }
 
+/** Return the default authenticated landing route for a user role. */
+export function getAuthenticatedHome(role: string): string {
+  if (role === 'admin') return '/admin'
+  if (role === 'aspirant') return '/dashboard'
+  return '/pending'
+}
+
 export function ProtectedRoute({ children, role }: RouteProps) {
   const { user, loading } = useAuth()
   if (loading) return <PageLoader />
@@ -22,9 +29,15 @@ export function GuestRoute({ children }: Pick<RouteProps, 'children'>) {
   const { user, loading } = useAuth()
   if (loading) return <PageLoader />
   if (user) {
-    if (user.role === 'admin') return <Navigate to="/admin" replace />
-    if (user.role === 'aspirant') return <Navigate to="/dashboard" replace />
-    return <Navigate to="/pending" replace />
+    return <Navigate to={getAuthenticatedHome(user.role)} replace />
   }
   return children
+}
+
+/** Redirect root `/` directly to login or the authenticated user's home route. */
+export function HomeRedirect() {
+  const { user, loading } = useAuth()
+  if (loading) return <PageLoader />
+  if (!user) return <Navigate to="/login" replace />
+  return <Navigate to={getAuthenticatedHome(user.role)} replace />
 }

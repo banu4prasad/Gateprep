@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { getEndTimeMs } from '../utils/testEngineUtils'
+import { navigateBackOrFallback } from '../utils/navigation'
 import useAntiCheat from './useAntiCheat'
 import useNextQuestionPrefetch from './useNextQuestionPrefetch'
 import useTestLoader from './useTestLoader'
@@ -15,7 +16,7 @@ import type { AttemptLifecycleResult, LifecycleAttempt } from './useAttemptLifec
 import type { TestAnswerStateResult } from './useTestAnswerState'
 import type { TestProgressResult } from './useTestProgress'
 import type { TestSubmissionResult } from './useTestSubmission'
-import type { TestLoaderResult } from './useTestLoader'
+import type { TestLoaderResult, TestLoadStatus } from './useTestLoader'
 
 export interface TestEngineResult {
   accepted: boolean
@@ -31,7 +32,10 @@ export interface TestEngineResult {
   endTimeMs: number | null
   fsViolations: number
   fullscreenUnavailable: boolean
+  handleBack: () => void
   handleTimerExpire: () => void
+  loadError: string | null
+  loadStatus: TestLoadStatus
   loading: boolean
   markAndNext: () => void
   marked: Set<number>
@@ -41,6 +45,7 @@ export interface TestEngineResult {
   navigate: (to: string) => void
   notAnswered: number
   questions: TestQuestion[]
+  retryLoad: () => void
   saveAndNext: () => void
   setAccepted: Dispatch<SetStateAction<boolean>>
   setCurrent: Dispatch<SetStateAction<number>>
@@ -68,6 +73,7 @@ export interface TestEngineResult {
 
 export default function useTestEngine(): TestEngineResult {
   const { testId } = useParams<{ testId: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isPreview = searchParams.get('preview') === 'true'
@@ -97,7 +103,19 @@ export default function useTestEngine(): TestEngineResult {
   const [current, setCurrent] = useState(0)
 
   // --- test loading ---
-  const { test, loading } = useTestLoader({ testId, navigate })
+  const {
+    test,
+    loading,
+    status: loadStatus,
+    errorMessage: loadError,
+    retry: retryLoad,
+  } = useTestLoader({ testId })
+
+  const fallbackRoute = isPreview && testId ? `/admin/tests/${testId}` : '/tests'
+  const handleBack = useCallback(
+    () => navigateBackOrFallback(navigate, location.key, fallbackRoute),
+    [navigate, location.key, fallbackRoute],
+  )
 
   // --- answer state ---
   const answerState = useTestAnswerState({
@@ -262,7 +280,10 @@ export default function useTestEngine(): TestEngineResult {
     endTimeMs,
     fsViolations,
     fullscreenUnavailable,
+    handleBack,
     handleTimerExpire,
+    loadError,
+    loadStatus,
     loading,
     markAndNext,
     marked,
@@ -272,6 +293,7 @@ export default function useTestEngine(): TestEngineResult {
     navigate,
     notAnswered,
     questions,
+    retryLoad,
     saveAndNext,
     setAccepted,
     setCurrent,

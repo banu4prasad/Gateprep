@@ -19,12 +19,12 @@ export default function TestEngine() {
   const {
     accepted, answered, answers, attemptNumber, beginTest, clearResponse,
     commitNAT, current, currentQuestion, doSubmit, endTimeMs, fsViolations,
-    fullscreenUnavailable, handleTimerExpire, loading, markAndNext, marked,
-    maxAttempts, natInput, navigate, notAnswered, questionGroups, questions,
-    saveAndNext, setAccepted, setCurrent, setMCQ, updateNatInput, setShowCalc,
-    setShowConfirm, setShowFsWarning, setShowPalette, showCalc, showConfirm,
-    showFsWarning, showPalette, started, starting, submitting, test, toggleMSQ,
-    totalViolations, visited,
+    fullscreenUnavailable, handleBack, handleTimerExpire, loadError, loadStatus,
+    loading, markAndNext, marked, maxAttempts, natInput, navigate, notAnswered,
+    questionGroups, questions, retryLoad, saveAndNext, setAccepted, setCurrent,
+    setMCQ, updateNatInput, setShowCalc, setShowConfirm, setShowFsWarning,
+    setShowPalette, showCalc, showConfirm, showFsWarning, showPalette, started,
+    starting, submitting, test, toggleMSQ, totalViolations, visited,
   } = engine
 
   const sidebar = (
@@ -49,11 +49,15 @@ export default function TestEngine() {
   return (
     <TestEngineStageGate
       loading={loading}
+      loadStatus={loadStatus}
+      loadError={loadError}
       started={started}
       currentQuestion={currentQuestion}
       accepted={accepted}
       beginTest={beginTest}
       navigate={navigate}
+      onBack={handleBack}
+      onRetry={retryLoad}
       setAccepted={setAccepted}
       starting={starting}
       test={test}
