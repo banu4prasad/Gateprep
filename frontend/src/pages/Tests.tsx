@@ -5,7 +5,7 @@ import useSWR from 'swr'
 import { fetcher } from '../api/api'
 import type { HistoryItem, TestCatalogItem } from '../types/api'
 import { SUBJECTS, SERIES_LABELS, TYPE_LABELS } from '../utils/constants'
-import { useTestNavigation } from '../hooks/useTestNavigation'
+import { NONE_SUBJECT_PARAM, useTestNavigation } from '../hooks/useTestNavigation'
 import type { NavigationStep, NavigationType } from '../hooks/useTestNavigation'
 import { BookOpen, ArrowRight, ChevronRight, CheckCircle } from 'lucide-react'
 import clsx from 'clsx'
@@ -199,7 +199,7 @@ function WeeklyQuizSubjects({ tests, push, breadcrumbs, goBack }: WeeklyQuizSubj
           {tests.filter(t => t.category === 'weekly_quiz' && !t.subject).length > 0 && (
             <NavCard label="General"
               count={tests.filter(t => t.category === 'weekly_quiz' && !t.subject).length}
-              onClick={() => push('subject', '')} />
+              onClick={() => push('subject', NONE_SUBJECT_PARAM)} />
           )}
         </div>
       </div>

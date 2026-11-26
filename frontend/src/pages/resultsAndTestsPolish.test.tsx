@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import useSWR from 'swr'
 import MyResults from './MyResults'
 import BookmarksPage from './Bookmarks'
@@ -109,15 +109,21 @@ describe('MyResults and Tests layout polish', () => {
     )
   })
 
-  it('renders clear section headings on nested /tests views and standardized card metadata', () => {
+  it('renders clear section headings on nested /tests views, syncs URL query params, and preserves state on reload', () => {
     mockedUseSWR.mockImplementation((key) => {
       if (key === '/tests') return swrResult(sampleTests)
       return swrResult([])
     })
 
-    render(
+    function LocationSpy() {
+      const location = useLocation()
+      return <output data-testid="tests-url">{`${location.pathname}${location.search}`}</output>
+    }
+
+    const { unmount } = render(
       <ThemeProvider>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={['/tests']}>
+          <LocationSpy />
           <TestsPage />
         </MemoryRouter>
       </ThemeProvider>
@@ -127,13 +133,28 @@ describe('MyResults and Tests layout polish', () => {
 
     fireEvent.click(screen.getByText('Weekly Quiz'))
     expect(screen.getByRole('heading', { name: 'Weekly Quiz', level: 1 })).toBeInTheDocument()
+    expect(screen.getByTestId('tests-url')).toHaveTextContent('/tests?category=weekly_quiz')
 
     fireEvent.click(screen.getByText('Operating Systems'))
     expect(screen.getByRole('heading', { name: 'Operating Systems', level: 1 })).toBeInTheDocument()
+    const currentUrl = screen.getByTestId('tests-url').textContent || ''
+    expect(currentUrl).toBe('/tests?category=weekly_quiz&subject=Operating+Systems')
     expect(screen.getByText('75 min')).toBeInTheDocument()
     expect(screen.getByText('30 questions')).toBeInTheDocument()
     expect(screen.getByText('40 marks')).toBeInTheDocument()
     expect(screen.queryByText('75m')).not.toBeInTheDocument()
     expect(screen.queryByText('30 Qs')).not.toBeInTheDocument()
+
+    // Simulate reload at the synced URL
+    unmount()
+    render(
+      <ThemeProvider>
+        <MemoryRouter initialEntries={[currentUrl]}>
+          <TestsPage />
+        </MemoryRouter>
+      </ThemeProvider>
+    )
+    expect(screen.getByRole('heading', { name: 'Operating Systems', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText('Operating Systems Quiz 1')).toBeInTheDocument()
   })
 })
