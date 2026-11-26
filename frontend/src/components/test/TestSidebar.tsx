@@ -1,6 +1,8 @@
+import clsx from 'clsx'
 import { ChevronRight, Send, User } from 'lucide-react'
 import Spinner from '../shared/Spinner'
 import {
+  ACTIVE_QUESTION_CLASS,
   getQStatus,
   STATUS_CLASS,
   groupExamQuestions,
@@ -18,6 +20,7 @@ export interface TestSidebarProps {
   currentQuestion?: TestQuestion
   marked: Set<number>
   notAnswered: number
+  notVisited: number
   onQuestionSelect: (index: number) => void
   onSubmitClick: () => void
   questionGroups: QuestionGroups
@@ -36,6 +39,7 @@ export default function TestSidebar({
   currentQuestion,
   marked,
   notAnswered,
+  notVisited,
   onQuestionSelect,
   onSubmitClick,
   questionGroups,
@@ -56,6 +60,8 @@ export default function TestSidebar({
     : isFullLengthExam(testType, questionList)
 
   const displayQuestionGroups = groupExamQuestions(questionList, effectiveFullLength)
+  const answerMap: Record<string, unknown> = Object.fromEntries(Object.entries(answers))
+  const markedIds = new Set([...marked].map(String))
 
   return (
     <>
@@ -85,7 +91,7 @@ export default function TestSidebar({
         {[
           ['q-dot-answered', `Answered (${answered})`],
           ['q-dot-not-answered', `Not Answered (${notAnswered})`],
-          ['q-dot-not-visited', `Not Visited (${questions.length - visited.size})`],
+          ['q-dot-not-visited', `Not Visited (${notVisited})`],
           ['q-dot-marked', `Marked (${marked.size})`],
         ].map(([cls, label]) => (
           <div key={label} className="flex items-center gap-2">
@@ -96,7 +102,7 @@ export default function TestSidebar({
       </div>
 
       {[...displayQuestionGroups.entries()].map(([sectionTitle, items]) => (
-        <div key={sectionTitle} className="p-2 border-b border-border">
+        <div key={sectionTitle} className="px-2.5 py-2 border-b border-border">
           {effectiveFullLength ? (
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold truncate text-foreground">{sectionTitle}</p>
@@ -107,24 +113,22 @@ export default function TestSidebar({
               <p className="text-xs font-semibold mb-2 truncate text-foreground">{sectionTitle}</p>
             )
           )}
-          <div className="grid grid-cols-5 gap-1">
+          <div className="grid grid-cols-5 gap-1.5 justify-items-center">
             {items.map(({ question, index: questionIndex }) => {
               const isCurrent = question.id === currentQuestion?.id
-              const status = isCurrent
-                ? 'current'
-                : !visited.has(question.id)
-                  ? 'not-visited'
-                  : getQStatus(
-                    String(question.id),
-                    currentQuestion ? String(currentQuestion.id) : '',
-                    Object.fromEntries(Object.entries(answers)),
-                    new Set([...marked].map(String)),
-                  )
+              const status = !visited.has(question.id) && !isCurrent && !answers[question.id]
+                ? 'not-visited'
+                : getQStatus(String(question.id), answerMap, markedIds)
               return (
                 <button
                   key={question.id}
+                  type="button"
                   onClick={() => onQuestionSelect(questionIndex)}
-                  className={STATUS_CLASS[status] || STATUS_CLASS['not-visited']}
+                  aria-current={isCurrent ? 'step' : undefined}
+                  className={clsx(
+                    STATUS_CLASS[status] || STATUS_CLASS['not-visited'],
+                    isCurrent && ACTIVE_QUESTION_CLASS,
+                  )}
                 >
                   {questionIndex + 1}
                 </button>

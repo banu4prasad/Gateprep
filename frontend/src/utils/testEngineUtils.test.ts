@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
+  ACTIVE_QUESTION_CLASS,
+  STATUS_CLASS,
   getQStatus,
   getEndTimeMs,
   formatTime,
@@ -11,41 +13,38 @@ import {
 } from './testEngineUtils'
 
 describe('getQStatus', () => {
-  it('returns "current" when qId matches currentQId, regardless of state', () => {
-    // Current takes precedence over marked/answered states
-    const marked = new Set(['q1'])
-    const answers = { q1: 'A' }
-    
-    expect(getQStatus('q1', 'q1', answers, marked)).toBe('current')
-    expect(getQStatus('q2', 'q2', {}, new Set())).toBe('current')
-  })
-
   it('returns "answered-marked" when question is both answered and marked', () => {
     const marked = new Set(['q1'])
     const answers = { q1: 'Option B' }
-    
-    expect(getQStatus('q1', 'q2', answers, marked)).toBe('answered-marked')
+
+    expect(getQStatus('q1', answers, marked)).toBe('answered-marked')
   })
 
   it('returns "marked" when question is marked but NOT answered', () => {
     const marked = new Set(['q1'])
     const answers = {} // No answer for q1
-    
-    expect(getQStatus('q1', 'q2', answers, marked)).toBe('marked')
+
+    expect(getQStatus('q1', answers, marked)).toBe('marked')
   })
 
   it('returns "answered" when question is answered but NOT marked', () => {
     const marked = new Set<string>()
     const answers = { q1: 'Option C' }
-    
-    expect(getQStatus('q1', 'q2', answers, marked)).toBe('answered')
+
+    expect(getQStatus('q1', answers, marked)).toBe('answered')
   })
 
   it('returns "not-answered" when question is neither answered nor marked', () => {
     const marked = new Set<string>()
     const answers = {}
-    
-    expect(getQStatus('q1', 'q2', answers, marked)).toBe('not-answered')
+
+    expect(getQStatus('q1', answers, marked)).toBe('not-answered')
+  })
+
+  it('exposes active ring class separately from status fill classes', () => {
+    expect(ACTIVE_QUESTION_CLASS).toBe('q-dot-active')
+    expect(STATUS_CLASS['not-answered']).not.toMatch(/\bq-dot-answered\b/)
+    expect(STATUS_CLASS.marked).toContain('q-dot-marked')
   })
 })
 

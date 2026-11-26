@@ -17,6 +17,7 @@ export interface TestEngineOverlaysProps {
   doSubmit: (auto?: boolean) => void
   marked: Set<number>
   notAnswered: number
+  notVisited: number
   questions: TestQuestion[]
   submitting: boolean
 }
@@ -35,6 +36,7 @@ export default function TestEngineOverlays({
   doSubmit,
   marked,
   notAnswered,
+  notVisited,
   questions,
   submitting,
 }: TestEngineOverlaysProps): React.ReactElement {
@@ -58,6 +60,7 @@ export default function TestEngineOverlays({
           doSubmit={doSubmit}
           marked={marked}
           notAnswered={notAnswered}
+          notVisited={notVisited}
           questions={questions}
           setShowConfirm={setShowConfirm}
           submitting={submitting}

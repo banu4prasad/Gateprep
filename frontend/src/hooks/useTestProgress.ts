@@ -10,7 +10,7 @@ export interface TestProgressParams {
   setCurrent: Dispatch<SetStateAction<number>>
   commitNAT: () => void
   setMarked: Dispatch<SetStateAction<Set<number>>>
-  setVisited: Dispatch<SetStateAction<Set<number>>>
+  visited: ReadonlySet<number>
 }
 export interface TestProgressResult {
   saveAndNext: () => void
@@ -19,6 +19,7 @@ export interface TestProgressResult {
   subjects: string[]
   answered: number
   notAnswered: number
+  notVisited: number
 }
 export default function useTestProgress({
   questions,
@@ -28,7 +29,7 @@ export default function useTestProgress({
   setCurrent,
   commitNAT,
   setMarked,
-  setVisited,
+  visited,
 }: TestProgressParams): TestProgressResult {
   const saveAndNext = useCallback(() => {
     if (currentQuestion?.question_type === 'nat') commitNAT()
@@ -58,11 +59,20 @@ export default function useTestProgress({
 
   const subjects = useMemo(() => [...questionGroups.keys()], [questionGroups])
 
-  const answered = useMemo(() => {
-    return Object.values(answers).filter(Boolean).length
-  }, [answers])
+  const answered = useMemo(
+    () => questions.filter(q => Boolean(answers[q.id])).length,
+    [questions, answers],
+  )
 
-  const notAnswered = questions.length - answered
+  const notAnswered = useMemo(
+    () => questions.filter(q => visited.has(q.id) && !answers[q.id]).length,
+    [questions, visited, answers],
+  )
+
+  const notVisited = useMemo(
+    () => questions.filter(q => !visited.has(q.id) && !answers[q.id]).length,
+    [questions, visited, answers],
+  )
 
   return {
     saveAndNext,
@@ -71,5 +81,6 @@ export default function useTestProgress({
     subjects,
     answered,
     notAnswered,
+    notVisited,
   }
 }

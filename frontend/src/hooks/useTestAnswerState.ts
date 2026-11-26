@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { TestQuestion } from '@/types/api'
 
@@ -77,10 +77,10 @@ export default function useTestAnswerState({
     }
   }, [current, questions, timingsRef])
 
-  // Visited tracking effect
-  useEffect(() => {
+  // Visited tracking effect (before paint so palette counts stay in sync)
+  useLayoutEffect(() => {
     const q = questions[current]
-    if (q) setVisited(v => new Set([...v, q.id]))
+    if (q) setVisited(v => (v.has(q.id) ? v : new Set([...v, q.id])))
   }, [current, questions])
 
   // NAT input sync effect

@@ -27,7 +27,7 @@ export default function QuestionPaletteSheet({
           Q{current + 1}/{questions.length}
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[85vw] sm:w-80 p-0 overflow-y-auto">
+      <SheetContent side="right" className="w-[85vw] sm:w-80 p-0 overflow-y-auto [--palette-ring-offset:var(--bg-card)]">
         <SheetHeader className="p-3 border-b text-left px-4">
           <SheetTitle className="text-sm">Question Palette</SheetTitle>
         </SheetHeader>

@@ -61,7 +61,8 @@ function renderSidebar(isFullLength: boolean): void {
       answers={{}}
       currentQuestion={questions[0]}
       marked={new Set()}
-      notAnswered={questions.length}
+      notAnswered={0}
+      notVisited={questions.length}
       onQuestionSelect={() => undefined}
       onSubmitClick={() => undefined}
       questionGroups={questionGroups}
@@ -120,6 +121,7 @@ describe('TestSidebar section rendering', () => {
         currentQuestion={subjectQuestions[0]}
         marked={new Set()}
         notAnswered={2}
+        notVisited={0}
         onQuestionSelect={() => undefined}
         onSubmitClick={() => undefined}
         questionGroups={new Map()}
@@ -145,6 +147,7 @@ describe('TestSidebar section rendering', () => {
         currentQuestion={questions[0]}
         marked={new Set()}
         notAnswered={3}
+        notVisited={0}
         onQuestionSelect={() => undefined}
         onSubmitClick={() => undefined}
         questionGroups={new Map()}
@@ -157,7 +160,109 @@ describe('TestSidebar section rendering', () => {
     )
     expect(screen.getByText('Aspirant 1')).toBeInTheDocument()
     const collapseBtn = screen.getByRole('button', { name: 'Collapse sidebar' })
+    expect(collapseBtn).toBeInTheDocument()
     collapseBtn.click()
     expect(onToggleCollapse).toHaveBeenCalledOnce()
+  })
+
+  it('keeps each active question status fill color and adds the active ring class instead of turning green', () => {
+    const { rerender } = render(
+      <TestSidebar
+        answered={0}
+        answers={{}}
+        currentQuestion={questions[0]}
+        marked={new Set()}
+        notAnswered={1}
+        notVisited={2}
+        onQuestionSelect={() => undefined}
+        onSubmitClick={() => undefined}
+        questionGroups={new Map()}
+        questions={questions}
+        submitting={false}
+        visited={new Set([1])}
+        isFullLength={false}
+      />
+    )
+
+    const q1Unanswered = screen.getByRole('button', { name: '1' })
+    expect(q1Unanswered).toHaveClass('q-dot', 'q-dot-not-answered', 'q-dot-active')
+    expect(q1Unanswered).not.toHaveClass('q-dot-answered')
+    expect(q1Unanswered).toHaveAttribute('aria-current', 'step')
+
+    const q2NotVisited = screen.getByRole('button', { name: '2' })
+    expect(q2NotVisited).toHaveClass('q-dot', 'q-dot-not-visited')
+    expect(q2NotVisited).not.toHaveClass('q-dot-active')
+    expect(q2NotVisited).not.toHaveAttribute('aria-current')
+
+    rerender(
+      <TestSidebar
+        answered={1}
+        answers={{ 1: 'A' }}
+        currentQuestion={questions[1]}
+        marked={new Set([2])}
+        notAnswered={1}
+        notVisited={1}
+        onQuestionSelect={() => undefined}
+        onSubmitClick={() => undefined}
+        questionGroups={new Map()}
+        questions={questions}
+        submitting={false}
+        visited={new Set([1, 2])}
+        isFullLength={false}
+      />
+    )
+
+    const q1Answered = screen.getByRole('button', { name: '1' })
+    expect(q1Answered).toHaveClass('q-dot-answered')
+    expect(q1Answered).not.toHaveClass('q-dot-active')
+
+    const q2MarkedActive = screen.getByRole('button', { name: '2' })
+    expect(q2MarkedActive).toHaveClass('q-dot-marked', 'q-dot-active')
+    expect(q2MarkedActive).not.toHaveClass('q-dot-answered')
+
+    rerender(
+      <TestSidebar
+        answered={1}
+        answers={{ 1: 'A' }}
+        currentQuestion={questions[0]}
+        marked={new Set([2])}
+        notAnswered={1}
+        notVisited={1}
+        onQuestionSelect={() => undefined}
+        onSubmitClick={() => undefined}
+        questionGroups={new Map()}
+        questions={questions}
+        submitting={false}
+        visited={new Set([1, 2])}
+        isFullLength={false}
+      />
+    )
+
+    const q1AnsweredActive = screen.getByRole('button', { name: '1' })
+    expect(q1AnsweredActive).toHaveClass('q-dot-answered', 'q-dot-active')
+    expect(screen.getByRole('button', { name: '2' })).toHaveClass('q-dot-marked')
+  })
+
+  it('paints an answered-but-unvisited question as answered rather than not-visited', () => {
+    render(
+      <TestSidebar
+        answered={1}
+        answers={{ 3: 'B' }}
+        currentQuestion={questions[0]}
+        marked={new Set()}
+        notAnswered={1}
+        notVisited={1}
+        onQuestionSelect={() => undefined}
+        onSubmitClick={() => undefined}
+        questionGroups={new Map()}
+        questions={questions}
+        submitting={false}
+        visited={new Set([1])}
+        isFullLength={false}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: '3' })).toHaveClass('q-dot-answered')
+    expect(screen.getByRole('button', { name: '3' })).not.toHaveClass('q-dot-not-visited')
   })
 })

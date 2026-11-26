@@ -113,6 +113,7 @@ describe('useAttemptLifecycle resume', () => {
     expect(attemptRef.current?.id).toBe(20)
     expect(answersRef.current).toEqual({ 5: '123.5' })
     expect(timingsRef.current).toEqual({ 5: 48 })
+    expect(options.setVisited).toHaveBeenCalledWith(new Set([5]))
     expect(testAPI.startTest).toHaveBeenCalledExactlyOnceWith(7)
     expect(testAPI.getQuestions).toHaveBeenCalledExactlyOnceWith(7, 20)
   })

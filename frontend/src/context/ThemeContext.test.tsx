@@ -76,6 +76,51 @@ describe('ThemeProvider', () => {
 
     expect(document.documentElement.style.colorScheme).toBe('dark')
   })
+
+  it('suppresses CSS transitions briefly during theme toggles to avoid button color flashes', async () => {
+    const rafCallbacks: FrameRequestCallback[] = []
+    const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      rafCallbacks.push(callback)
+      return rafCallbacks.length
+    })
+    const cancelSpy = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
+
+    try {
+      const { unmount } = render(<ThemeProvider><ThemeConsumer /></ThemeProvider>)
+      expect(document.documentElement.classList.contains('theme-switching')).toBe(false)
+
+      await act(async () => {
+        await userEvent.click(screen.getByTestId('toggle-btn'))
+      })
+
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+      expect(document.documentElement.classList.contains('theme-switching')).toBe(true)
+      expect(rafCallbacks).toHaveLength(1)
+
+      act(() => {
+        rafCallbacks[0](16)
+      })
+      expect(document.documentElement.classList.contains('theme-switching')).toBe(true)
+      expect(rafCallbacks).toHaveLength(2)
+
+      act(() => {
+        rafCallbacks[1](32)
+      })
+      expect(document.documentElement.classList.contains('theme-switching')).toBe(false)
+
+      await act(async () => {
+        await userEvent.click(screen.getByTestId('toggle-btn'))
+      })
+      expect(document.documentElement.classList.contains('theme-switching')).toBe(true)
+
+      unmount()
+      expect(cancelSpy).toHaveBeenCalled()
+      expect(document.documentElement.classList.contains('theme-switching')).toBe(false)
+    } finally {
+      rafSpy.mockRestore()
+      cancelSpy.mockRestore()
+    }
+  })
 })
 
 describe('useTheme', () => {

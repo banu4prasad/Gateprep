@@ -13,6 +13,7 @@ export interface ConfirmSubmitModalProps {
   doSubmit: (auto?: boolean) => void
   marked: ReadonlySet<number>
   notAnswered: number
+  notVisited: number
   questions: TestQuestion[]
   setShowConfirm: React.Dispatch<React.SetStateAction<boolean>>
   submitting: boolean
@@ -25,6 +26,7 @@ export default function ConfirmSubmitModal({
   doSubmit,
   marked,
   notAnswered,
+  notVisited,
   questions,
   setShowConfirm,
   submitting,
@@ -42,6 +44,7 @@ export default function ConfirmSubmitModal({
               ['Total Questions', questions.length, 'text-foreground'],
               ['Answered', answered, 'text-[var(--success-text)]'],
               ['Not Answered', notAnswered, 'text-[var(--danger-text)]'],
+              ['Not Visited', notVisited, 'text-muted-foreground'],
               ['Marked', marked.size, 'text-[var(--marked-text)]'],
             ].map(([label, val, colorClass]) => (
               <div key={label} className="flex justify-between py-1.5 border-b border-border">
