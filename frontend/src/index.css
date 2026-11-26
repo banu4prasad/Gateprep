@@ -117,6 +117,7 @@
     --destructive-foreground: #020818;
     --input: oklch(1 0 0 / 15%);
     --ring: #7dd3fc;
+    --palette-active-ring: var(--ring);
     --btn-disabled-bg: #1e293b;
     --btn-disabled-fg: #cbd5e1;
     --btn-disabled-border: #334155;
@@ -189,6 +190,7 @@
     --destructive-foreground: #ffffff;
     --input: var(--border);
     --ring: #0369a1;
+    --palette-active-ring: var(--text);
     --btn-disabled-bg: #e2e8f0;
     --btn-disabled-fg: #334155;
     --btn-disabled-border: #cbd5e1;
@@ -311,7 +313,7 @@
     font-weight: 600;
     cursor: pointer;
     border: 2px solid;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
     user-select: none;
   }
   .q-dot-not-visited  { background: #e5e7eb; border-color: #d1d5db; color: #374151; }
@@ -319,6 +321,7 @@
   .q-dot-answered     { background: #15803d; border-color: #166534; color: white; }
   .q-dot-marked       { background: var(--accent-indigo); border-color: color-mix(in srgb, var(--accent-indigo) 80%, black); color: white; }
   .q-dot-answered-marked { background: var(--accent-indigo); border-color: color-mix(in srgb, var(--accent-indigo) 80%, black); color: white; position: relative; }
+  .q-dot-active       { box-shadow: 0 0 0 2px var(--palette-ring-offset, var(--sidebar-bg)), 0 0 0 4px var(--palette-active-ring); }
 
   /* Buttons */
   .btn-primary {
@@ -645,4 +648,12 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Suppress color/border transitions while flipping data-theme so buttons don't flash mid-interpolation */
+:root.theme-switching,
+:root.theme-switching *,
+:root.theme-switching *::before,
+:root.theme-switching *::after {
+  transition: none !important;
 }

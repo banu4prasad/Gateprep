@@ -21,7 +21,7 @@ export default function TestEngine() {
     commitNAT, current, currentQuestion, doSubmit, endTimeMs, fsViolations,
     fullscreenUnavailable, handleBack, handleTimerExpire, loadError, loadStatus,
     loading, markAndNext, marked, maxAttempts, natInput, navigate, notAnswered,
-    questionGroups, questions, retryLoad, saveAndNext, setAccepted, setCurrent,
+    notVisited, questionGroups, questions, retryLoad, saveAndNext, setAccepted, setCurrent,
     setMCQ, updateNatInput, setShowCalc, setShowConfirm, setShowFsWarning,
     setShowPalette, showCalc, showConfirm, showFsWarning, showPalette, started,
     starting, submitting, test, toggleMSQ, totalViolations, visited,
@@ -34,6 +34,7 @@ export default function TestEngine() {
       currentQuestion={currentQuestion}
       marked={marked}
       notAnswered={notAnswered}
+      notVisited={notVisited}
       setCurrent={setCurrent}
       setShowPalette={setShowPalette}
       setShowConfirm={setShowConfirm}
@@ -62,7 +63,7 @@ export default function TestEngine() {
       starting={starting}
       test={test}
     >
-      <div className="theme-surface h-screen flex flex-col overflow-hidden select-none">
+      <div className="theme-surface h-dvh flex flex-col overflow-hidden select-none">
         <TestEngineOverlays
           endTimeMs={endTimeMs}
           fsViolations={fsViolations}
@@ -77,6 +78,7 @@ export default function TestEngine() {
           doSubmit={doSubmit}
           marked={marked}
           notAnswered={notAnswered}
+          notVisited={notVisited}
           questions={questions}
           submitting={submitting}
         />
@@ -136,7 +138,7 @@ export default function TestEngine() {
           <div
             className={clsx(
               'hidden md:flex border-l flex-col flex-shrink-0 overflow-y-auto theme-sidebar-surface transition-all duration-200',
-              sidebarCollapsed ? 'w-0 border-l-0 overflow-hidden' : 'w-56'
+              sidebarCollapsed ? 'w-0 border-l-0 overflow-hidden' : 'w-60'
             )}
             aria-hidden={sidebarCollapsed}
           >

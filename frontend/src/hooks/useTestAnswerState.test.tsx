@@ -53,7 +53,7 @@ function useTestNavigationState() {
     setCurrent,
     commitNAT: answerState.commitNAT,
     setMarked: answerState.setMarked,
-    setVisited: answerState.setVisited,
+    visited: answerState.visited,
   })
 
   return { ...answerState, ...progress, answersRef, current, setCurrent }
@@ -78,5 +78,33 @@ describe('useTestAnswerState NAT answers', () => {
     expect(result.current.current).toBe(1)
     expect(result.current.answersRef.current[1]).toBe('42')
     expect(result.current.answers[1]).toBe('42')
+  })
+
+  it('counts only visited-but-unanswered questions in notAnswered', () => {
+    const { result } = renderHook(() => useTestNavigationState())
+
+    expect(result.current.answered).toBe(0)
+    expect(result.current.notAnswered).toBe(1)
+    expect(result.current.notVisited).toBe(1)
+
+    act(() => result.current.setCurrent(1))
+    expect(result.current.answered).toBe(0)
+    expect(result.current.notAnswered).toBe(2)
+    expect(result.current.notVisited).toBe(0)
+
+    act(() => result.current.setMCQ('A'))
+    expect(result.current.answered).toBe(1)
+    expect(result.current.notAnswered).toBe(1)
+    expect(result.current.notVisited).toBe(0)
+  })
+
+  it('excludes hydrated/pre-filled answers from notVisited even if visited lacks their id', () => {
+    const { result } = renderHook(() => useTestNavigationState())
+
+    act(() => result.current.setAnswers({ 2: 'B' }))
+
+    expect(result.current.answered).toBe(1)
+    expect(result.current.notAnswered).toBe(1)
+    expect(result.current.notVisited).toBe(0)
   })
 })

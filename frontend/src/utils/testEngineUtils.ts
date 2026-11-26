@@ -1,13 +1,14 @@
 export const TIMER_WARNINGS = [30, 15, 10, 5, 1]
 
 export const STATUS_CLASS = {
-  current: 'q-dot q-dot-answered border-2 border-white',
   answered: 'q-dot q-dot-answered',
   'not-answered': 'q-dot q-dot-not-answered',
   'not-visited': 'q-dot q-dot-not-visited',
   marked: 'q-dot q-dot-marked',
   'answered-marked': 'q-dot q-dot-answered-marked',
-}
+} as const
+
+export const ACTIVE_QUESTION_CLASS = 'q-dot-active'
 
 export type QuestionStatus = keyof typeof STATUS_CLASS
 
@@ -94,11 +95,9 @@ export function formatTime(ms: number | null | undefined): string {
 
 export function getQStatus(
   qId: string,
-  currentQId: string,
   answers: Record<string, unknown>,
   marked: ReadonlySet<string>,
 ): QuestionStatus {
-  if (qId === currentQId) return 'current'
   if (marked.has(qId) && answers[qId]) return 'answered-marked'
   if (marked.has(qId)) return 'marked'
   if (answers[qId]) return 'answered'

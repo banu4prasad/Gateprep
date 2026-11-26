@@ -44,6 +44,7 @@ export interface TestEngineResult {
   updateNatInput: (value: string) => void
   navigate: (to: string) => void
   notAnswered: number
+  notVisited: number
   questions: TestQuestion[]
   retryLoad: () => void
   saveAndNext: () => void
@@ -153,10 +154,10 @@ export default function useTestEngine(): TestEngineResult {
     setCurrent,
     commitNAT,
     setMarked,
-    setVisited,
+    visited,
   })
 
-  const { saveAndNext, markAndNext, questionGroups, subjects, answered, notAnswered } = progress
+  const { saveAndNext, markAndNext, questionGroups, subjects, answered, notAnswered, notVisited } = progress
 
   // --- warm the browser cache with the next question's diagrams ---
   useNextQuestionPrefetch(questions, current, started)
@@ -292,6 +293,7 @@ export default function useTestEngine(): TestEngineResult {
     updateNatInput,
     navigate,
     notAnswered,
+    notVisited,
     questions,
     retryLoad,
     saveAndNext,

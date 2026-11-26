@@ -10,7 +10,7 @@ export interface NatInputProps {
 
 export default function NatInput({ value, onChange, onCommit, savedValue }: NatInputProps): React.ReactElement {
   return (
-    <div>
+    <div className="pb-6">
       <p className="text-xs text-success-text mb-3">Enter numerical answer. No negative marking.</p>
       <div className="flex gap-3 items-center max-w-xs">
         <Input

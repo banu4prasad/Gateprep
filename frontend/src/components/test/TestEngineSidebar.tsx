@@ -13,6 +13,7 @@ export default function TestEngineSidebar({
   currentQuestion,
   marked,
   notAnswered,
+  notVisited,
   setCurrent,
   setShowPalette,
   setShowConfirm,
@@ -31,6 +32,7 @@ export default function TestEngineSidebar({
       currentQuestion={currentQuestion}
       marked={marked}
       notAnswered={notAnswered}
+      notVisited={notVisited}
       onQuestionSelect={(index) => {
         setCurrent(index)
         setShowPalette(false)

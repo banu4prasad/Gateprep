@@ -403,6 +403,71 @@ describe('TestEngine page flow', () => {
     expect(screen.queryByRole('button', { name: 'Expand sidebar' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument()
   })
+
+  it('does not double-count Not Visited questions inside Not Answered and keeps active dot status fill', async () => {
+    renderPage()
+    await beginExam()
+
+    expect(screen.getByText('Answered (0)')).toBeInTheDocument()
+    expect(screen.getByText('Not Answered (1)')).toBeInTheDocument()
+    expect(screen.getByText('Not Visited (1)')).toBeInTheDocument()
+    expect(screen.getByText('Marked (0)')).toBeInTheDocument()
+
+    const q1Button = screen.getByRole('button', { name: /^1$/ })
+    expect(q1Button).toHaveClass('q-dot-not-answered', 'q-dot-active')
+    expect(q1Button).not.toHaveClass('q-dot-answered')
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Submit Test|Submit/ })[0])
+    expect(screen.getByText('Total Questions').nextElementSibling).toHaveTextContent('2')
+    expect(screen.getByText('Answered').nextElementSibling).toHaveTextContent('0')
+    expect(screen.getByText('Not Answered').nextElementSibling).toHaveTextContent('1')
+    expect(screen.getByText('Not Visited').nextElementSibling).toHaveTextContent('1')
+    expect(screen.getByText('Marked').nextElementSibling).toHaveTextContent('0')
+  })
+
+  it('resets question container scrollTop to 0 when switching questions and preserves bottom padding for NAT status', async () => {
+    vi.mocked(testAPI.getQuestions).mockResolvedValue(response([
+      ...questions,
+      {
+        id: 13,
+        question_type: 'nat',
+        question_text: 'Enter value',
+        question_image_url: null,
+        options: [],
+        option_images: null,
+        order_index: 2,
+        marks: 2,
+        negative_marks: 0,
+        subject: 'Computer Science',
+        topic: null,
+      },
+    ]))
+
+    renderPage()
+    await beginExam()
+
+    const scrollContainer = screen.getByText('Question No. 1').parentElement
+    expect(scrollContainer).toHaveClass('overflow-y-auto')
+    expect(scrollContainer).not.toHaveClass('pb-10')
+    if (!scrollContainer) throw new Error('Question scroll container not found')
+
+    scrollContainer.scrollTop = 240
+    expect(scrollContainer.scrollTop).toBe(240)
+
+    fireEvent.click(screen.getByRole('button', { name: /^3$/ }))
+    await waitFor(() => expect(screen.getByText('Question No. 3')).toBeInTheDocument())
+    expect(scrollContainer.scrollTop).toBe(0)
+
+    const natInput = screen.getByRole('textbox', { name: 'Numerical Answer' })
+    fireEvent.change(natInput, { target: { value: '4' } })
+    const savedConfirmation = screen.getByText(/✓ Saved:/)
+    expect(savedConfirmation.parentElement).toHaveClass('pb-6')
+
+    scrollContainer.scrollTop = 180
+    fireEvent.click(screen.getByRole('button', { name: /^1$/ }))
+    await waitFor(() => expect(screen.getByText('Question No. 1')).toBeInTheDocument())
+    expect(scrollContainer.scrollTop).toBe(0)
+  })
 })
 
 describe('TestEngine fullscreen fallback', () => {
