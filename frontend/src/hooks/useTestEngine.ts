@@ -30,6 +30,7 @@ export interface TestEngineResult {
   doSubmit: (auto?: boolean) => void
   endTimeMs: number | null
   fsViolations: number
+  fullscreenUnavailable: boolean
   handleTimerExpire: () => void
   loading: boolean
   markAndNext: () => void
@@ -167,7 +168,16 @@ export default function useTestEngine(): TestEngineResult {
     setStarted,
   })
 
-  const { attempt, attemptNumber, maxAttempts, starting, accepted, setAccepted, beginTest } = attemptSub
+  const {
+    attempt,
+    attemptNumber,
+    maxAttempts,
+    starting,
+    accepted,
+    fullscreenUnavailable,
+    setAccepted,
+    beginTest,
+  } = attemptSub
 
   // --- sync refs with live state ---
   useEffect(() => { testIdRef.current = testId }, [testId])
@@ -251,6 +261,7 @@ export default function useTestEngine(): TestEngineResult {
     doSubmit,
     endTimeMs,
     fsViolations,
+    fullscreenUnavailable,
     handleTimerExpire,
     loading,
     markAndNext,

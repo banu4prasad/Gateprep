@@ -1,6 +1,11 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getApiErrorDetail } from '@/lib/apiError'
+import {
+  exitFullscreenBestEffort,
+  requestFullscreenBestEffort,
+  type FullscreenRequestOutcome,
+} from '@/utils/fullscreen'
 import { adminAPI, testAPI } from '../api/api'
 import type { Dispatch, RefObject, SetStateAction } from 'react'
 import type { AttemptStart, TestQuestion } from '@/types/api'
@@ -45,6 +50,7 @@ export interface AttemptLifecycleResult {
   maxAttempts: number | string
   starting: boolean
   accepted: boolean
+  fullscreenUnavailable: boolean
   setAccepted: Dispatch<SetStateAction<boolean>>
   beginTest: () => Promise<void>
 }
@@ -76,6 +82,20 @@ export default function useAttemptLifecycle({
   const [maxAttempts, setMaxAttempts] = useState<number | string>(6)
   const [starting, setStarting] = useState(false)
   const [accepted, setAccepted] = useState(false)
+  const [fullscreenUnavailable, setFullscreenUnavailable] = useState(false)
+  const mountedRef = useRef(true)
+  const loadedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      if (loadedTimerRef.current !== null) {
+        clearTimeout(loadedTimerRef.current)
+        loadedTimerRef.current = null
+      }
+    }
+  }, [])
 
   const beginTest = useCallback(async () => {
     if (testId === undefined || testId === null || testId === '') {
@@ -87,16 +107,36 @@ export default function useAttemptLifecycle({
     if (!accepted || starting) return
 
     setStarting(true)
+    setFullscreenUnavailable(false)
     loadedRef.current = false
+    if (loadedTimerRef.current !== null) {
+      clearTimeout(loadedTimerRef.current)
+      loadedTimerRef.current = null
+    }
+
+    let aborted = false
+    let examStarted = false
+    const fullscreenState: { outcome: FullscreenRequestOutcome | 'pending' } = {
+      outcome: 'pending',
+    }
 
     try {
-      try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen?.()
-        }
-      } catch {
-        // Browsers may reject fullscreen in some environments; show recovery after load.
-      }
+      requestFullscreenBestEffort({
+        onSettled: (outcome) => {
+          fullscreenState.outcome = outcome
+          if (aborted || !mountedRef.current) {
+            if (outcome === 'entered') {
+              exitFullscreenBestEffort()
+            }
+            return
+          }
+          if (outcome === 'entered') {
+            setFullscreenUnavailable(false)
+          } else if (examStarted) {
+            setFullscreenUnavailable(true)
+          }
+        },
+      })
 
       let attemptData
       let qData
@@ -116,6 +156,13 @@ export default function useAttemptLifecycle({
         attemptData = attemptRes.data
         const qRes = await testAPI.getQuestions(testId, attemptData.id)
         qData = qRes.data
+      }
+
+      if (!mountedRef.current) {
+        if (fullscreenState.outcome === 'entered') {
+          exitFullscreenBestEffort()
+        }
+        return
       }
 
       setAttempt(attemptData)
@@ -153,15 +200,34 @@ export default function useAttemptLifecycle({
       fsViolRef.current = attemptData.fullscreen_violations || 0
       answersRef.current = restoredAnswers
       timingsRef.current = restoredTimings
+      examStarted = true
       setStarted(true)
 
-      setTimeout(() => {
+      if (
+        fullscreenState.outcome === 'unsupported' ||
+        fullscreenState.outcome === 'blocked'
+      ) {
+        setFullscreenUnavailable(true)
+      }
+
+      loadedTimerRef.current = setTimeout(() => {
+        loadedTimerRef.current = null
+        if (!mountedRef.current) return
         loadedRef.current = true
         if (!document.fullscreenElement) {
-          setShowFsWarning(true)
+          if (fullscreenState.outcome === 'entered') {
+            setShowFsWarning(true)
+          } else {
+            setFullscreenUnavailable(true)
+          }
         }
       }, 2000)
     } catch (err) {
+      aborted = true
+      exitFullscreenBestEffort()
+      if (mountedRef.current) {
+        setFullscreenUnavailable(false)
+      }
       console.error('TestEngine beginTest error:', err)
       toast.error(getApiErrorDetail(err) || 'Failed to start test')
       navigate('/tests')
@@ -200,6 +266,7 @@ export default function useAttemptLifecycle({
     maxAttempts,
     starting,
     accepted,
+    fullscreenUnavailable,
     setAccepted,
     beginTest,
   }

@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, X } from 'lucide-react'
 import clsx from 'clsx'
+import { ALERT_STYLE } from '../components/shared/alertStyles'
+import { cn } from '@/lib/utils'
 import QuestionView from '../components/test/QuestionView'
 import TestHeader from '../components/test/TestHeader'
 import TestEngineStageGate from '../components/test/TestEngineStageGate'
@@ -12,15 +14,17 @@ import { isFullLengthExam } from '../utils/testEngineUtils'
 
 export default function TestEngine() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [fsNoticeDismissed, setFsNoticeDismissed] = useState(false)
   const engine = useTestEngine()
   const {
     accepted, answered, answers, attemptNumber, beginTest, clearResponse,
     commitNAT, current, currentQuestion, doSubmit, endTimeMs, fsViolations,
-    handleTimerExpire, loading, markAndNext, marked, maxAttempts, natInput,
-    navigate, notAnswered, questionGroups, questions, saveAndNext, setAccepted,
-    setCurrent, setMCQ, updateNatInput, setShowCalc, setShowConfirm, setShowFsWarning,
-    setShowPalette, showCalc, showConfirm, showFsWarning, showPalette, started,
-    starting, submitting, test, toggleMSQ, totalViolations, visited,
+    fullscreenUnavailable, handleTimerExpire, loading, markAndNext, marked,
+    maxAttempts, natInput, navigate, notAnswered, questionGroups, questions,
+    saveAndNext, setAccepted, setCurrent, setMCQ, updateNatInput, setShowCalc,
+    setShowConfirm, setShowFsWarning, setShowPalette, showCalc, showConfirm,
+    showFsWarning, showPalette, started, starting, submitting, test, toggleMSQ,
+    totalViolations, visited,
   } = engine
 
   const sidebar = (
@@ -85,6 +89,28 @@ export default function TestEngine() {
           test={test}
           totalViolations={totalViolations}
         />
+
+        {fullscreenUnavailable && !fsNoticeDismissed && (
+          <div
+            role="status"
+            className={cn(
+              ALERT_STYLE.info,
+              'flex items-center justify-between gap-3 sm:px-4 rounded-none border-x-0 border-t-0 text-xs sm:text-sm flex-shrink-0',
+            )}
+          >
+            <span>
+              Fullscreen mode is unavailable in this browser. Continuing test without fullscreen.
+            </span>
+            <button
+              type="button"
+              onClick={() => setFsNoticeDismissed(true)}
+              aria-label="Dismiss fullscreen notice"
+              className="p-1 rounded hover:bg-sky-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+            >
+              <X size={14} aria-hidden="true" />
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-1 overflow-hidden">
           {currentQuestion && <QuestionView
