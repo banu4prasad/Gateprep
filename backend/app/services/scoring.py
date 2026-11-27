@@ -54,7 +54,8 @@ def _has_at_most_two_decimal_places(value: str) -> bool:
         decimal_value = Decimal(value)
     except InvalidOperation:
         return False
-    return decimal_value.as_tuple().exponent >= -2
+    exponent = decimal_value.as_tuple().exponent
+    return isinstance(exponent, int) and exponent >= -2
 
 
 def _score_nat(correct: str, given: str, marks: float) -> tuple[bool, float]:

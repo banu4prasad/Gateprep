@@ -19,7 +19,8 @@ slowapi>=0.1.9
 # Test runner
 pytest>=9.0.3
 
-# Type checking stubs
+# Type checking
+mypy>=1.20.0
 types-passlib
 types-python-jose
 types-redis

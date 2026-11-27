@@ -167,6 +167,63 @@ class AuthCookieTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json()["detail"], "Invalid token")
 
+    def test_refresh_rejects_invalid_token_and_non_string_session_id(self):
+        invalid_response = self.client.post(
+            "/auth/refresh",
+            headers={"Cookie": f"{settings.AUTH_COOKIE_NAME}=not-a-jwt"},
+        )
+        self.assertEqual(invalid_response.status_code, 401)
+        self.assertEqual(invalid_response.json()["detail"], "Invalid or expired token")
+
+        db = self.SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == self.user_id).one()
+            user.current_session_id = "123"
+            db.commit()
+        finally:
+            db.close()
+
+        non_string_sid_token = create_access_token(
+            {
+                "sub": self.user_id,
+                "role": UserRole.aspirant,
+                "sid": 123,
+                "auth": "cookie",
+            }
+        )
+        non_string_response = self.client.post(
+            "/auth/refresh",
+            headers={"Cookie": f"{settings.AUTH_COOKIE_NAME}={non_string_sid_token}"},
+        )
+        self.assertEqual(non_string_response.status_code, 401)
+        self.assertEqual(non_string_response.json()["detail"], "Session expired")
+
+    def test_refresh_rejects_inactive_user(self):
+        session_id = "active-session"
+        db = self.SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == self.user_id).one()
+            user.current_session_id = session_id
+            user.is_active = False
+            db.commit()
+        finally:
+            db.close()
+
+        token = create_access_token(
+            {
+                "sub": self.user_id,
+                "role": UserRole.aspirant,
+                "sid": session_id,
+                "auth": "cookie",
+            }
+        )
+        response = self.client.post(
+            "/auth/refresh",
+            headers={"Cookie": f"{settings.AUTH_COOKIE_NAME}={token}"},
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["detail"], "Session expired")
+
 
 if __name__ == "__main__":
     unittest.main()

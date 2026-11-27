@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Literal, Optional, cast
+from typing import Annotated, Literal, Optional, TypeGuard, cast
 
 from fastapi import (
     APIRouter,
@@ -239,7 +239,8 @@ def login(
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.email == payload.email).first()
-    if not _is_valid_credentials(user, payload.password) or not user.is_active:
+    valid_credentials = _is_valid_credentials(user, payload.password)
+    if user is None or not valid_credentials or not user.is_active:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     _set_auth_cookie(response, create_token_for_user(user, db, request))
@@ -280,9 +281,9 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 # ── Refresh Token ─────────────────────────────────────────────────
 
 
-def _is_valid_cookie_auth_payload(payload: Optional[dict]) -> bool:
+def _is_valid_cookie_auth_payload(payload: Optional[dict]) -> TypeGuard[dict]:
     """True if the decoded token payload exists and was issued for cookie auth."""
-    return bool(payload) and payload.get("auth") == "cookie"
+    return payload is not None and payload.get("auth") == "cookie"
 
 
 def _extract_user_id(payload: dict) -> int:
@@ -299,7 +300,11 @@ def _extract_user_id(payload: dict) -> int:
 def _is_session_still_valid(user: Optional[User], session_id: Optional[str]) -> bool:
     """True if the user exists, a session id was presented, and it matches
     the user's current (live) session id."""
-    return bool(user) and bool(session_id) and user.current_session_id == session_id
+    return (
+        user is not None
+        and bool(session_id)
+        and user.current_session_id == session_id
+    )
 
 
 @router.post("/refresh", response_model=AuthUserResponse)
@@ -318,7 +323,11 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
     session_id = payload.get("sid")
 
     user = db.query(User).filter(User.id == user_id, User.is_active.is_(True)).first()
-    if not _is_session_still_valid(user, session_id):
+    if (
+        user is None
+        or not isinstance(session_id, str)
+        or not _is_session_still_valid(user, session_id)
+    ):
         raise HTTPException(status_code=401, detail="Session expired")
 
     _set_auth_cookie(response, create_token_for_session(user, session_id))
@@ -342,10 +351,10 @@ def _validate_reset_input(payload: ResetPasswordRequest) -> str:
 
 def _is_usable_reset_token(
     reset_token: Optional[PasswordResetToken], now: datetime
-) -> bool:
+) -> TypeGuard[PasswordResetToken]:
     """True if the token exists, hasn't been consumed, and hasn't expired."""
     return (
-        bool(reset_token)
+        reset_token is not None
         and reset_token.used_at is None
         and _as_utc(reset_token.expires_at) >= now
     )

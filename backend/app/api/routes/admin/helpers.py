@@ -99,7 +99,7 @@ async def read_upload_bytes(
             raise HTTPException(status_code=400, detail="File name is required")
 
     if allowed_extensions is not None:
-        secure_name = os.path.basename(file.filename.replace("\\", "/"))
+        secure_name = os.path.basename((file.filename or "").replace("\\", "/"))
         if "." not in secure_name:
             raise HTTPException(status_code=400, detail="File must have an extension")
         ext = secure_name.rsplit(".", 1)[-1].lower()
