@@ -238,6 +238,24 @@ class BulkAnswerSubmit(BaseModel):
     answers: List[AnswerSubmit]
 
 
+class PracticeResultHtmlRequest(BaseModel):
+    """Inputs for re-rendering a practice report server-side.
+
+    Question text, options, explanations, images and scores are never read from
+    this body: the test is re-hydrated from the database and the answers are
+    re-scored, so only the learner's own answers and cosmetic attempt metadata
+    are accepted from the client.
+    """
+
+    test_id: int
+    answers: List[AnswerSubmit] = Field(default_factory=list, max_length=500)
+    client_result_id: Optional[str] = Field(default=None, max_length=64)
+    attempt_number: int = Field(default=2, ge=1)
+    attempts_remaining: int = Field(default=0, ge=0)
+    submitted_at: Optional[datetime] = None
+    tab_violations: int = Field(default=0, ge=0)
+
+
 class ViolationUpdate(BaseModel):
     tab_violations: Optional[int] = Field(default=None, ge=0)
     fullscreen_violations: Optional[int] = Field(default=None, ge=0)

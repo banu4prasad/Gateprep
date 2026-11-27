@@ -525,6 +525,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tests/practice/result.html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Practice Result Html
+         * @description Render a downloadable report for a practice (non-persisted) attempt.
+         *
+         *     The test is re-hydrated from the database and the submitted answers are
+         *     re-scored, so no question content or score is trusted from the client. The
+         *     caller must already hold a persisted submission for the test, otherwise this
+         *     route would let anyone scrape the answer key for tests they have not taken.
+         */
+        post: operations["post_practice_result_html_tests_practice_result_html_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tests/{test_id}": {
         parameters: {
             query?: never;
@@ -1007,6 +1032,40 @@ export interface components {
             test_id: number;
             /** Total Marks */
             total_marks: number | null;
+        };
+        /**
+         * PracticeResultHtmlRequest
+         * @description Inputs for re-rendering a practice report server-side.
+         *
+         *     Question text, options, explanations, images and scores are never read from
+         *     this body: the test is re-hydrated from the database and the answers are
+         *     re-scored, so only the learner's own answers and cosmetic attempt metadata
+         *     are accepted from the client.
+         */
+        PracticeResultHtmlRequest: {
+            /** Answers */
+            answers?: components["schemas"]["AnswerSubmit"][];
+            /**
+             * Attempt Number
+             * @default 2
+             */
+            attempt_number: number;
+            /**
+             * Attempts Remaining
+             * @default 0
+             */
+            attempts_remaining: number;
+            /** Client Result Id */
+            client_result_id?: string | null;
+            /** Submitted At */
+            submitted_at?: string | null;
+            /**
+             * Tab Violations
+             * @default 0
+             */
+            tab_violations: number;
+            /** Test Id */
+            test_id: number;
         };
         /** PracticeResultResponse */
         PracticeResultResponse: {
@@ -2349,6 +2408,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistoryResponse"][];
+                };
+            };
+        };
+    };
+    post_practice_result_html_tests_practice_result_html_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PracticeResultHtmlRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { authAPI, fetcher } from './api';
+import { authAPI, fetcher, testAPI } from './api';
 import api from './client';
 
 vi.mock('./client', () => {
@@ -72,6 +72,31 @@ describe('API Wrappers', () => {
       await authAPI.me();
       
       expect(api.get).toHaveBeenCalledWith('/auth/me');
+    });
+  });
+
+  describe('testAPI report downloads', () => {
+    it('downloadResultHtml should GET the persisted report as a blob', async () => {
+      vi.mocked(api.get).mockResolvedValueOnce({ data: new Blob(['x']) });
+
+      await testAPI.downloadResultHtml(42);
+
+      expect(api.get).toHaveBeenCalledWith('/tests/attempt/42/result.html', { responseType: 'blob' });
+    });
+
+    it('downloadPracticeResultHtml should POST the payload and request a blob', async () => {
+      vi.mocked(api.post).mockResolvedValueOnce({ data: new Blob(['x']) });
+      const payload = {
+        test_id: 7,
+        answers: [{ question_id: 1, selected_answer: 'A', time_spent_seconds: 5 }],
+        attempt_number: 2,
+        attempts_remaining: 4,
+        tab_violations: 0,
+      };
+
+      await testAPI.downloadPracticeResultHtml(payload);
+
+      expect(api.post).toHaveBeenCalledWith('/tests/practice/result.html', payload, { responseType: 'blob' });
     });
   });
 });
