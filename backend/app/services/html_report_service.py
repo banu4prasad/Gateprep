@@ -51,6 +51,10 @@ def _format_datetime(value: Any) -> str:
         except Exception:
             return value
     if hasattr(value, "strftime"):
+        # Aware datetimes (e.g. +05:30 from a browser) must be converted before
+        # the "UTC" suffix is appended; naive values are already stored as UTC.
+        if getattr(value, "tzinfo", None) is not None:
+            value = value.astimezone(timezone.utc)
         return value.strftime("%d %b %Y, %I:%M %p UTC")
     return str(value)
 

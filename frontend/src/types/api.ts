@@ -153,6 +153,7 @@ export interface QuestionsBulk {
 export type SeriesCreate = components['schemas']['SeriesCreate']
 export type BookmarkNote = components['schemas']['BookmarkNote']
 export type AnswerSubmit = components['schemas']['AnswerSubmit']
+export type PracticeResultHtmlRequest = components['schemas']['PracticeResultHtmlRequest']
 export type ViolationUpdate = components['schemas']['ViolationUpdate']
 
 export type AttemptAnswer = components['schemas']['AttemptAnswerResponse']
@@ -184,8 +185,11 @@ export type PersistedResultAnswer = components['schemas']['ResultAnswerResponse'
 export type ResultTopper = components['schemas']['ResultTopperResponse']
 
 export interface ResultData {
+  test_id?: number
   test_title?: string
-  attempt_number?: unknown
+  attempt_number?: number
+  attempts_remaining?: number
+  tab_violations?: number
   submitted_at?: string | null
   score?: number
   total_marks?: unknown
