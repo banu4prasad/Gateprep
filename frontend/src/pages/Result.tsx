@@ -8,7 +8,6 @@ import MathText from '../components/shared/MathText'
 import OptionImage from '../components/test/OptionImage'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-import { downloadResultReport } from '../utils/reportGenerator'
 import { ResultSkeleton } from '../components/shared/Skeletons'
 import { useResultData } from '../hooks/useResultData'
 import { Card, CardContent } from '../components/ui/card'
@@ -505,6 +504,7 @@ export default function ResultPage() {
 
   const handleDownload = useCallback(async () => {
     try {
+      const { downloadResultReport } = await import('../utils/reportGenerator')
       await downloadResultReport(result)
       toast.success('Result downloaded')
     } catch {
