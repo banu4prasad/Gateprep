@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="GATE Prep Platform", version="2.0.0", lifespan=lifespan)
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # Compress large JSON (question lists, results) before it leaves the Space.
 # Added first = innermost: the CSRF/SlowAPI middlewares below stream response

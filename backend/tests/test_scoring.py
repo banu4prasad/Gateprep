@@ -1,6 +1,6 @@
 import pytest
 from app.models.models import Question
-from app.services.scoring import evaluate_answer
+from app.services.scoring import _has_at_most_two_decimal_places, evaluate_answer
 
 def make_question(q_type, correct, marks=2.0, negative_marks=0.66) -> Question:
     return Question(
@@ -135,3 +135,8 @@ def test_evaluate_answer_does_not_reward_negative_penalty():
     q = make_question("mcq", "A", marks=1.0, negative_marks=-1.0)
 
     assert evaluate_answer(q, "B") == (False, 0.0)
+
+
+@pytest.mark.parametrize("value", ["NaN", "sNaN", "Infinity", "-Infinity"])
+def test_has_at_most_two_decimal_places_rejects_non_finite_decimals(value):
+    assert _has_at_most_two_decimal_places(value) is False

@@ -184,6 +184,14 @@ class PasswordResetTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_unknown_reset_token_is_rejected(self):
+        response = self.public_client.post(
+            "/auth/reset-password",
+            json={"token": generate_reset_token(), "password": "newsecret"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["detail"], "Invalid or expired reset link")
+
 
 if __name__ == "__main__":
     unittest.main()
